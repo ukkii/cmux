@@ -79,3 +79,22 @@ Kept on purpose: local diagnostics that never leave the machine (debug log, star
 breadcrumb log, local Ghostty crash marker scan, memory-pressure and main-thread
 hang monitoring, the Cloud diagnostics view). GhosttyKit is still built with its
 own Sentry turned off.
+
+## Cloud tunnel and SSH transport
+
+The cmux Cloud packet-tunnel system extension (`cmuxTunnel.systemextension`, built on
+WireGuardKit/wireguard-go) is gone. The app no longer bundles or installs a system
+extension, never asks for System Extension or VPN approval, and its signature no
+longer claims the NetworkExtension, system-extension install or app-group
+entitlements. The `NSSystemExtensionUsageDescription` prompt string and the "Cloud
+VPN" setup pane are removed, and a VPN configuration saved by an earlier version is
+no longer adopted or managed.
+
+Cloud machines, iOS pairing, My Devices and workspace presence are switched off:
+cmux no longer restores a cmux account session at launch and opens no connections
+to cmux services. (Their code is deleted in the following steps.)
+
+`cmux ssh` (and `ssh://` links) now always use the classic cmuxd-remote transport,
+interactive sessions included, instead of the cmux-tui SSH carrier, which was built
+on Cloud code. Workspaces saved by the cmux-tui carrier still restore, but reconnect
+with a plain `ssh` command rather than reattaching to the old cmux-tui session.

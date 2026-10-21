@@ -1,4 +1,5 @@
 import CmuxCloud
+import CmuxSurfaceCatalogModel
 import CmuxFoundation
 import CmuxNotifications
 import AppKit

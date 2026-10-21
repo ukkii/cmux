@@ -59,7 +59,7 @@ final class CloudNameAuthorityFixture {
         return try #require(object["result"] as? [String: Any])
     }
 
-    func agentName(_ name: String, context: CloudAgentNameContext? = nil) async throws {
+    func agentName(_ name: String, context: SurfaceAgentNameContext? = nil) async throws {
         let captured = context ?? catalog.cloudAgentNameContext(workspaceID: workspace.id, panelID: panelID)
         _ = try await call("surface.sync_codex_native_title", extra: [
             "title": name, "cloud_name_context": (captured?.wire as Any?) ?? NSNull()

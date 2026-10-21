@@ -136,8 +136,6 @@
 	<string>A program running within cmux would like to use speech recognition.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>A program running within cmux would like to access motion data.</string>
-	<key>NSSystemExtensionUsageDescription</key>
-	<string>cmux installs a network extension so this Mac can reach your Cloud machines on their private network. It runs only while you use cmux Cloud.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>A program running within cmux would like to use Bluetooth to discover passkeys and security keys.</string>
 	<key>NSAppleEventsUsageDescription</key>

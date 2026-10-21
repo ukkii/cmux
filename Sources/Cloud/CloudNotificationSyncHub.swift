@@ -1,4 +1,5 @@
 import CmuxCloud
+import CmuxSurfaceCatalogModel
 import Combine
 import Foundation
 

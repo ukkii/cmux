@@ -5,11 +5,11 @@ import Foundation
 extension SurfaceCatalog {
     /// Captures a read precondition without I/O. It expires on a name change,
     /// projection move, daemon restart, or local restore before a callback returns.
-    func cloudAgentNameContext(workspaceID: UUID, panelID: UUID) -> CloudAgentNameContext? {
+    func cloudAgentNameContext(workspaceID: UUID, panelID: UUID) -> SurfaceAgentNameContext? {
         guard let projection = projection(forPanel: panelID), projection.workspaceID == workspaceID,
               cloudStateObservations[projection.resource.machine]?.freshness == .current,
               let state = cloudStates[projection.resource.machine] else { return nil }
-        return CloudAgentNameContext(projection: projection, state: state)
+        return SurfaceAgentNameContext(projection: projection, state: state)
     }
 
     /// nil means local/SSH: their existing title semantics continue unchanged.
@@ -17,7 +17,7 @@ extension SurfaceCatalog {
     /// same accepted graph. Errors keep that graph visible and report the refusal.
     func submitCloudPanelRename(
         workspace: Workspace, panelID: UUID, title: String?, source: Workspace.CustomTitleSource,
-        context: CloudAgentNameContext? = nil
+        context: SurfaceAgentNameContext? = nil
     ) -> Bool? {
         if let projection = projection(forPanel: panelID), projection.workspaceID == workspace.id,
            !projection.resource.machine.isLocal, projection.resource.kind == .display, source != .auto {

@@ -192,10 +192,10 @@ final class MobileHostIrxRuntime: MobileHostPairingRuntime {
         pairingEnabled() && alpn == MobileHostIrxLegacyDialectServer.legacyALPN
     }
 
+    /// iOS pairing, device access, and remote control are permanently disabled
+    /// in this build, so the mobile host never listens or opens a connection.
     var isNetworkingAllowed: Bool {
-        (pairingEnabled() || DevicesFeature.isEnabled || MobileRemoteControlPolicy.allowsIncomingAccess())
-            && !managedDevicePolicy.isEnforced(.disableIrohNetworking)
-            && !managedDevicePolicy.isEnforced(.disableRemoteControl)
+        false
     }
 
     private func isCurrent(_ token: UUID) -> Bool {

@@ -2355,65 +2355,6 @@
           }
         }
       }
-    },
-    "NSSystemExtensionUsageDescription": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux installs a network extension so this Mac can reach your Cloud machines on their private network. It runs only while you use cmux Cloud."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux はこの Mac からプライベートネットワーク上のクラウドマシンに到達できるように、ネットワーク機能拡張をインストールします。機能拡張は cmux Cloud を使用している間だけ動作します。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux 会安装一个网络扩展，让这台 Mac 能够通过专用网络访问您的云端机器。它仅在您使用 cmux Cloud 期间运行。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux installiert eine Netzwerkerweiterung, damit dieser Mac Ihre Cloud-Maschinen in deren privatem Netzwerk erreichen kann. Sie wird nur ausgeführt, während Sie cmux Cloud verwenden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux installe une extension réseau afin que ce Mac puisse accéder à vos machines Cloud sur leur réseau privé. Elle ne s’exécute que lorsque vous utilisez cmux Cloud."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يقوم cmux بتثبيت امتداد شبكة ليتمكن جهاز Mac هذا من الوصول إلى أجهزة السحابة الخاصة بك على شبكتها الخاصة. يعمل هذا الامتداد فقط أثناء استخدامك لـ cmux Cloud."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux instala una extensión de red para que este Mac pueda conectarse a tus máquinas Cloud en su red privada. Solo se ejecuta mientras usas cmux Cloud."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux 會安裝網路延伸功能，以便此 Mac 可透過私人網路連線至您的 Cloud 虛擬主機。此功能僅在您使用 cmux Cloud 時執行。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux는 이 Mac이 사설 네트워크의 Cloud 머신에 연결할 수 있도록 네트워크 확장을 설치합니다. 이 확장은 cmux Cloud를 사용하는 동안에만 실행됩니다."
-          }
-        }
-      }
     }
   }
 }

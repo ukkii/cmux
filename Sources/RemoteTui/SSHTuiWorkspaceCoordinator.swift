@@ -1,5 +1,6 @@
 import CmuxSSHClipboardTrust
 import CmuxCloud
+import CmuxSettings
 import CmuxCloudTui
 import CmuxCore
 import CmuxSurfaceCatalogModel

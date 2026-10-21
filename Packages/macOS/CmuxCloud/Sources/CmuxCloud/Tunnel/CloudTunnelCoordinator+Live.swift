@@ -1,27 +1,18 @@
 import Foundation
 
 extension CloudTunnelCoordinator {
-    /// The production coordinator: backend from this build's signature and
-    /// bundle, NetworkExtension controller when it is available, enrollment
-    /// through the signed-in ``VMClient``, and ``CloudActivationPolicy`` as
-    /// the gate on every start. Main actor because the controller is.
+    /// The production coordinator. The Network Extension packet tunnel is not
+    /// part of this build, so the backend is always unavailable and the
+    /// controller is inert: no start is ever admitted and NetworkExtension
+    /// preferences are never loaded.
     @MainActor
-    public static func live(
-        consumers: any CloudTunnelConsumerSource,
-        selector: CloudTunnelBackendSelector = .live(),
-        tunnelManager: VMTunnelManager = VMTunnelManager(),
-        activation: CloudActivationPolicy
-    ) -> CloudTunnelCoordinator {
-        let backend = selector.select()
-        let controller = liveController(for: backend, activation: activation) { identifier in
-            NetworkExtensionTunnelController(providerBundleIdentifier: identifier)
-        }
-        return CloudTunnelCoordinator(
-            backend: backend,
-            controller: controller,
-            enroller: VMTunnelEnroller(manager: tunnelManager),
+    public static func inert(consumers: any CloudTunnelConsumerSource) -> CloudTunnelCoordinator {
+        CloudTunnelCoordinator(
+            backend: .unavailable(.extensionNotBundled),
+            controller: CloudTunnelInertController(),
+            enroller: VMTunnelEnroller(manager: VMTunnelManager()),
             consumers: consumers,
-            admission: activation.tunnelAdmission
+            admission: .constant { .cloudMachinesOff }
         )
     }
 

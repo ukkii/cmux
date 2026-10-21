@@ -1,4 +1,5 @@
 import CmuxCloud
+import CmuxSurfaceCatalogModel
 import Bonsplit
 import CmuxSettings
 import Foundation
@@ -68,7 +69,7 @@ extension TerminalController {
             found = true
             applied = SurfaceCatalog.shared.submitCloudPanelRename(
                 workspace: workspace, panelID: resolvedPanelId, title: title, source: .auto,
-                context: CloudAgentNameContext(wire: params["cloud_name_context"])
+                context: SurfaceAgentNameContext(wire: params["cloud_name_context"])
             ) ?? tabManager.updatePanelTitle(tabId: workspaceId, panelId: resolvedPanelId, title: title)
         }
 
@@ -172,7 +173,7 @@ extension TerminalController {
                    !(panelOnlyIfMultiple && workspace.panels.count < 2 && workspace.cloudVMBinding == nil) {
                     panelApplied = SurfaceCatalog.shared.submitCloudPanelRename(
                         workspace: workspace, panelID: resolvedPanelId, title: title, source: .auto,
-                        context: CloudAgentNameContext(wire: params["cloud_name_context"])
+                        context: SurfaceAgentNameContext(wire: params["cloud_name_context"])
                     ) ?? workspace.setPanelCustomTitle(panelId: resolvedPanelId, title: title, source: .auto)
                 }
             }

@@ -5,12 +5,12 @@ import Foundation
 extension CmuxTuiSurfaceProvider: SurfaceAgentNaming {
     /// Automatic names use the revision captured before the agent computed them.
     /// Refresh supplies current topology, but never upgrades that name precondition.
-    func renameAgentTab(context: CloudAgentNameContext, name: String) async throws {
+    func renameAgentTab(context: SurfaceAgentNameContext, name: String) async throws {
         let lifecycle = currentLifecycleGeneration
         guard context.projection.resource.machine == machine,
               await refreshCurrentGraph(force: true),
               let state = cloudState,
-              CloudAgentNameContext(projection: context.projection, state: state) == context,
+              SurfaceAgentNameContext(projection: context.projection, state: state) == context,
               let cursor = state.cursor, let tabID = context.projection.remoteTabID else {
             throw CancellationError()
         }

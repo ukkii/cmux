@@ -2,8 +2,9 @@ import CmuxCloud
 import CmuxSettings
 import Foundation
 
-/// Shared policy for discovering the account's other Macs. Incoming discovery
-/// is controlled independently by `MobileRemoteControlPolicy`.
+/// Shared policy for discovering the account's other Macs. Device discovery
+/// depends on Cloud, which is permanently disabled in this build, so the
+/// feature is never available.
 enum DevicesFeature {
     @MainActor
     static var isEnabled: Bool {
@@ -36,9 +37,7 @@ enum DevicesFeature {
         policy: ManagedDevicePolicy? = nil,
         cloudEnabled: Bool? = nil
     ) -> Bool {
-        let policy = policy ?? ManagedDevicePolicy(defaults: defaults)
-        return !policy.isEnforced(.disableCloud)
-            && (cloudEnabled ?? CloudMachinesFeature.isEnabled(defaults: defaults, policy: policy))
+        false
     }
 
     nonisolated static func isDiscoveryEnabled(defaults: UserDefaults = .standard, cloudEnabled: Bool? = nil) -> Bool {

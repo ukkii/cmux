@@ -465,7 +465,6 @@ def test_package_lane_reads_the_job_package_list_from_the_workflow() -> None:
         "CmuxCanvas",
         "CmuxCloudBannerCore",
         "CmuxCloudImagePaste",
-        "CmuxCloudTunnelCore",
         "CMUXDebugLog",
         "CmuxExtensionKit",
         "CmuxLiveEval",

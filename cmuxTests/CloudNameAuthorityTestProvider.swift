@@ -67,9 +67,9 @@ final class CloudNameAuthorityTestProvider: SurfaceAgentNaming {
         try commit(collection: "tabs", id: id, name: name)
     }
 
-    func renameAgentTab(context: CloudAgentNameContext, name: String) async throws {
+    func renameAgentTab(context: SurfaceAgentNameContext, name: String) async throws {
         try await beforeRename?()
-        guard CloudAgentNameContext(projection: context.projection, state: graph) == context else {
+        guard SurfaceAgentNameContext(projection: context.projection, state: graph) == context else {
             throw CancellationError()
         }
         try commit(collection: "tabs", id: try #require(context.projection.remoteTabID), name: name, source: "auto")

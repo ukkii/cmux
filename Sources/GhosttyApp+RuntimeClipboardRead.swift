@@ -1,4 +1,4 @@
-import CmuxCloud
+import CmuxSettings
 import AppKit
 import CmuxTerminal
 import CmuxTerminalCore

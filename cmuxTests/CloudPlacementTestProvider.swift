@@ -66,7 +66,7 @@ final class CloudPlacementTestProvider: SurfaceProvider, SurfacePlacementSyncing
         tabRenames.append(name)
         renamedTabs.append((id, name))
     }
-    func renameAgentTab(context: CloudAgentNameContext, name: String) async throws {
+    func renameAgentTab(context: SurfaceAgentNameContext, name: String) async throws {
         try await renameRemoteTab(id: try #require(context.projection.remoteTabID), name: name)
     }
     func projectionDidEnd(_ projection: SurfaceProjection) {}

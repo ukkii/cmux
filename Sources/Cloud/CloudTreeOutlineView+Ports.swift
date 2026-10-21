@@ -9,7 +9,8 @@ extension CloudTreeOutlineView.Coordinator {
         case .none: break
         case .refresh: nodeActions.refreshMachine(machineID)
         case .setupVPN:
-            AppDelegate.shared?.openCloudVPNSetup(preferredWindow: outlineView?.window)
+            // The Cloud VPN (Network Extension tunnel) is removed from this build.
+            break
         case .openMachine, .openShell:
             // Only opening needs the snapshot: it rejects removed machines and gates expired ones.
             guard let machine = machine(id: machineID) else { return }

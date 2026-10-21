@@ -1,11 +1,10 @@
 import CmuxSettings
 import Foundation
 
-/// The one application-side Cloud activation decision. Cloud is available to
-/// every user unless a managed profile disables it; the persisted first-use
-/// activation marker controls whether Cloud work may run. The right-sidebar
-/// discoverability check intentionally omits the activation marker so the
-/// Cloud tab can own first-use enablement.
+/// The one application-side Cloud activation decision. Cloud is permanently
+/// disabled in this build: every answer is `false` regardless of managed
+/// policy or the persisted first-use activation marker, so no Cloud code path
+/// runs. The signatures stay until the remaining call sites are removed.
 /// lint:allow namespace-type: moved unchanged from the app target, where it was an internal static namespace; reshaping it is a separate change from this package move.
 public enum CloudMachinesFeature: Sendable {
     public nonisolated static var disabledMessage: String {
@@ -15,7 +14,7 @@ public enum CloudMachinesFeature: Sendable {
 
     /// Whether Cloud can be discovered on this Mac.
     public nonisolated static func isAvailable(policy: ManagedDevicePolicy) -> Bool {
-        !policy.isEnforced(.disableCloud)
+        false
     }
 
     /// Whether Cloud work is enabled after local first-use activation.
@@ -23,12 +22,10 @@ public enum CloudMachinesFeature: Sendable {
         defaults: UserDefaults,
         policy: ManagedDevicePolicy
     ) -> Bool {
-        isAvailable(policy: policy) && localOptIn(defaults: defaults)
+        false
     }
 
     public nonisolated static func localOptIn(defaults: UserDefaults) -> Bool {
-        let key = BetaFeaturesCatalogSection().cloudMachines
-        guard defaults.object(forKey: key.userDefaultsKey) != nil else { return key.defaultValue }
-        return defaults.bool(forKey: key.userDefaultsKey)
+        false
     }
 }

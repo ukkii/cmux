@@ -1,4 +1,4 @@
-import CmuxMobileHost
+import CmuxAgentSessionStore
 import Foundation
 import Observation
 import SwiftUI

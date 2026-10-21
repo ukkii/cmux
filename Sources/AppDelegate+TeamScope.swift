@@ -50,4 +50,20 @@ extension AppDelegate {
         cloudTunnelAccessDidEnd()
         NotificationCenter.default.post(name: .cmuxCloudVMAccessDidEnd, object: self)
     }
+
+    /// Signing out ends every Cloud session at once; the tunnel goes with it.
+    @MainActor
+    func cloudTunnelAccessDidEnd() {
+        VMTunnelManager(purpose: .browser).removeLocalCredentials()
+        VMTunnelManager(purpose: .terminal).removeLocalCredentials()
+        // The next account starts from "no machine known": nothing Cloud runs
+        // at launch until it opts in or this Mac lists its fleet again.
+        CloudMachineCache().clear()
+        guard let coordinator = cloudTunnelCoordinator else { return }
+        let previous = cloudTunnelTeardownTask
+        cloudTunnelTeardownTask = Task {
+            await previous?.value
+            try? await coordinator.revoke()
+        }
+    }
 }

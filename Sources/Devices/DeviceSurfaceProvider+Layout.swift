@@ -1,4 +1,4 @@
-import CmuxCloud
+import CmuxSurfaceCatalogModel
 import CmuxCore
 import Foundation
 

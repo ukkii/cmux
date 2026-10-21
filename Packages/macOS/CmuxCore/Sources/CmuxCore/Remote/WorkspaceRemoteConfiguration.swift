@@ -591,7 +591,7 @@ extension WorkspaceRemoteConfiguration {
         if let restoredSSHSession { return restoredSSHSession }
         let retainsRelayNamespace = preserveAfterTerminalExit || terminalTransport == .mosh
 
-        var snapshot = SessionRemoteWorkspaceSnapshot(
+        let snapshot = SessionRemoteWorkspaceSnapshot(
             transport: transport,
             terminalTransport: terminalTransport,
             terminalProfile: terminalProfile,
@@ -608,15 +608,8 @@ extension WorkspaceRemoteConfiguration {
             persistentDaemonSlot: preserveAfterTerminalExit ? persistentDaemonSlot : nil,
             managedCloudVMID: managedCloudVMID
         )
-        // Same rule as the app's routesThroughSSHTui: a configuration carrying a
-        // cmuxd-remote relay or daemon endpoint runs the legacy lifecycle, so its
-        // snapshot must not claim cmux-tui ownership.
-        if terminalTransport == .ssh && !skipDaemonBootstrap && relayPort == nil && daemonWebSocketEndpoint == nil {
-            snapshot.sshSessionOwner = "cmux-tui"
-            if sshOptionsOverride == nil {
-                snapshot.sshOptions = Self.restorableCarrierSSHOptions(sshOptions) + routeSensitiveMarkerOptions
-            }
-        }
+        // SSH-TUI is retired, so a snapshot never claims cmux-tui ownership; every
+        // SSH workspace restores through the cmuxd-remote lifecycle.
         return snapshot
     }
 }

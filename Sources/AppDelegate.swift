@@ -1247,15 +1247,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         set { mainWindowLifecycleCoordinator.replaceRegisteredContextLookups(newValue) }
     }
     var saveWorkspaceActionTasks: [UUID: Task<Void, Never>] = [:]
-    /// The app-managed Cloud tunnel (see `AppDelegate+CloudTunnel.swift`).
+    /// The inert Cloud tunnel coordinator; the packet tunnel itself is removed.
     var cloudTunnelCoordinator: CloudTunnelCoordinator?
     var cloudOperations: CloudOperationRecorder?
     var cloudDiagnosticsWindowController: NSWindowController?
     /// The in-flight sign-out teardown of that tunnel, so a second sign-out
     /// replaces rather than stacks it.
     var cloudTunnelTeardownTask: Task<Void, Never>?
-    /// Brings the tunnel down when Cloud Machines is turned off at runtime.
-    var cloudTunnelActivationObserver: CloudTunnelActivationObserver?
     private var mainWindowControllers: [MainWindowController] = []
 
     /// Tracks the cascade point for new windows, matching Ghostty's upstream algorithm.
@@ -2526,7 +2524,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             coordinator?.authenticatedSessionIdentity
         })
         self.cloudOperations = cloudOperations
-        let cloudTunnel = makeCloudTunnelCoordinator()
+        // The Network Extension tunnel is removed; this coordinator is inert and
+        // only keeps the remaining Cloud call sites total until Cloud is removed.
+        let cloudTunnel = CloudTunnelCoordinator.inert(consumers: CloudTunnelAppConsumers())
         cloudTunnelCoordinator = cloudTunnel
         CmuxTuiSurfaceProviderRegistry.shared.portAccess.coordinator = cloudTunnel
         let cloudReads = VMClient.bootstrap(
@@ -2536,90 +2536,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             isCloudEnabled: { CloudMachinesFeature.offMainIsEnabled() }, isCloudAvailable: { CloudMachinesFeature.offMainIsAvailable() }
         )
         TerminalController.shared.cloudTunnel = cloudTunnel
-        // Warms the New Machine sheet's plan and network catalog per signed-in
-        // account so Cmd+Shift+Y never waits on the network.
-        NewMachineSheetDataCache.bootstrap(auth: auth.coordinator)
+        // Cloud, mobile, device and presence services are hard-disabled in this
+        // build. The control-plane clients below are inert constructors kept only
+        // so not-yet-removed call sites never dereference a nil `shared`; nothing
+        // here opens a connection, starts an observer loop, or restores a session.
         RemotesClient.bootstrap(auth: auth.coordinator)
         TeamsClient.bootstrap(auth: auth.coordinator)
         AIAccountsClient.bootstrap(auth: auth.coordinator)
         CoderouterClient.bootstrap(auth: auth.coordinator)
         MachineUsageClient.bootstrap(auth: auth.coordinator, operations: cloudOperations, readRequests: cloudReads)
-        PhonePushClient.shared.configure(auth: auth.coordinator)
-        MobileHostService.shared.configure(auth: auth.coordinator)
-        caffeineController.onStateChange = { [weak self] enabled in
+        caffeineController.onStateChange = { [weak self] _ in
             self?.menuBarExtraController?.refreshForDebugControls()
-            MobileHostService.emitEvent(
-                topic: "caffeine.status.changed",
-                payload: ["enabled": enabled]
-            )
         }
-        DeviceRegistryClient.shared.configure(auth: auth.coordinator)
         self.devicesRegistry = devicesRegistry
-        if let devicesRegistry, let computersService {
-            computersService.configure(auth: auth.coordinator)
-            devicesRegistry.configure(auth: auth.coordinator, catalog: .shared, authorization: computersService)
-        }
-        configureWorkspacePresence(auth: auth.coordinator)
-        PhoneReplyInboxClient.shared.configure(auth: auth.coordinator)
-        PhoneReplyInboxCoordinator.shared.configure(client: PhoneReplyInboxClient.shared)
-        // Relayed phone replies share the direct RPC paste-and-submit path,
-        // including named Return-key submission and partial-success semantics.
-        PhoneReplyInboxCoordinator.shared.injectTerminalInput = { [weak self] params, retargetsToLiveSurfaceOwner in
-            guard let self else { return .permanentlyUndeliverable }
-            let controller = TerminalController.shared
-            // The inbox payload always carries a stable surface id. Resolve it
-            // before entering the generic mobile RPC so a launch-time workspace
-            // claim cannot route the reply to a stale manager.
-            guard let routedParams = self.phoneReplyTerminalInputParams(
-                params,
-                retargetsToLiveSurfaceOwner: retargetsToLiveSurfaceOwner
-            ) else {
-                // A valid surface can be temporarily absent while a window,
-                // Dock, or remote-tmux projection is being rebuilt. The inbox
-                // has a server-side TTL, so keep that bounded retry alive;
-                // malformed payloads are the only immediate permanent case.
-                let hasValidSurfaceID = controller.v2UUID(params, "surface_id") != nil
-                let hasWorkspaceID = controller.v2HasNonNullParam(params, "workspace_id")
-                let hasValidWorkspaceID = controller.v2UUID(params, "workspace_id") != nil
-                if !retargetsToLiveSurfaceOwner, !hasWorkspaceID {
-                    return .permanentlyUndeliverable
-                }
-                guard hasValidSurfaceID,
-                      (!hasWorkspaceID || hasValidWorkspaceID) else {
-                    return .permanentlyUndeliverable
-                }
-                return .retryable
-            }
-            switch await controller.v2MobileTerminalPaste(params: routedParams) {
-            case .ok:
-                // `terminal.paste` applies the text before it attempts the
-                // named key. A false `submitted` flag is therefore a partial
-                // success, not a safe invitation to replay the whole reply:
-                // doing so would duplicate text in the agent prompt. The
-                // accepted paste is the durable delivery boundary; the user
-                // can press Return manually if the key was rejected.
-                return .delivered
-            case .err(let code, _, _):
-                if code == "input_queue_full" || code == "surface_unavailable" {
-                    return .retryable
-                }
-                guard code == "not_found" else {
-                    return .permanentlyUndeliverable
-                }
-                // A surface can be absent while startup/session restoration is
-                // still rebuilding its workspace. Once that pass has finished,
-                // a stable-surface lookup miss is authoritative and the parked
-                // reply must be acknowledged instead of retrying until TTL.
-                let restorationPending = !self.didAttemptStartupSessionRestore
-                    || self.isApplyingSessionRestore
-                return restorationPending ? .retryable : .permanentlyUndeliverable
-            }
-        }
-        connectivityInvalidationSubscriberCoordinator.configure(auth: auth.coordinator)
-        // DEV-only: auto-publish this Mac's attach route to the signed-in user's
-        // pairedMacs backup so a fresh dev iOS build restores it (no manual host
-        // entry). No-op on Release / when the flag is off.
-        MacPairedMacBackupPublisher.shared.configure(auth: auth.coordinator)
         TerminalController.shared.attachAuth(coordinator: auth.coordinator, accountFlow: auth.accountFlow)
         TerminalController.shared.attachBrowserDataImportCoordinator(browserDataImportCoordinator)
         TerminalController.shared.attachCaffeineController(caffeineController)
@@ -2629,12 +2558,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if !isRunningUnderXCTest(ProcessInfo.processInfo.environment) {
             TerminalController.shared.startSimulatorMutationRecovery()
         }
-        auth.start()
-        ensureMobileWorkspaceListObserver(for: tabManager)
-        MobileTerminalRenderObserver.shared.start()
         agentChatTranscriptService.start()
         SidebarAgentUsageCoordinator { [weak self] id in self?.tabManagerFor(tabId: id)?.workspacesById[id]?.sidebarMetadata }.start()
-        installMobileHostSettingsObserver()
         installManagedPolicyEnforcement()
         scheduleGhosttyCrashBreadcrumbIfNeeded(notificationStore: notificationStore)
         startPaneMemoryGuardrailIfNeeded()
@@ -5493,7 +5418,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
 #endif
         ensureSocketListenerIfEnabled(tabManager: tabManager, source: "mainWindow.register")
-        ensureMobileWorkspaceListObserver(for: tabManager)
         notifyMainWindowContextsDidChange()
         if window.isKeyWindow {
             setActiveMainWindow(window)
@@ -8354,7 +8278,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 tabManager: manager,
                 source: "bootstrapInitialMainWindow.\(debugSource)"
             )
-            MobileHostService.shared.start()
         }
         guard !didBootstrapInitialMainWindow else { return windowId }
 

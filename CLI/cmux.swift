@@ -13959,14 +13959,8 @@ struct CMUXCLI {
                     SSHHostConfiguredRemoteCommand().configuredCommand(fromSSHConfigOutput: $0)
                 }
                 : nil
-        if !sshOptions.skipDaemonBootstrap, effectiveTerminalTransport == .ssh,
-           !sshOptions.remoteCommand.disablesTTY(in: sshOptions.sshOptions,
-               hostRequestTTY: resolvedUserSSHConfiguration.flatMap { sshConfigurationValue(named: "requesttty", in: $0) }) {
-            try runSSHTui(options: sshOptions, configuredRemoteCommand: configuredInteractiveRemoteCommand,
-                          client: client, jsonOutput: jsonOutput, idFormat: idFormat,
-                          routeIdentifier: resolvedRouteIdentifier)
-            return
-        }
+        // Every SSH session, with or without a TTY, uses the cmuxd-remote
+        // lifecycle configured through `workspace.remote.configure` below.
         let sshStartedAt = Date()
         func logSSHTiming(_ stage: String, extra: String = "") {
             let elapsedMs = Int(Date().timeIntervalSince(sshStartedAt) * 1000)

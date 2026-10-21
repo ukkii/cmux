@@ -1,6 +1,6 @@
 import AppKit
 import CMUXAgentLaunch
-import CmuxMobileHost
+import CmuxAgentSessionStore
 import CmuxTerminal
 import CmuxTerminalCore
 import GhosttyKit

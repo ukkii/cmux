@@ -100,14 +100,10 @@ extension Workspace {
 }
 
 extension WorkspaceRemoteConfiguration {
-    /// cmux-tui owns managed SSH connections, which carry no cmuxd-remote channel
-    /// (`workspace.ssh.open` and restored descriptors leave the relay unset). A
-    /// configuration that arrives with a relay or daemon endpoint was bootstrapped
-    /// by the legacy `workspace.remote.configure` flow, which the CLI still uses
-    /// when the SSH session has no TTY. It keeps that lifecycle so its relay and
-    /// terminal startup command are not dropped.
+    /// SSH-TUI is retired: every SSH workspace, including one restored from a
+    /// descriptor saved by cmux-tui, runs the cmuxd-remote lifecycle configured
+    /// through `workspace.remote.configure`.
     var routesThroughSSHTui: Bool {
-        transport == .ssh && terminalTransport == .ssh && !skipDaemonBootstrap &&
-            relayPort == nil && daemonWebSocketEndpoint == nil
+        false
     }
 }

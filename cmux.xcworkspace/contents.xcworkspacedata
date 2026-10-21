@@ -202,9 +202,6 @@
          location = "group:CmuxCloudTui">
       </FileRef>
       <FileRef
-         location = "group:CmuxCloudTunnelCore">
-      </FileRef>
-      <FileRef
          location = "group:CmuxCommandPalette">
       </FileRef>
       <FileRef

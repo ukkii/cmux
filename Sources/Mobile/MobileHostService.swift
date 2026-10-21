@@ -775,13 +775,9 @@ final class MobileHostService {
         defaults: UserDefaults,
         buildFlavor: BuildFlavor
     ) -> Bool {
-        guard !ManagedDevicePolicy(defaults: defaults).isIncomingDeviceAccessDisabled else { return false }
-        // The current iOS choice takes precedence over the historical key;
-        // incoming Mac access remains an independent opt-in.
-        let iOSPairingEnabled = defaults.object(forKey: listeningEnabledDefaultsKey) as? Bool
-            ?? defaults.object(forKey: "cmuxMobilePairingHostEnabled") as? Bool
-            ?? false
-        return iOSPairingEnabled
+        // iOS pairing is permanently disabled in this build; a stored opt-in
+        // from an earlier version is ignored.
+        false
     }
 
     /// User-default key for the preferred iOS pairing listener port.

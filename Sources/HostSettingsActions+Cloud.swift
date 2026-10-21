@@ -106,9 +106,8 @@ extension HostSettingsActions {
         ProUpgradePresenter.present(source: .settingsCloudMachines)
     }
 
-    func openCloudVPNSetup() {
-        AppDelegate.shared?.openCloudVPNSetup(bringWindowForward: true)
-    }
+    /// The Cloud VPN (Network Extension tunnel) is removed from this build.
+    func openCloudVPNSetup() {}
 
     private static func settingsActivationState(
         from state: CloudActivationCoordinator.State?

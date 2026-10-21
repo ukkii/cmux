@@ -59,22 +59,10 @@ extension SessionRemoteWorkspaceSnapshot {
             // empty value remains an explicit disable.
             || (self.agentSocketPathOverrideIsSet == true &&
                 SSHAgentSocketResolver(environment: [:]).normalizedAgentSocketPath(self.agentSocketPath) == nil)
-        if let configuration = tuiSSHConfiguration(agentSocketPath: agentSocketPath) { return configuration }
-        if let configuration = legacyTmuxSSHConfiguration(agentSocketPath: agentSocketPath) { return configuration }
-        if skipDaemonBootstrap != true, (terminalTransport ?? .ssh) == .ssh,
-           preserveAfterTerminalExit == true {
-            // Preserve the old descriptor for recovery, but never resume its daemon
-            // or start a replacement workload under a different session owner.
-            var configuration = WorkspaceRemoteConfiguration(destination: normalizedDestination,
-                port: normalizedPort, identityFile: identityFile, sshOptions: sshOptions,
-                localProxyPort: nil, relayPort: nil, relayID: nil, relayToken: nil,
-                localSocketPath: nil, terminalStartupCommand: nil,
-                agentSocketPath: agentSocketPath,
-                agentSocketPathOverrideIsSet: agentSocketPathOverrideIsSet,
-                preserveAfterTerminalExit: true)
-            configuration.restoredSSHSession = self
-            return configuration
-        }
+        // Every SSH descriptor, including one saved by the retired cmux-tui
+        // carrier (`sshSessionOwner == "cmux-tui"`), restores through the
+        // cmuxd-remote lifecycle below. A descriptor without a relay namespace
+        // reconnects with a plain SSH command.
 
         let normalizedPersistentDaemonSlot = WorkspaceRemoteConfiguration.normalizedPersistentDaemonSlot(persistentDaemonSlot)
         let normalizedLocalSocketPath = WorkspaceRemoteConfiguration.normalizedOptionalValue(localSocketPath)

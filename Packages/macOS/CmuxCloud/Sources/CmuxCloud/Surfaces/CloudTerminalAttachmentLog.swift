@@ -1,5 +1,6 @@
 import CmuxCloud
 import CmuxCloudTui
+import CmuxSurfaceCatalogModel
 import Foundation
 import os
 

@@ -1,4 +1,5 @@
 import CmuxCloud
+import CmuxSettings
 import CmuxCore
 import CmuxFoundation
 import CmuxSurfaceCatalogModel

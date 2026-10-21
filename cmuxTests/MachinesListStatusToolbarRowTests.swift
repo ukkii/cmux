@@ -1,5 +1,6 @@
 import AppKit
 import CmuxCloud
+import CmuxSurfaceCatalogModel
 import SwiftUI
 import Testing
 
