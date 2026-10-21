@@ -3,8 +3,6 @@ import Foundation
 enum SettingsSearchAliasIndex {
     static func sectionAliases(for target: SettingsNavigationTarget) -> String {
         switch target {
-        case .account:
-            return localized("settings.search.alias.section.account", defaultValue: "auth authentication login logout sign in sign out email user profile team")
         case .app:
             return localized("settings.search.alias.section.app", defaultValue: "general preferences prefs behavior chrome dock menubar menu bar status notifications telemetry")
         case .themes:
@@ -51,7 +49,6 @@ enum SettingsSearchAliasIndex {
     }
 
     private static let settingAliases: [String: String] = [
-        "account:account": localized("settings.search.alias.setting.account.account", defaultValue: "auth authentication login logout signin sign-in signout sign-out email user profile stack team"),
         "app:language": localized("settings.search.alias.setting.app.language", defaultValue: "app.language locale l10n localization translation japanese english ja en nihongo restart"),
         "themes:accent-color": localized("settings.search.alias.setting.app.accent-color", defaultValue: "app.accentColor accent color highlight tint blue purple system accent macOS accent cmux blue"),
         "themes:appearance": localized("settings.search.alias.setting.app.appearance", defaultValue: "app.appearance theme color scheme light mode dark mode system mode"),

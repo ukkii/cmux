@@ -12,7 +12,6 @@ import Foundation
 /// the `SettingsSectionID` extension below, and add a view file in
 /// `Sections/`.
 public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Hashable {
-    case account
     case app
     /// App appearance, accent color, terminal themes, and browser theme.
     case themes
@@ -51,7 +50,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
     /// User-facing section title shown in the sidebar.
     public var title: String {
         switch self {
-        case .account: return String(localized: "settings.section.account", defaultValue: "Account")
         case .app: return String(localized: "settings.section.app", defaultValue: "App")
         case .themes: return String(localized: "settings.section.themes", defaultValue: "Themes")
         case .terminal: return String(localized: "settings.section.terminal", defaultValue: "Terminal")
@@ -75,7 +73,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
     /// SF Symbol shown alongside the title in the sidebar.
     public var symbolName: String {
         switch self {
-        case .account: return "person.crop.circle"
         case .app: return "gearshape"
         case .themes: return "paintbrush"
         case .terminal: return "terminal"
@@ -101,7 +98,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
     /// by capability rather than only by title.
     public var searchKeywords: String {
         switch self {
-        case .account: return "sign in team sync user profile"
         case .app: return "language workspace notifications menu bar telemetry"
         case .themes: return "theme themes color scheme palette ghostty terminal colors appearance light dark accent browser"
         case .terminal: return "scrollbar copy on select agent resume hibernation"

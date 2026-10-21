@@ -4,7 +4,7 @@ import { DocsSchema } from "../docs-schema";
 import { DocsLink as Link } from "@/app/[locale]/components/docs-link";
 import { CodeBlock } from "@/app/[locale]/components/code-block";
 import { Callout } from "@/app/[locale]/components/callout";
-import settingsSchema from "@/data/cmux.schema.json";
+import settingsSchema from "../../../../../../schemas/cmux.schema.json";
 import { localizedShortcutText, shortcutCategories } from "@/data/cmux-shortcuts";
 import { DocsHeading } from "@/app/[locale]/components/docs-heading";
 

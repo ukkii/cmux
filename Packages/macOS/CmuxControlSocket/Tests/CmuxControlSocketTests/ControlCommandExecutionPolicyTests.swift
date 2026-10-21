@@ -4,20 +4,19 @@ import Testing
 @Suite("ControlCommandExecutionPolicy")
 struct ControlCommandExecutionPolicyTests {
     @Test func removedCloudNamespacesRunOnTheMainActor() {
-        // Cloud, device-registry, AI-account and CodeRouter verbs were removed;
-        // their former prefixes must no longer divert to the worker lane.
-        for method in ["vm.create", "remotes.list", "aiAccounts.list", "coderouter.handoff.complete"] {
+        // Cloud, device-registry, AI-account, CodeRouter and account/team verbs
+        // were removed; they must no longer divert to the worker lane.
+        for method in [
+            "vm.create", "remotes.list", "aiAccounts.list", "coderouter.handoff.complete",
+            "auth.status", "auth.sign_in_url", "auth.team.list",
+        ] {
             #expect(ControlCommandExecutionPolicy(forMethod: method) == .mainActor, "\(method)")
         }
     }
 
     @Test func fixedWorkerSetRunsOnTheSocketWorker() {
         for method in [
-            "system.ping", "system.capabilities", "auth.status", "auth.sign_in_url",
-            "auth.team.list", "auth.team.use", "auth.team.create",
-            "auth.team.members", "auth.team.invite", "auth.team.invite_link",
-            "auth.team.revoke_invite", "auth.team.remove_member", "auth.team.open_members",
-            "auth.team.invitations", "auth.team.accept_invite", "auth.team.decline_invite",
+            "system.ping", "system.capabilities",
             "feed.jump", "feed.push", "agent.hook.enqueue", "agent.hook.barrier",
             "agent.restore.admit", "agent.restore.release",
             "agent.message.send", "agent.message.list", "agent.message.claim",

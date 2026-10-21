@@ -307,7 +307,6 @@
 1	Sources/Workspace.swift	main actor-isolated instance method 'splitTabBar(_:shouldCloseTab:inPane:)' cannot be used to satisfy nonisolated requirement from protocol 'BonsplitDelegate'
 1	Sources/Workspace.swift	switch must be exhaustive
 22	Sources/cmuxApp.swift	'onChange(of:perform:)' was deprecated in macOS 14.0: Use `onChange` with a two or zero parameter action closure instead.
-1	cmuxTests/AccountSignInModelTests.swift	'addWorkspace(id:title:titleSource:workingDirectory:initialSurface:initialTerminalCommand:initialTerminalInput:initialTerminalStartupRestoreAgent:initialTerminalEnvironment:initialBrowserURL:initialBrowserOmnibarVisible:initialBrowserTransparentBackground:workspaceEnvironment:inheritWorkingDirectory:select:eagerLoadTerminal:placementOverride:autoWelcomeIfNeeded:autoRefreshMetadata:normalizeWorkspaceGroupsAfterInsert:applyCreationTitleAsCustomTitle:allowTextBoxFocusDefault:)' is deprecated: Use addWorkspaceIfActive(...) for lifecycle-safe creation [#DeprecatedDeclaration]
 1	cmuxTests/AgentChatSessionRegistryLifecycleTests.swift	using '_' to ignore the result of a Void-returning function is redundant
 1	cmuxTests/AgentChatTranscriptServiceLifetimeTests.swift	no calls to throwing functions occur within 'try' expression
 1	cmuxTests/AgentHibernationEvaluationSchedulingTests.swift	instance method 'wait' is unavailable from asynchronous contexts; Await a Task handle instead
@@ -339,7 +338,6 @@
 1	cmuxTests/AppDelegateShortcutRoutingTests.swift	immutable value 'browserPanel' was never used; consider replacing with '_' or removing it [#no-usage]
 2	cmuxTests/AppDelegateShortcutRoutingTests.swift	immutable value 'contentView' was never used; consider replacing with '_' or removing it [#no-usage]
 1	cmuxTests/AppDelegateSurfaceShortcutRoutingTests.swift	no calls to throwing functions occur within 'try' expression
-1	cmuxTests/AuthEnvironmentTests.swift	'addWorkspace(id:title:titleSource:workingDirectory:initialSurface:initialTerminalCommand:initialTerminalInput:initialTerminalStartupRestoreAgent:initialTerminalEnvironment:initialBrowserURL:initialBrowserOmnibarVisible:initialBrowserTransparentBackground:workspaceEnvironment:inheritWorkingDirectory:select:eagerLoadTerminal:placementOverride:autoWelcomeIfNeeded:autoRefreshMetadata:normalizeWorkspaceGroupsAfterInsert:applyCreationTitleAsCustomTitle:allowTextBoxFocusDefault:)' is deprecated: Use addWorkspaceIfActive(...) for lifecycle-safe creation [#DeprecatedDeclaration]
 2	cmuxTests/BrowserAutomationRecoveryLifecycleTests.swift	'#require(_:_:)' is redundant because 'URL(string: "about:blank")' never equals 'nil' (from macro 'require')
 1	cmuxTests/BrowserConfigTests.swift	capture of 'inspector' with non-sendable type 'BrowserDeveloperToolsVisibilityPersistenceTests.FakeInspector' in a '@Sendable' closure [#SendableClosureCaptures]
 1	cmuxTests/BrowserConfigTests.swift	capture of 'self' with non-sendable type 'BrowserSessionHistoryRestoreTests.ProvisionalNavigationRaceServer?' in a '@Sendable' closure [#SendableClosureCaptures]

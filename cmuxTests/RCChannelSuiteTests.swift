@@ -9,19 +9,6 @@ import Testing
 
 /// Swift Testing coverage for the `rc` release channel, kept next to the suites
 /// it extends so the RC cases run under the same traits as their nightly twins.
-extension AuthEnvironmentTests {
-    @Test("rc bundle uses the cmux-rc callback scheme")
-    func rcBundleUsesRCCallbackScheme() {
-        #expect(
-            AuthEnvironment.callbackScheme(
-                environment: [:],
-                bundleIdentifier: "com.cmuxterm.app.rc",
-                isDebugBuild: false
-            ) == "cmux-rc"
-        )
-    }
-}
-
 extension CMUXCLIErrorOutputRegressionTests {
     @Test func testThemesSetRCOverridePathIsReadableByRCAppConfigResolution() throws {
         try assertThemesSetOverridePathIsReadableByChannelApp(channel: "rc")

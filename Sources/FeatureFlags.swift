@@ -21,15 +21,12 @@ import os
 final class CmuxFeatureFlags {
     static let shared = CmuxFeatureFlags(publishesOffMainSnapshot: true)
 
-    private static let sidebarAccountButtonDefault = true
-
     private static let agentChatUIDefault = false
     private static let sidebarWorkspaceAgentSpinnerDefault = false
     private static let computerUseUXDefault = true
     private nonisolated static let simulatorDefault = true
     private static let workspaceTodoControlsDefault = false
     private static let appKitSidebarListDefault = true
-    private static let goPlanDefault = false
     private static let agentInboxQuickViewDefault = false
     private nonisolated static let conversationSidebarDefault = false
 
@@ -75,20 +72,6 @@ final class CmuxFeatureFlags {
         defaultWhenUnavailable: CmuxFeatureFlags.simulatorDefault
     )
 
-    // FLAG(key: go-plan-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2026-12-01, defaultWhenUnavailable: false)
-    // Controls the $10/month Go plan rollout. Keep this off until capacity and
-    // support are ready; existing Go subscribers keep their entitlements.
-    static let goPlanFlag = CmuxFeatureFlagDefinition(
-        key: "go-plan-enabled-release",
-        title: String(localized: "featureFlags.goPlan.title", defaultValue: "Go plan"),
-        flagDescription: String(
-            localized: "featureFlags.goPlan.description",
-            defaultValue: "Shows and sells the $10/month Go personal Cloud VM plan."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.goPlanDefault
-    )
-
     // FLAG(key: agent-inbox-quick-view-enabled-release, owner: lawrencecchen,
     //      reviewBy: 2026-11-16, defaultWhenUnavailable: false)
     // Keeps the agent inbox quick view behind an explicit rollout while the
@@ -132,20 +115,6 @@ final class CmuxFeatureFlags {
             defaultValue: "Labels every clickable control in the window so typing a label clicks it."
         ),
         defaultWhenUnavailable: false
-    )
-
-    // FLAG(key: sidebar-account-button-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2027-02-16, defaultWhenUnavailable: true)
-    // Shows the account control in the bottom-left sidebar footer. The
-    // Settings account section remains available when this shortcut is off.
-    static let sidebarAccountButtonFlag = CmuxFeatureFlagDefinition(
-        key: "sidebar-account-button-enabled-release",
-        title: String(localized: "featureFlags.sidebarAccount.title", defaultValue: "Sidebar account button"),
-        flagDescription: String(
-            localized: "featureFlags.sidebarAccount.description",
-            defaultValue: "Shows the profile and sign-in control in the sidebar footer."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.sidebarAccountButtonDefault
     )
 
     // FLAG(key: agent-chat-ui-enabled-release, owner: lawrencecchen,
@@ -216,14 +185,12 @@ final class CmuxFeatureFlags {
     // Registry order is used only for remote loading; accessors bind to named definitions.
     static let allFlags: [CmuxFeatureFlagDefinition] = {
         [
-            CmuxFeatureFlags.sidebarAccountButtonFlag,
             CmuxFeatureFlags.agentChatUIFlag,
             CmuxFeatureFlags.sidebarWorkspaceAgentSpinnerFlag,
             CmuxFeatureFlags.computerUseUXFlag,
             CmuxFeatureFlags.simulatorFlag,
             CmuxFeatureFlags.workspaceTodoControlsFlag,
             CmuxFeatureFlags.appKitSidebarListFlag,
-            CmuxFeatureFlags.goPlanFlag,
             CmuxFeatureFlags.agentInboxQuickViewFlag,
             CmuxFeatureFlags.conversationSidebarFlag,
             CmuxFeatureFlags.windowHintsFlag
@@ -232,10 +199,6 @@ final class CmuxFeatureFlags {
 
     var isAgentChatUIEnabled: Bool {
         effectiveValue(for: Self.agentChatUIFlag)
-    }
-
-    var isSidebarAccountButtonEnabled: Bool {
-        effectiveValue(for: Self.sidebarAccountButtonFlag)
     }
 
     var isSidebarWorkspaceAgentSpinnerEnabled: Bool {
@@ -253,10 +216,6 @@ final class CmuxFeatureFlags {
     }
     var isAppKitSidebarListEnabled: Bool {
         effectiveValue(for: Self.appKitSidebarListFlag)
-    }
-
-    var isGoPlanEnabled: Bool {
-        effectiveValue(for: Self.goPlanFlag)
     }
 
     var isAgentInboxQuickViewEnabled: Bool {

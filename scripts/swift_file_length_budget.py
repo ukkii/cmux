@@ -10,7 +10,7 @@ def git(*args):
 
 
 GENERATED_CONTRACT_FILES = {
-    # generate-cmux-config-schema.py embeds web/data/cmux.schema.json line for
+    # generate-cmux-config-schema.py embeds schemas/cmux.schema.json line for
     # line, so every new schema key or enum value adds a line here.
     Path("Packages/macOS/CmuxFoundation/Sources/CmuxFoundation/ConfigValidation/CmuxConfigSchema.generated.swift"),
 }

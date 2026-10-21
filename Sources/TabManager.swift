@@ -1441,14 +1441,14 @@ class TabManager: ObservableObject {
                 .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
             if autoWelcomeIfNeeded && select && initialSurface == .terminal
                 && !hasInitialTerminalCommand
-                && !UserDefaults.standard.bool(forKey: AccountCatalogSection().welcomeShown.userDefaultsKey) {
+                && !UserDefaults.standard.bool(forKey: AppCatalogSection().welcomeShown.userDefaultsKey) {
                 let launch = WelcomeBannerDelivery.prepareLaunch(welcomeBannerDeliveryResolver())
                 welcomeDelivery = launch.delivery
                 if launch.delivery == .shellStartup {
                     resolvedInitialTerminalEnvironment.merge(launch.environment, uniquingKeysWith: { current, _ in current })
                     // The token file makes shell-startup delivery at most once,
                     // so mark it shown now; the typed fallback marks on send.
-                    UserDefaults.standard.set(true, forKey: AccountCatalogSection().welcomeShown.userDefaultsKey)
+                    UserDefaults.standard.set(true, forKey: AppCatalogSection().welcomeShown.userDefaultsKey)
                 }
             }
             let ordinal = Self.nextPortOrdinal
@@ -1559,7 +1559,7 @@ class TabManager: ObservableObject {
         if let terminalPanel = workspace.focusedTerminalPanel,
            terminalPanel.surface.surface != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                UserDefaults.standard.set(true, forKey: AccountCatalogSection().welcomeShown.userDefaultsKey)
+                UserDefaults.standard.set(true, forKey: AppCatalogSection().welcomeShown.userDefaultsKey)
                 terminalPanel.sendText(WelcomeBannerDelivery.typedCommandText)
             }
             return
@@ -1579,7 +1579,7 @@ class TabManager: ObservableObject {
             }
             panelsCancellable?.cancel()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                UserDefaults.standard.set(true, forKey: AccountCatalogSection().welcomeShown.userDefaultsKey)
+                UserDefaults.standard.set(true, forKey: AppCatalogSection().welcomeShown.userDefaultsKey)
                 terminalPanel.sendText(WelcomeBannerDelivery.typedCommandText)
             }
         }

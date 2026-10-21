@@ -54,7 +54,7 @@ public struct BrowserURLResolver: Sendable {
 
         let lower = trimmed.lowercased()
         let bareHost = bareHostCandidate(lower)
-        if BrowserAppWebOrigin.isLoopbackHost(bareHost) {
+        if BrowserLoopbackHost.matches(bareHost) {
             return schemeLessURL(scheme: "http", authorityText: trimmed)
         }
 

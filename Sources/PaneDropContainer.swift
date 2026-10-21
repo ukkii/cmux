@@ -311,7 +311,7 @@ extension PaneDropContainer {
             return .editor
         case .browser, .markdown, .rightSidebarTool, .customSidebar, .simulator,
              .agentSession, .project, .extensionBrowser, .workspaceTodo,
-             .notifications, .accountSignIn, .chief:
+             .notifications, .chief:
             return nil
         }
     }

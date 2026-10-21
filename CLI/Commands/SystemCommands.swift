@@ -163,7 +163,9 @@ struct SessionsCommand: SharedLegacyFacadeCommand {
 
 /// Dispatched before the legacy parser's command switch.
 struct SessionCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
+    // No catch-all argument here: ArgumentParser already generates a rest-argument
+    // spec to dispatch into `subcommands`, and a second one on this struct produces
+    // an invalid duplicate `_arguments` spec in the generated zsh completion script.
     static let configuration = CommandConfiguration(
         commandName: "session",
         subcommands: [
@@ -205,7 +207,7 @@ struct ImportCommand: SharedLegacyFacadeCommand {
 
 /// Dispatched before the legacy parser's command switch.
 struct ReviewCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
+    // See SessionCommand's comment: no catch-all argument alongside `subcommands`.
     static let configuration = CommandConfiguration(
         commandName: "review",
         subcommands: [
@@ -261,7 +263,7 @@ struct ShotCommand: SharedLegacyFacadeCommand {
 }
 
 struct RecordCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
+    // See SessionCommand's comment: no catch-all argument alongside `subcommands`.
     // `start` is the default: a bare `cmux record --gif` starts a recording.
     static let configuration = CommandConfiguration(
         commandName: "record",
@@ -706,7 +708,7 @@ struct LayoutCommand: SharedLegacyFacadeCommand {
 }
 
 struct GlaedaCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
+    // See SessionCommand's comment: no catch-all argument alongside `subcommands`.
     // No `defaultSubcommand`: a bare `cmux glaeda` throws its usage.
     static let configuration = CommandConfiguration(
         commandName: "glaeda",
@@ -729,7 +731,7 @@ struct GlaedaObserveCommand: SharedLegacyFacadeCommand {
 }
 
 struct AutomationCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
+    // See SessionCommand's comment: no catch-all argument alongside `subcommands`.
     static let configuration = CommandConfiguration(
         commandName: "automation",
         subcommands: [
@@ -791,7 +793,7 @@ struct SudoCommand: SharedLegacyFacadeCommand {
 }
 
 struct VaultCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
+    // See SessionCommand's comment: no catch-all argument alongside `subcommands`.
     static let configuration = CommandConfiguration(
         commandName: "vault",
         subcommands: [

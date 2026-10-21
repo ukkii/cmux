@@ -12,8 +12,6 @@ extension TerminalController {
         "debug.textbox.interact",
         "debug.app.activate",
         "debug.workspace_todo.checklist_add_field",
-        "debug.pro_welcome_checklist.show",
-        "debug.native_pricing.show",
         "debug.command_palette.toggle",
         "debug.command_palette.rename_tab.open",
         "debug.command_palette.visible",
@@ -51,7 +49,6 @@ extension TerminalController {
         "debug.global_search.query",
         "debug.terminal.simulate_file_drop",
         "debug.sidebar.simulate_drag",
-        "mobile.dev_stack_auth.configure",
     ]
 }
 #endif

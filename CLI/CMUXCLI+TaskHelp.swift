@@ -400,8 +400,6 @@ extension CMUXCLI {
 
     private var remoteCommandsHelp: String {
         return """
-        auth <status|login|logout|team>
-        login | logout                                      (aliases for auth login/logout)
         \(simulatorCommandUsageLine)
         \(iosCommandUsageLine)
         ssh <destination> [--transport <ssh|mosh>] [--name <title>] [--command <text>] [--port <n>] [--identity <path>] [-A|--forward-agent] [-a|--no-forward-agent] [--ssh-option <opt>] [--window <id|ref|index>] [--no-focus] [-- <remote-command-args>]

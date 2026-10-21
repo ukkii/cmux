@@ -3,6 +3,14 @@ import Foundation
 
 /// Settings under the dotted-id prefix `app.*` — user-facing app behavior.
 public struct AppCatalogSection: SettingCatalogSection {
+    /// Whether the terminal welcome banner has been shown once. Kept under
+    /// its historical UserDefaults key so existing installs do not see it again.
+    public let welcomeShown = DefaultsKey<Bool>(
+        id: "app.welcomeShown",
+        defaultValue: false,
+        userDefaultsKey: "cmuxWelcomeShown"
+    )
+
     public let appearance = DefaultsKey<AppearanceMode>(
         id: "app.appearance",
         defaultValue: .system,

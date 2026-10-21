@@ -194,8 +194,6 @@ SKIPPED_CLI_COMMANDS = {
 
 
 SKIPPED_SOCKET_METHODS = {
-    "auth.begin_sign_in": "opens an external sign-in flow",
-    "auth.sign_out": "mutates the signed-in user session",
     "vm.create": "can create billable cloud VM resources",
     "vm.destroy": "can destroy cloud VM resources",
     "vm.exec": "executes commands inside a cloud VM",
@@ -1086,7 +1084,6 @@ def build_socket_cases(ctx: StressContext, capabilities: set[str]) -> list[Socke
         SocketCase("system.tree", "system.tree", lambda c: {"all": True}),
         SocketCase("system.top", "system.top", lambda c: {"all": True}, timeout=20),
         SocketCase("auth.login", "auth.login", lambda c: {}),
-        SocketCase("auth.status", "auth.status", lambda c: {}, expect_ok=None),
         SocketCase("vm.list", "vm.list", lambda c: {}, expect_ok=None, timeout=20),
         SocketCase("window.list", "window.list", lambda c: {}),
         SocketCase("window.current", "window.current", lambda c: {}, expect_ok=None),

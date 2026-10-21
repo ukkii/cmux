@@ -43,7 +43,7 @@ enum GlobalSearchDocuments {
         case .terminal:
             kind = .terminal
         case .filePreview, .rightSidebarTool, .customSidebar, .agentSession, .project,
-             .extensionBrowser, .simulator, .workspaceTodo, .notifications, .accountSignIn, .chief:
+             .extensionBrowser, .simulator, .workspaceTodo, .notifications, .chief:
             kind = .title
         }
 

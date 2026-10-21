@@ -166,3 +166,40 @@ What users see:
 - **Session restore:** Cloud workspaces and panes saved by older versions are dropped
   on restore and from "Reopen Closed"; the rest of the session restores normally.
 - **Config:** a `cmux.json` action using `cmux.cloudvm` no longer resolves.
+
+## Account, sign-in, teams, Pro and billing
+
+- The sidebar footer no longer shows the account avatar, the account/team popover or
+  the Pro/Upgrade badge. In minimal mode the footer is empty.
+- The sidebar Help popover and the Help menu no longer offer "Upgrade…", "Upgrade to
+  Pro/Max", "Preview Native Pro Pricing…" or "Show Pro Welcome Checklist…". The native
+  pricing window and the Pro welcome checklist are gone.
+- Settings has no Account section (no sign-in/out, profile, team management,
+  invitations, plan card or billing portal). Settings opens on App by default;
+  `cmux settings open account` is no longer accepted.
+- The command palette no longer offers sign in/out, team picker, team members or Pro
+  upgrade commands.
+- The "Sign In" workspace pane is gone; saved sessions containing one restore
+  without it.
+- Removed CLI commands: `cmux auth status|login|logout|team …`, `cmux login`,
+  `cmux logout`. Removed socket methods: `auth.status`, `auth.sign_in_url`,
+  `auth.begin_sign_in`, `auth.sign_out`, `auth.team.*`,
+  `mobile.dev_stack_auth.configure`, `debug.pro_welcome_checklist.show`,
+  `debug.native_pricing.show`. `auth.login` (socket password) still works.
+- The embedded browser no longer intercepts `cmux://auth-callback` links, exchanges a
+  signed-in session for cmux.com app pages, themes cmux.com pricing pages or opens
+  cmux.com app links in a split.
+- The app makes no requests to the cmux account, billing or team backend or to Stack
+  Auth. The Stack Auth SDK and the `CmuxAuthRuntime`, `CMUXAuthCore`, `CmuxAPIClient`
+  and `CmuxClientConfig` packages are gone.
+- Feature flags "Sidebar account button" and "Go plan" are removed.
+- The setting "Show Cloud and Device Icons in Sidebar" (`sidebar.showCloudDeviceIcons`)
+  is removed; `cmux.json` validation now rejects it, along with
+  `cloud.beta.machines.enabled` and the shortcut bindings `newCloudWorkspace`,
+  `newCloudMachine`, `openTeamPicker`, `switchRightSidebarToMachines`.
+- `cmux://` deep links for SSH, workspaces, panes and surfaces still work; the URL
+  scheme is now registered as `.links` (build setting `CMUX_URL_SCHEME`).
+- The config schema source moved from `web/data/cmux.schema.json` to
+  `schemas/cmux.schema.json`.
+- The one-time terminal welcome banner still shows once and keeps its "already shown"
+  state.

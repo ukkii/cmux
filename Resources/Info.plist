@@ -183,10 +183,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>CFBundleURLName</key>
-			<string>$(PRODUCT_BUNDLE_IDENTIFIER).auth</string>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).links</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>$(CMUX_AUTH_CALLBACK_SCHEME)</string>
+				<string>$(CMUX_URL_SCHEME)</string>
 			</array>
 			<key>LSHandlerRank</key>
 			<string>Default</string>

@@ -121,7 +121,6 @@ PY
 
 select_packages() {
   PACKAGES=(
-    CMUXAuthCore
     CmuxBrowser
     CmuxCanvasUI
     CmuxCloud
@@ -139,7 +138,6 @@ select_packages() {
     CmuxHomeRender
     CmuxMessagesLab
     CmuxAgentSessionStore
-    CmuxAuthRuntime
     CmuxCommandPalette
     CmuxControlSocket
     CmuxFoundation
@@ -451,8 +449,8 @@ run_package_tests() {
     case "$pkg" in
     # CmuxFoundation has several process-tree suites whose child
     # fixtures share global process resources; run each suite in its
-    # own Swift Testing process just like the auth suites.
-    CmuxAgentChat|CmuxAuthRuntime|CmuxFoundation)
+    # own Swift Testing process.
+    CmuxAgentChat|CmuxFoundation)
       ./scripts/ci/run-swift-testing-suites.sh "$pkgdir" || return $?
       ;;
     CmuxTerminal|CmuxTerminalCore|CmuxCloudTui|CmuxCloud)

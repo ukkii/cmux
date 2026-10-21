@@ -14,7 +14,7 @@ extension VerticalTabsSidebar {
         case .rightSidebarTool:
             return .rightSidebarTool
         case .customSidebar, .simulator, .extensionBrowser, .workspaceTodo, .notifications,
-             .accountSignIn, .chief:
+             .chief:
             return .unknown
         case .agentSession:
             return .agentSession

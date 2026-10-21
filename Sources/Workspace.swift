@@ -791,8 +791,6 @@ extension Workspace {
             )
         case .extensionBrowser:
             return nil
-        case .accountSignIn:
-            return nil
         }
         return SessionPanelSnapshot(
             id: panelId,
@@ -2288,8 +2286,6 @@ extension Workspace {
             return chiefPanel.id
         case .extensionBrowser:
             return nil
-        case .accountSignIn:
-            return nil
         }
     }
     func applySessionPanelMetadata(_ snapshot: SessionPanelSnapshot, toPanelId panelId: UUID) {
@@ -2674,8 +2670,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     /// Durable idempotency key for task-composer workspace creation.
     var taskCreateOperationID: UUID?
     private var forkAgentConversationInFlightPanelIds: Set<UUID> = []
-    let appLinkHandoffCoordinator = BrowserAppLinkHandoffCoordinator()
-    let appLinkPlacementPolicy = BrowserAppLinkPlacementPolicy()
 
     func beginForkAgentConversationAction(panelId: UUID) -> Bool {
         guard !forkAgentConversationInFlightPanelIds.contains(panelId) else {
@@ -4994,7 +4988,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     }
 
     private func configureBrowserPanel(_ browserPanel: BrowserPanel) {
-        AppDelegate.shared?.auth?.browserAppSession.register(browserPanel)
         browserPanel.webViewDidRequestClose = { [weak self, weak browserPanel] in
             guard let self, let browserPanel else { return }
             guard self.panels[browserPanel.id] is BrowserPanel else { return }
@@ -5006,156 +4999,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
 #endif
             _ = self.closePanel(browserPanel.id, force: true)
         }
-        browserPanel.openAppLinkInBrowserSplit = { [weak self, weak browserPanel] url in
-            guard let self, let browserPanel else { return false }
-            return self.openAppLinkInBrowserSplit(url, from: browserPanel)
-        }
-    }
-
-    private func openAppLinkInBrowserSplit(
-        _ destinationURL: URL,
-        from sourcePanel: BrowserPanel
-    ) -> Bool {
-        guard BrowserAvailabilitySettings.isEnabled(),
-              let mountedSource = panels[sourcePanel.id] as? BrowserPanel,
-              mountedSource === sourcePanel else {
-            return false
-        }
-
-        return appLinkHandoffCoordinator.start(
-            sourcePanelID: sourcePanel.id,
-            destinationURL: destinationURL,
-            isCurrent: { [weak self, weak sourcePanel] in
-                guard let self, let sourcePanel else { return false }
-                return self.currentBrowserPanel(sourcePanel)
-            },
-            openNavigation: { [weak self, weak sourcePanel] navigation in
-                guard let self, let sourcePanel else { return false }
-                return self.openAppLinkNavigation(
-                    navigation,
-                    from: sourcePanel
-                )
-            },
-            openRecovery: { [weak self, weak sourcePanel] in
-                guard let self, let sourcePanel else { return false }
-                return self.recoverAppLinkNavigation(
-                    destinationURL,
-                    from: sourcePanel
-                )
-            }
-        )
-    }
-
-    private func openAppLinkNavigation(
-        _ navigation: BrowserAppSessionNavigation,
-        from sourcePanel: BrowserPanel
-    ) -> Bool {
-        guard currentBrowserPanel(sourcePanel) else { return false }
-        return appLinkPlacementPolicy.openNavigation(
-            navigation,
-            openInPreferredPane: { request, websiteDataStore in
-                guard let targetPane = self.preferredRightSideTargetPane(
-                    fromPanelId: sourcePanel.id
-                ) else {
-                    return false
-                }
-                return self.newBrowserSurface(
-                    inPane: targetPane,
-                    initialRequest: request,
-                    focus: true,
-                    preferredProfileID: sourcePanel.profileID,
-                    allowsExternalBrowserFallback: false,
-                    websiteDataStore: websiteDataStore
-                ) != nil
-            },
-            openHorizontalSplit: { request, websiteDataStore in
-                self.newBrowserSplit(
-                    from: sourcePanel.id,
-                    orientation: .horizontal,
-                    initialRequest: request,
-                    preferredProfileID: sourcePanel.profileID,
-                    focus: true,
-                    allowsExternalBrowserFallback: false,
-                    websiteDataStore: websiteDataStore
-                ) != nil
-            },
-            openInSourcePane: { request, websiteDataStore in
-                guard let sourcePane = self.paneId(
-                    forPanelId: sourcePanel.id
-                ) else {
-                    return false
-                }
-                return self.newBrowserSurface(
-                    inPane: sourcePane,
-                    initialRequest: request,
-                    focus: true,
-                    insertAtEnd: true,
-                    preferredProfileID: sourcePanel.profileID,
-                    allowsExternalBrowserFallback: false,
-                    websiteDataStore: websiteDataStore
-                ) != nil
-            },
-            isBrowserAvailable: { BrowserAvailabilitySettings.isEnabled() }
-        )
-    }
-
-    private func currentBrowserPanel(_ sourcePanel: BrowserPanel) -> Bool {
-        (panels[sourcePanel.id] as? BrowserPanel) === sourcePanel
-    }
-
-    /// Preserves a cancelled app-link click without placing credentials in a
-    /// shared browser profile. The system browser is the last-resort path when
-    /// the workspace can no longer create a browser surface.
-    private func recoverAppLinkNavigation(
-        _ destinationURL: URL,
-        from sourcePanel: BrowserPanel
-    ) -> Bool {
-        appLinkPlacementPolicy.recover(
-            destinationURL,
-            openInPreferredPane: { url, websiteDataStore in
-                guard let targetPane = self.preferredRightSideTargetPane(
-                    fromPanelId: sourcePanel.id
-                ) else {
-                    return false
-                }
-                return self.newBrowserSurface(
-                    inPane: targetPane,
-                    url: url,
-                    focus: true,
-                    preferredProfileID: sourcePanel.profileID,
-                    allowsExternalBrowserFallback: false,
-                    websiteDataStore: websiteDataStore
-                ) != nil
-            },
-            openHorizontalSplit: { url, websiteDataStore in
-                self.newBrowserSplit(
-                    from: sourcePanel.id,
-                    orientation: .horizontal,
-                    url: url,
-                    preferredProfileID: sourcePanel.profileID,
-                    focus: true,
-                    allowsExternalBrowserFallback: false,
-                    websiteDataStore: websiteDataStore
-                ) != nil
-            },
-            openInSourcePane: { url, websiteDataStore in
-                guard let sourcePane = self.paneId(
-                    forPanelId: sourcePanel.id
-                ) else {
-                    return false
-                }
-                return self.newBrowserSurface(
-                    inPane: sourcePane,
-                    url: url,
-                    focus: true,
-                    insertAtEnd: true,
-                    preferredProfileID: sourcePanel.profileID,
-                    allowsExternalBrowserFallback: false,
-                    websiteDataStore: websiteDataStore
-                ) != nil
-            },
-            isBrowserAvailable: { BrowserAvailabilitySettings.isEnabled() }
-        )
     }
 
     /// Folds the media-device state of every browser pane into a single
@@ -6973,16 +6816,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     var isRestorableInSessionSnapshot: Bool {
         if isRemoteTmuxMirror { return false }
         if isRemoteTmuxAuthLogin { return false }
-        if panels.values.contains(where: {
-            switch $0.panelType {
-            case .accountSignIn:
-                true
-            default:
-                false
-            }
-        }) {
-            return false
-        }
         guard let remoteConfiguration else { return true }
         return remoteConfiguration.sessionSnapshot() != nil
     }

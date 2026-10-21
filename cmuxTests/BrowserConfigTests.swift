@@ -5810,7 +5810,7 @@ final class BrowserLinkOpenSettingsTests: XCTestCase {
             )
         )
         let callbackURL = try XCTUnwrap(
-            URL(string: "\(AuthEnvironment.callbackScheme)://auth-callback?stack_refresh=refresh&stack_access=access")
+            URL(string: "\(CmuxAppURLScheme.current)://auth-callback?stack_refresh=refresh&stack_access=access")
         )
         defaults.set([".*"], forKey: BrowserLinkOpenSettings.browserExternalOpenPatternsKey)
         XCTAssertFalse(

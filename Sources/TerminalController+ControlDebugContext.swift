@@ -80,14 +80,6 @@ extension TerminalController: ControlDebugContext {
         return workspace.id
     }
 
-    func controlDebugShowProWelcomeChecklist() {
-        ProWelcomeChecklistPresenter.present()
-    }
-
-    func controlDebugShowNativePricing() {
-        ProUpgradePresenter.presentNativePricingPreview()
-    }
-
     func controlDebugIsTerminalFocused(surfaceArgument: String) -> String {
         isTerminalFocused(surfaceArgument)
     }

@@ -19,8 +19,6 @@ struct cmuxApp: App {
     /// Single owner of the independently launched Computer Use helper daemon.
     private let computerUseRuntimeService: ComputerUseRuntimeService
 
-    /// App-owned auth graph injected into the delegate and auth consumers.
-    private let authComposition: MacAuthComposition
     /// Composition-root owner for the config-backed automation bridge.
     private let automationEngine: AutomationEngine
     private let browserDataImportCoordinator: BrowserDataImportCoordinator
@@ -96,12 +94,10 @@ struct cmuxApp: App {
             saveSecret: { try socketPasswordStore.savePassword($0) },
             backupTimestamp: secretMigrationTimestamp
         )
-        let authComposition = MacAuthComposition()
         let browserDataImportCoordinator = BrowserDataImportCoordinator()
         let notificationStore = TerminalNotificationStore.shared
         let closedItemHistoryStore = ClosedItemHistoryStore.shared
         let sidebarState = SidebarState()
-        self.authComposition = authComposition
         self.browserDataImportCoordinator = browserDataImportCoordinator
 
         // If invoked with CLI-style arguments (e.g. `cmux hooks setup`), exec the
@@ -202,7 +198,6 @@ struct cmuxApp: App {
             jsonStore: JSONConfigStore(fileURL: configFileURL),
             secretStore: secretStore,
             errorLog: SettingsErrorLog(),
-            accountFlow: authComposition.accountFlow,
             hostActions: hostSettingsActions,
             shortcutDefaultResolver: Self.makeShortcutDefaultResolver()
         )
@@ -306,7 +301,6 @@ struct cmuxApp: App {
             notificationStore: notificationStore,
             sidebarState: sidebarState,
             settingsRuntime: settingsRuntime,
-            auth: authComposition,
             automationEngine: automationEngine,
             browserDataImportCoordinator: browserDataImportCoordinator,
             computerUseRuntimeService: computerUseRuntimeService
@@ -627,9 +621,6 @@ struct cmuxApp: App {
                 Menu("Debug Windows") {
                     Button("Background Debug…") {
                         BackgroundDebugWindowController.shared.show()
-                    }
-                    Button("Pro Badge Style…") {
-                        ProBadgeDebugWindowController.shared.show()
                     }
                     Button(
                         String(
@@ -3146,15 +3137,6 @@ private struct SidebarFooterHoverIntensityPreview: View {
     var body: some View {
         HStack(spacing: 4) {
             Button(action: {}) {
-                SidebarFooterProfileIconReference(
-                    profileDisplay: profileDisplay,
-                    size: profileSize
-                )
-            }
-            .buttonStyle(SidebarFooterIconButtonStyle())
-            .accessibilityLabel(accessibilityLabel)
-
-            Button(action: {}) {
                 CmuxSystemSymbolImage(systemName: "iphone", pointSize: CGFloat(mobileSize), weight: .medium, tint: Color(nsColor: .secondaryLabelColor))
                     .frame(width: 22, height: 22)
             }
@@ -3233,14 +3215,6 @@ private struct SidebarFooterIconBalanceStrip: View {
     var body: some View {
         HStack(spacing: 4) {
             SidebarFooterBalanceCell(showsGuide: showsCellGuides) {
-                SidebarFooterProfileIconReference(
-                    profileDisplay: profileDisplay,
-                    size: profileSize
-                )
-                    .compositingGroup()
-                    .blur(radius: CGFloat(blurRadius))
-            }
-            SidebarFooterBalanceCell(showsGuide: showsCellGuides) {
                 SidebarFooterMobileIconReference(size: mobileSize)
                     .compositingGroup()
                     .blur(radius: CGFloat(blurRadius))
@@ -3250,7 +3224,6 @@ private struct SidebarFooterIconBalanceStrip: View {
                     .compositingGroup()
                     .blur(radius: CGFloat(blurRadius))
             }
-            ProBadgeLabel(style: .textPro)
         }
         .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
@@ -3278,26 +3251,6 @@ private struct SidebarFooterBalanceCell<Content: View>: View {
                         )
                 }
             }
-    }
-}
-
-private struct SidebarFooterProfileIconReference: View {
-    let profileDisplay: String
-    let size: Double
-
-    var body: some View {
-        let showsProfilePicture =
-            SidebarFooterProfileDisplayDebugChoice(rawValue: profileDisplay) == .picture
-        SidebarAccountAvatar(
-            avatarURL: nil,
-            displayName: "cmux",
-            email: "",
-            isSignedIn: showsProfilePicture,
-            size: showsProfilePicture
-                ? SidebarFooterButtonMetrics.profilePictureSize
-                : CGFloat(size)
-        )
-            .frame(width: 22, height: 22)
     }
 }
 

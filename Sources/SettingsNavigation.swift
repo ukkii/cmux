@@ -1,7 +1,6 @@
 import SwiftUI
 
 enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
-    case account
     case app
     case themes
     case terminal
@@ -24,8 +23,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .account:
-            return String(localized: "settings.section.account", defaultValue: "Account")
         case .app:
             return String(localized: "settings.section.app", defaultValue: "App")
         case .themes:
@@ -65,8 +62,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
 
     var symbolName: String {
         switch self {
-        case .account:
-            return "person.crop.circle"
         case .app:
             return "gearshape"
         case .themes:
@@ -106,8 +101,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
 
     var searchText: String {
         switch self {
-        case .account:
-            return "\(title) sign in team sync"
         case .app:
             return "\(title) language workspace notifications menu bar telemetry default terminal"
         case .themes:

@@ -38,44 +38,9 @@ enum SidebarFooterButtonMetrics {
     static let hoverOpacity = 0.08
 }
 
-enum SidebarAccountButtonVisual: Equatable {
-    case profilePicture
-    case profileIcon(systemName: String)
-}
-
-struct SidebarAccountButtonPresentation: Equatable {
-    static let defaultProfileIconSystemName = "person.crop.circle"
-
-    let visual: SidebarAccountButtonVisual
-    let size: CGFloat
-
-    static func resolve(
-        isSignedIn: Bool,
-        prefersProfileIcon: Bool,
-        hasProfilePicture: Bool = false
-    ) -> SidebarAccountButtonPresentation {
-        if isSignedIn, hasProfilePicture, !prefersProfileIcon {
-            return SidebarAccountButtonPresentation(
-                visual: .profilePicture,
-                size: SidebarFooterButtonMetrics.profilePictureSize
-            )
-        }
-        return SidebarAccountButtonPresentation(
-            visual: .profileIcon(systemName: defaultProfileIconSystemName),
-            size: SidebarFooterButtonMetrics.profileIconSize
-        )
-    }
-
-    var showsProfilePicture: Bool {
-        visual == .profilePicture
-    }
-}
-
 enum SidebarFooterControl: CaseIterable, Equatable {
-    case account
     case help
     case shortcutDiscovery
-    case upgrade
     case extensions
 }
 
@@ -84,14 +49,7 @@ enum SidebarFooterPresentationPolicy {
         _ control: SidebarFooterControl,
         presentationMode: WorkspacePresentationModeSettings.Mode
     ) -> Bool {
-        presentationMode != .minimal || control == .upgrade
-    }
-
-    static func isUpgradeVisible(
-        isProActive: Bool,
-        isProStatusKnown: Bool = true
-    ) -> Bool {
-        isProStatusKnown && !isProActive
+        presentationMode != .minimal
     }
 }
 
@@ -233,46 +191,6 @@ struct SidebarFooterHelpIcon: View {
     var body: some View {
         SidebarFooterCircularIcon(systemName: systemName, style: style)
     }
-}
-
-struct SidebarAccountAvatar: View {
-    let avatarURL: URL?
-    let displayName: String
-    let email: String
-    let isSignedIn: Bool
-    let size: CGFloat
-#if DEBUG
-    @AppStorage(SidebarFooterProfileIconDebugSettings.iconKey)
-    private var debugIcon = SidebarFooterProfileIconDebugSettings.defaultIcon.rawValue
-#endif
-
-    private var signedOutSystemName: String {
-#if DEBUG
-        SidebarFooterProfileIconDebugChoice(rawValue: debugIcon)?.rawValue
-            ?? SidebarFooterProfileIconDebugSettings.defaultIcon.rawValue
-#else
-        SidebarAccountButtonPresentation.defaultProfileIconSystemName
-#endif
-    }
-
-    var body: some View {
-        if isSignedIn {
-            StackAccountAvatarView(
-                avatarURL: avatarURL,
-                displayName: displayName,
-                email: email,
-                size: size,
-                loadingSystemName: signedOutSystemName
-            )
-        } else {
-            SidebarFooterCircularIcon(
-                systemName: signedOutSystemName,
-                style: SidebarFooterCircularIconStyle.standard.resized(to: size)
-            )
-            .frame(width: size, height: size, alignment: .center)
-        }
-    }
-
 }
 
 private struct SidebarFooterIconButtonStyleBody: View {

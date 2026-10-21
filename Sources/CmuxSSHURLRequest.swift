@@ -23,7 +23,7 @@ struct CmuxSSHURLRequest: Equatable {
     static let maxTitleLength = 160
     static let supportedSchemes: Set<String> = ["cmux", "cmux-nightly", "cmux-rc", "cmux-dev"]
     static var activeSupportedSchemes: Set<String> {
-        [AuthEnvironment.callbackScheme.lowercased()]
+        [CmuxAppURLScheme.current.lowercased()]
     }
 
     let originalURL: URL
@@ -534,7 +534,7 @@ struct CmuxNavigationURLRequest: Equatable {
     }
 
     static var activeSupportedSchemes: Set<String> {
-        [AuthEnvironment.callbackScheme.lowercased()]
+        [CmuxAppURLScheme.current.lowercased()]
     }
 
     let originalURL: URL
@@ -636,14 +636,14 @@ struct CmuxNavigationURLRequest: Equatable {
         }
     }
 
-    static func workspaceLink(workspaceId: UUID, scheme: String = AuthEnvironment.callbackScheme) -> String {
+    static func workspaceLink(workspaceId: UUID, scheme: String = CmuxAppURLScheme.current) -> String {
         "\(scheme)://workspace/\(workspaceId.uuidString)"
     }
 
     static func paneLink(
         workspaceId: UUID,
         paneId: UUID,
-        scheme: String = AuthEnvironment.callbackScheme
+        scheme: String = CmuxAppURLScheme.current
     ) -> String {
         "\(scheme)://workspace/\(workspaceId.uuidString)/pane/\(paneId.uuidString)"
     }
@@ -653,7 +653,7 @@ struct CmuxNavigationURLRequest: Equatable {
         surfaceId: UUID,
         stableWorkspaceId: UUID? = nil,
         stableSurfaceId: UUID? = nil,
-        scheme: String = AuthEnvironment.callbackScheme
+        scheme: String = CmuxAppURLScheme.current
     ) -> String {
         var link = "\(scheme)://workspace/\(workspaceId.uuidString)/surface/\(surfaceId.uuidString)"
         var queryItems: [String] = []

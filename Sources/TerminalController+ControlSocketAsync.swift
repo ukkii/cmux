@@ -260,9 +260,6 @@ extension TerminalController {
     private nonisolated func socketWorkerV2ResponseAsync(
         _ request: ControlRequest
     ) async throws -> String? {
-        if Self.authTeamSocketMethods.contains(request.method) {
-            return try await v2AuthTeamResponseAsync(request)
-        }
         if request.method == "surface.read_selection" {
             return await socketSurfaceSelectionResponseAsync(request)
         }

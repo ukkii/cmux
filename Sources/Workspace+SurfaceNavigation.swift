@@ -212,8 +212,6 @@ extension Workspace {
             return SurfaceKind.todo.rawValue
         case .notifications:
             return SurfaceKind.notifications.rawValue
-        case .accountSignIn:
-            return SurfaceKind.accountSignIn.rawValue
         case .chief:
             return SurfaceKind.chief.rawValue
         }

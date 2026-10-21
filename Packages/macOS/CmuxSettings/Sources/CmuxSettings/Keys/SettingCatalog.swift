@@ -51,7 +51,6 @@ public struct SettingCatalog: SettingCatalogSection {
     public let customSidebars = CustomSidebarsCatalogSection()
     public let shortcuts = KeyboardShortcutsCatalogSection()
     public let integrations = IntegrationsCatalogSection()
-    public let account = AccountCatalogSection()
     /// Appearance and scene options for Sleepy Mode.
     public let sleepyMode = SleepyModeCatalogSection()
 

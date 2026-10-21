@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SettingsSearchIndex {
-    static let defaultSelectionID = sectionID(for: .account)
+    static let defaultSelectionID = sectionID(for: .app)
 
     private static let sectionEntries: [SettingsSearchEntry] = SettingsNavigationTarget.allCases.map { target in
         SettingsSearchEntry(
@@ -16,8 +16,6 @@ enum SettingsSearchIndex {
     }
 
     private static let settingEntries: [SettingsSearchEntry] = [
-        setting(.account, "account", String(localized: "settings.section.account", defaultValue: "Account"), "sign in login team sync user profile"),
-        setting(.account, "pro", String(localized: "settings.account.pro.title", defaultValue: "cmux Pro"), "pro upgrade subscription billing plan pricing cloud"),
         setting(.app, "language", String(localized: "settings.app.language", defaultValue: "Language"), "locale translation japanese english restart"),
         setting(.themes, "appearance", String(localized: "settings.app.appearance", defaultValue: "Appearance"), "theme light dark system"),
         setting(.themes, "accent-color", String(localized: "settings.app.accentColor", defaultValue: "Accent Color"), "accent highlight tint blue system"),
@@ -146,7 +144,6 @@ enum SettingsSearchIndex {
         setting(.sidebarAppearance, "path-last-segment-only", String(localized: "settings.app.pathLastSegmentOnly", defaultValue: "Truncate Path From Start"), "cwd path directory truncate last segment basename viewport"),
         setting(.sidebarAppearance, "show-notification-message", String(localized: "settings.app.showNotificationMessage", defaultValue: "Show Notification Message in Sidebar"), "workspace latest notification"), setting(.sidebarAppearance, "notification-message-line-limit", String(localized: "settings.app.notificationMessageLineLimit", defaultValue: "Notification Preview Lines"), "sidebar.notificationMessageLineLimit workspace latest notification lines limit"),
         setting(.sidebarAppearance, "show-branch-directory", String(localized: "settings.app.showBranchDirectory", defaultValue: "Show Branch + Directory in Sidebar"), "git cwd path"),
-        setting(.sidebarAppearance, "show-cloud-device-icons", String(localized: "settings.app.showCloudDeviceIcons", defaultValue: "Show Cloud and Device Icons in Sidebar"), "cloud device computer icon remote workspace"),
         setting(.sidebarAppearance, "show-pull-requests", String(localized: "settings.app.showPullRequests", defaultValue: "Show Pull Requests in Sidebar"), "review pr mr link"),
         setting(.sidebarAppearance, "watch-git-status", String(localized: "settings.app.watchGitStatus", defaultValue: "Watch Git Status in Sidebar"), "git status branch watcher index lock"),
         setting(.sidebarAppearance, "make-pr-clickable", String(localized: "settings.app.makeSidebarPullRequestClickable", defaultValue: "Make Sidebar PR Clickable"), "pull requests pull request pr mr review clickable links select workspace row"),
@@ -326,7 +323,6 @@ enum SettingsSearchIndex {
         "sidebar.showNotificationMessage": settingID(for: .sidebarAppearance, idSuffix: "show-notification-message"),
         "sidebar.notificationMessageLineLimit": settingID(for: .sidebarAppearance, idSuffix: "notification-message-line-limit"),
         "sidebar.showBranchDirectory": settingID(for: .sidebarAppearance, idSuffix: "show-branch-directory"),
-        "sidebar.showCloudDeviceIcons": settingID(for: .sidebarAppearance, idSuffix: "show-cloud-device-icons"),
         "sidebar.showPullRequests": settingID(for: .sidebarAppearance, idSuffix: "show-pull-requests"),
         "sidebar.watchGitStatus": settingID(for: .sidebarAppearance, idSuffix: "watch-git-status"),
         "sidebar.makePullRequestsClickable": settingID(for: .sidebarAppearance, idSuffix: "make-pr-clickable"),

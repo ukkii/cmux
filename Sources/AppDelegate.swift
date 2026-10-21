@@ -2,7 +2,6 @@ import CmuxSSHClipboardTrust
 import CmuxComputerUse
 import AppKit
 import CmuxAppKitSupportUI
-import CmuxAuthRuntime
 import CmuxBrowser
 import CmuxCommandPalette
 import CmuxPanes
@@ -705,8 +704,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     // left unwired (wiring it would double-record). The recorder-FREE members of the open/click
     // cluster did move into the package this wave: the reveal-in-Finder side effect now lives in `NotificationClickPerformer` (behind `FinderRevealing`), and the entire focused-mark state
     // machine lives in `FocusedNotificationMarker` (behind `FocusedNotificationResolving`).
-    /// The auth graph, injected once via `configure(...)` at app startup.
-    private(set) var auth: MacAuthComposition?
     private let agentChatTranscriptService = AgentChatTranscriptService()
     var settingsRuntime: SettingsRuntime?
     /// Injected before the coordinator is used; the managed-policy extension
@@ -1404,56 +1401,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // audit recoverable route lifecycle after a surface unregisters.
         GhosttyApp.terminalSurfaceRegistry.attachRouteRetirer(self)
     }
-    /// Shared native auth callback entrypoint for LaunchServices and embedded
-    /// browser handoffs. `delivery` must be `.trustedEmbeddedBrowser` only for
-    /// the embedded browser's policy-checked handoff; LaunchServices callbacks
-    /// are `.external`, so unsolicited stateless ones need user approval.
-    /// The returned value reflects completed sign-in.
-    @MainActor
-    func handleAuthCallbackURLInProcess(
-        _ url: URL,
-        delivery: AuthCallbackDelivery = .external
-    ) async -> Bool {
-        let callbackRouter = auth?.callbackRouter ?? AuthCallbackRouter()
-        guard callbackRouter.isAuthCallbackURL(url) else {
-            AuthDebugLog().log("auth.callback rejected: URL is not an accepted callback")
-            return false
-        }
-        guard let accountFlow = auth?.accountFlow else {
-            AuthDebugLog().log("auth.callback dropped: auth graph not configured yet")
-            return false
-        }
-        let signedIn = await accountFlow.handleCallbackURL(url, delivery: delivery)
-        guard signedIn else {
-            AuthDebugLog().log("auth.callback did not complete sign-in")
-            return false
-        }
-        await NativePricingPlanRefresh.refreshForProWelcomeChecklist()
-        return true
-    }
-
     func application(_ application: NSApplication, open urls: [URL]) {
-        #if DEBUG
-        AuthDebugLog().log("auth.openURLs.received count=\(urls.count) summaries=\(urls.map(Self.authURLDebugSummary).joined(separator: "|"))")
-        #endif
         if handleCmuxExternalURLs(from: urls) {
-            #if DEBUG
-            AuthDebugLog().log("auth.openURLs.handledByExternalRoutes count=\(urls.count)")
-            #endif
             return
-        }
-
-        // Before the auth graph is configured, fall back to a default router
-        // (built-in cmux schemes) so dropped callbacks are still detected.
-        let callbackRouter = auth?.callbackRouter ?? AuthCallbackRouter()
-        let authCallbacks = urls.filter(callbackRouter.isAuthCallbackURL)
-        #if DEBUG
-        AuthDebugLog().log("auth.openURLs.authCallbacks count=\(authCallbacks.count)")
-        #endif
-        for url in authCallbacks {
-            Task { @MainActor in
-                _ = await handleAuthCallbackURLInProcess(url, delivery: .external)
-            }
         }
         let externalFileURLs = externalOpenFileURLs(from: urls)
         let terminalFileRequests = TerminalDefaultFileOpenRequest.requests(from: externalFileURLs)
@@ -1547,8 +1497,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             AgentMessageCenter.warmStoreOffMain()
         }
 
-        claimAuthCallbackURLSchemes()
-        StartupBreadcrumbLog.append("appDelegate.didFinish.authSchemes.claimed")
+        claimAppURLScheme()
+        StartupBreadcrumbLog.append("appDelegate.didFinish.urlScheme.claimed")
 
         // Install the Feed (workstream) store. Separate from the transport
         // wiring: the store is a plain singleton here, and the socket
@@ -2289,7 +2239,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         notificationStore: TerminalNotificationStore,
         sidebarState: SidebarState,
         settingsRuntime: SettingsRuntime,
-        auth: MacAuthComposition,
         automationEngine: AutomationEngine,
         browserDataImportCoordinator: BrowserDataImportCoordinator,
         computerUseRuntimeService: ComputerUseRuntimeService
@@ -2308,14 +2257,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         self.settingsRuntime = settingsRuntime
         self.notificationStore = notificationStore
         self.sidebarState = sidebarState
-        self.auth = auth
         self.browserDataImportCoordinator = browserDataImportCoordinator
         self.computerUseRuntimeService = computerUseRuntimeService
-        TeamsClient.bootstrap(auth: auth.coordinator)
         caffeineController.onStateChange = { [weak self] _ in
             self?.menuBarExtraController?.refreshForDebugControls()
         }
-        TerminalController.shared.attachAuth(coordinator: auth.coordinator, accountFlow: auth.accountFlow)
         TerminalController.shared.attachBrowserDataImportCoordinator(browserDataImportCoordinator)
         TerminalController.shared.attachCaffeineController(caffeineController)
         TerminalController.shared.agentChatTranscriptService = agentChatTranscriptService
@@ -8113,71 +8059,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
     }
 
-    @discardableResult
-    func performProUpgradeWorkspaceAction(
-        title: String,
-        url: URL,
-        tabManager preferredTabManager: TabManager? = nil,
-        event: NSEvent? = nil,
-        debugSource: String = "proUpgradeWorkspace"
-    ) -> Workspace? {
-        guard BrowserAvailabilitySettings.isEnabled() else {
-#if DEBUG
-            cmuxDebugLog("proUpgradeWorkspace.blocked_browser_disabled source=\(debugSource)")
-#endif
-            return nil
-        }
-        var createdWorkspace: Workspace?
-        let didCreate = performNewWorkspaceCreationAction(
-            initialSurface: .browser,
-            preferredTabManager: preferredTabManager,
-            event: event,
-            debugSource: debugSource,
-            title: title,
-            initialBrowserURL: url,
-            initialBrowserOmnibarVisible: false,
-            initialBrowserTransparentBackground: true,
-            applyCreationTitleAsCustomTitle: false,
-            focusInitialBrowserAddressBarOnCreate: false,
-            createdWorkspaceHandler: { workspace in
-                createdWorkspace = workspace
-            }
-        )
-        guard didCreate, let createdWorkspace else { return nil }
-        focusInitialBrowserWebView(in: createdWorkspace)
-        return createdWorkspace
-    }
-
-    func proUpgradeWorkspaceExists(workspaceId: UUID) -> Bool {
-        mainWindowContexts.values.contains { context in
-            context.tabManager.tabs.contains { $0.id == workspaceId }
-        } || (tabManager?.tabs.contains { $0.id == workspaceId } == true)
-    }
-
-    @discardableResult
-    func focusProUpgradeWorkspace(workspaceId: UUID, url: URL) -> Bool {
-        guard BrowserAvailabilitySettings.isEnabled() else { return false }
-        guard let (context, workspace) = proUpgradeWorkspaceContext(workspaceId: workspaceId) else {
-            return false
-        }
-        guard let window = resolvedWindow(for: context) else {
-            return false
-        }
-        guard focusWindowForAppActivation(window, reason: .workspaceCreation) else {
-            return false
-        }
-        context.tabManager.selectedTabId = workspace.id
-        guard let browserPanel = workspace.focusedSurfaceId.flatMap({ workspace.browserPanel(for: $0) })
-            ?? workspace.panels.values.compactMap({ $0 as? BrowserPanel }).first else {
-            return false
-        }
-        workspace.focusPanel(browserPanel.id)
-        browserPanel.navigate(to: url)
-        browserPanel.requestExplicitWebViewFocus()
-        context.tabManager.rememberFocusedSurface(tabId: workspace.id, surfaceId: browserPanel.id)
-        return true
-    }
-
     private func performNewWorkspaceCreationAction(
         initialSurface: NewWorkspaceInitialSurface,
         preferredTabManager: TabManager?,
@@ -8403,20 +8284,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return true
     }
 
-    private func proUpgradeWorkspaceContext(workspaceId: UUID) -> (MainWindowContext, Workspace)? {
-        for context in mainWindowContexts.values {
-            if let workspace = context.tabManager.tabs.first(where: { $0.id == workspaceId }) {
-                return (context, workspace)
-            }
-        }
-        if let tabManager,
-           let workspace = tabManager.tabs.first(where: { $0.id == workspaceId }),
-           let context = mainWindowContexts.values.first(where: { $0.tabManager === tabManager }) {
-            return (context, workspace)
-        }
-        return nil
-    }
-
     /// Routes first focus of a freshly created browser-initial workspace into
     /// the address bar so the user can type a URL immediately.
     private func focusInitialBrowserAddressBar(in workspace: Workspace) {
@@ -8426,16 +8293,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
         workspace.focusPanel(browserPanel.id)
         focusBrowserAddressBar(in: browserPanel)
-    }
-
-    private func focusInitialBrowserWebView(in workspace: Workspace) {
-        guard let browserPanel = workspace.focusedSurfaceId.flatMap({ workspace.browserPanel(for: $0) })
-            ?? workspace.panels.values.compactMap({ $0 as? BrowserPanel }).first else {
-            return
-        }
-        workspace.focusPanel(browserPanel.id)
-        browserPanel.requestExplicitWebViewFocus()
-        workspace.owningTabManager?.rememberFocusedSurface(tabId: workspace.id, surfaceId: browserPanel.id)
     }
 
     func mainWindowContext(for tabManager: TabManager) -> MainWindowContext? {
@@ -9709,7 +9566,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func sendWelcomeCommandWhenReady(to workspace: Workspace, markShownOnSend: Bool = false) {
         sendTextWhenReady(WelcomeBannerDelivery.typedCommandText, to: workspace, beforeSend: {
             if markShownOnSend {
-                UserDefaults.standard.set(true, forKey: AccountCatalogSection().welcomeShown.userDefaultsKey)
+                UserDefaults.standard.set(true, forKey: AppCatalogSection().welcomeShown.userDefaultsKey)
             }
         })
     }

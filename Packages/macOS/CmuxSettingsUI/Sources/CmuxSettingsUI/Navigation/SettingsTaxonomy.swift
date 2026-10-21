@@ -66,7 +66,7 @@ enum SettingsTaxonomyGroup: String, CaseIterable, Identifiable, Sendable {
     var sections: [SettingsSectionID] {
         switch self {
         case .general:
-            return [.account, .app, .themes, .sleepyMode]
+            return [.app, .themes, .sleepyMode]
         case .terminal:
             return [.terminal, .textBox]
         case .workspace:

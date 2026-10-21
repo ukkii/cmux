@@ -17,18 +17,6 @@
          location = "group:CmuxAgentQuestion">
       </FileRef>
       <FileRef
-         location = "group:CmuxAPIClient">
-      </FileRef>
-      <FileRef
-         location = "group:CMUXAuthCore">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxAuthRuntime">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxClientConfig">
-      </FileRef>
-      <FileRef
          location = "group:CmuxGhosttyKit">
       </FileRef>
       <FileRef

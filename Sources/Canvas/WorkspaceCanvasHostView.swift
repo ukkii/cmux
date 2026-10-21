@@ -117,7 +117,6 @@ struct WorkspaceCanvasHostView: View {
         case .extensionBrowser: return "puzzlepiece.extension"
         case .workspaceTodo: return "checklist"
         case .notifications: return "bell"
-        case .accountSignIn: return "person.crop.circle"
         case .chief: return ChiefPanel.iconSystemName
         }
     }

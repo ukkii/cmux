@@ -470,7 +470,6 @@ extension Workspace {
         if closePanel, !preservesTerminalForTransfer {
             journalClosedAgentSessions(panelId: panelId)
         }
-        appLinkHandoffCoordinator.cancel(sourcePanelID: panelId)
         if publishSurfaceClosedEvent {
             publishCmuxSurfaceClosed(panelId, paneId: paneId, panel: panel, origin: origin)
         }

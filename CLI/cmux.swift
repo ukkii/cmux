@@ -5274,19 +5274,6 @@ struct CMUXCLI {
             try validateNotificationCommandArguments(command: command, args: commandArgs)
         }
         try prepareStandardInputBeforeSocket(command: command, commandArgs: commandArgs)
-        let isAuthCommand = ["auth", "login", "logout"].contains(command)
-        let authUsage = String(
-            localized: "cli.auth.usage",
-            defaultValue: "Usage: cmux auth <status|login|logout|team>"
-        )
-        var authSubcommand: String?
-        if isAuthCommand {
-            let authArgs = command == "auth" ? commandArgs : [command] + commandArgs
-            authSubcommand = CmuxCLIArgumentParser().parseAuthSubcommand(authArgs)
-            if authSubcommand == nil {
-                throw CLIError(message: authUsage)
-            }
-        }
         var client = SocketClient(path: resolvedSocketPath)
         let cursorHookSocketTimeout: TimeInterval? = isCursorShellHookCommand ? 0.35 : nil
         let cursorHookDeadline: Date? = isCursorShellHookCommand
@@ -5366,99 +5353,6 @@ struct CMUXCLI {
             print(jsonString(formatIDs(response, mode: idFormat)))
         case "agent-hibernation":
             try runAgentHibernation(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput)
-
-        case "auth", "login", "logout":
-            guard let sub = authSubcommand else {
-                throw CLIError(message: authUsage)
-            }
-            switch sub {
-            case "status":
-                let response = try client.sendV2(method: "auth.status")
-                if jsonOutput {
-                    print(jsonString(response))
-                    break
-                }
-                let signedIn = (response["signed_in"] as? Bool) ?? false
-                if !signedIn {
-                    print("Not signed in.")
-                    print("Run: cmux auth login")
-                    break
-                }
-                let user = response["user"] as? [String: Any]
-                let email = user?["email"] as? String
-                let display = user?["display_name"] as? String
-                let userID = user?["id"] as? String
-                print("Signed in.")
-                if let email { print("  email:    \(email)") }
-                if let display { print("  name:     \(display)") }
-                if let userID { print("  user_id:  \(userID)") }
-                if let teamID = response["selected_team_id"] as? String {
-                    print("  team_id:  \(teamID)")
-                }
-                if (response["team_scope_ready"] as? Bool) == false {
-                    let recovering = (response["team_scope_recovering"] as? Bool) ?? false
-                    if recovering {
-                        print(String(
-                            localized: "cli.auth.status.teamNotLoadedRetrying",
-                            defaultValue: "  team:     not loaded (retrying)"
-                        ))
-                    } else {
-                        print(String(
-                            localized: "cli.auth.status.teamNotLoaded",
-                            defaultValue: "  team:     not loaded"
-                        ))
-                    }
-                }
-
-            case "login":
-                let statusBefore = try client.sendV2(method: "auth.status")
-                if (statusBefore["signed_in"] as? Bool) == true {
-                    let email = (statusBefore["user"] as? [String: Any])?["email"] as? String
-                    print("Already signed in\(email.map { " as \($0)" } ?? ""). Use `cmux auth logout` to sign out first.")
-                    break
-                }
-                if let signInURLResponse = try? client.sendV2(method: "auth.sign_in_url"),
-                   let signInURL = signInURLResponse["url"] as? String,
-                   !signInURL.isEmpty {
-                    print("Fallback sign-in URL:")
-                    print(signInURL)
-                }
-                print("Opening sign-in popup on the cmux web app.")
-                // auth.begin_sign_in blocks on the server side until the
-                // popup completes (or 5min timeout). The response is the
-                // callback — no polling.
-                let result = try client.sendV2(method: "auth.begin_sign_in", responseTimeout: 305)
-                if (result["signed_in"] as? Bool) == true {
-                    let email = (result["user"] as? [String: Any])?["email"] as? String
-                    print("Signed in\(email.map { " as \($0)" } ?? "").")
-                } else if (result["timed_out"] as? Bool) == true {
-                    print("Timed out waiting for sign-in. Run `cmux auth status` once you've finished in the popup.")
-                } else {
-                    print("Sign-in did not complete. Run `cmux auth status` to check.")
-                }
-
-            case "logout":
-                let statusBefore = try client.sendV2(method: "auth.status")
-                if (statusBefore["signed_in"] as? Bool) != true {
-                    print("Already signed out.")
-                    break
-                }
-                // auth.sign_out awaits the token clear before replying.
-                let result = try client.sendV2(method: "auth.sign_out")
-                if (result["signed_in"] as? Bool) != true {
-                    print("Signed out.")
-                } else {
-                    print("Sign-out requested but state hasn't cleared yet. Run `cmux auth status` to confirm.")
-                }
-            case "team":
-                try runAuthTeamCommand(
-                    commandArgs: Array(commandArgs.dropFirst()),
-                    client: client,
-                    jsonOutput: jsonOutput
-                )
-            default:
-                throw CLIError(message: authUsage)
-            }
 
         case "agent":
             // `agent message`, `inbox` and `messages` are local agent messaging;
@@ -16515,27 +16409,6 @@ struct CMUXCLI {
             """
         case "automation":
             return CMUXCLI.automationUsage()
-        case "auth":
-            return String(localized: "cli.auth.help", defaultValue: """
-            Usage: cmux auth <status|login|logout|team>
-
-            status   Print whether the user is signed in (add `cmux --json` for JSON).
-            login    Open the sign-in popup on the cmux web app and wait for it to finish.
-            logout   Clear the current session.
-            team     List teams or select one (`team list|use <team-id>|create <name>`).
-            """)
-        case "login":
-            return """
-            Usage: cmux login
-
-            Alias for `cmux auth login`.
-            """
-        case "logout":
-            return """
-            Usage: cmux logout
-
-            Alias for `cmux auth logout`.
-            """
         case "rpc":
             return """
             Usage: cmux rpc <method> [json-params]

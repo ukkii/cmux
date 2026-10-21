@@ -8,9 +8,6 @@ import WebKit
 @MainActor final class BrowserNavigationDelegate: NSObject, WKNavigationDelegate {
     enum PolicyCancellationKind { case terminal(restoreAttemptID: UUID?) }
     private let subframeDownloadIntents = BrowserSubframeDownloadIntentTracker()
-    private let externalNavigationPolicy = BrowserExternalNavigationPolicy(
-        trustedOrigin: AuthEnvironment.appWebOrigin
-    )
     private let externalNavigationHandler: BrowserExternalNavigationHandler
     private var shouldPrintAfterCurrentNavigationFinishes = false
     var didStartProvisionalNavigation: (@MainActor (WKWebView, WKNavigation?) -> Void)?
@@ -25,7 +22,6 @@ import WebKit
     var didTerminateWebContentProcess: (@MainActor (WKWebView) -> Void)?
     var handleBlockedURLAllowlistNavigation: (@MainActor (URL, WKWebView) -> Void)?
     var openInNewTab: (@MainActor (URL) -> Void)?
-    var openAppLinkInBrowserSplit: (@MainActor (URL) -> Bool)?
     var requestNavigation: (@MainActor (URLRequest, BrowserInsecureHTTPNavigationIntent, (@MainActor (WKNavigation?) -> Void)?) -> Void)?
     var presentAlert: BrowserAlertPresenter = browserPresentAlert
     var shouldBlockInsecureHTTPNavigation: (@MainActor (URL) -> Bool)?
@@ -441,36 +437,6 @@ import WebKit
             return
         }
 
-        // Authenticated cmux app links carry an in-process handoff action.
-        // Consume them before generic URL rules so a broad external pattern
-        // cannot divert the signed-in split placement to LaunchServices.
-        // In a tab a browser REPL session drives, only the user's own click
-        // opens the split; any other activation loads the link in the tab.
-        if navigationAction.navigationType == .linkActivated,
-           navigationAction.targetFrame?.isMainFrame != false,
-           let url = navigationAction.request.url,
-           let appLink = BrowserAppLinkOpenRequest(
-               url: url,
-               webOrigin: AuthEnvironment.appSessionHandoffOrigin
-           ),
-           BrowserReplNavigationGuard.shared.allowsExternal(panelID: owner?.id, action: navigationAction, target: .appLink),
-           openAppLinkInBrowserSplit?(appLink.destinationURL) == true {
-            clearAttemptedRequest(discardPendingBypasses: true)
-            let reportTerminalCancellation: @MainActor () -> Void = terminalPolicyCancellationReporter?(
-                navigationAction,
-                webView
-            ) ?? {}
-            reportTerminalCancellation()
-#if DEBUG
-            cmuxDebugLog(
-                "browser.nav.decidePolicy.action kind=openAppLinkInBrowserSplit " +
-                "url=\(browserNavigationDebugURL(appLink.destinationURL))"
-            )
-#endif
-            decisionHandler(.cancel)
-            return
-        }
-
         // A tab a browser REPL session drives hands a link to the external
         // browser only when the user activated it there: an agent's click
         // or the page's own activation loads in the tab, under its guards.
@@ -528,7 +494,7 @@ import WebKit
                 && owner?.isTrustedLocalFileDocument(url) == true
             if !isTrustedInternal,
                !isTrustedDocument,
-               url.scheme?.lowercased() != AuthEnvironment.callbackScheme.lowercased(),
+               url.scheme?.lowercased() != CmuxAppURLScheme.current.lowercased(),
                !BrowserURLAllowlistPolicy(defaults: .standard).allows(url) {
                 decisionHandler(.cancel)
                 if isMainFrame {
@@ -611,35 +577,6 @@ import WebKit
             "openInNewTab=\(shouldOpenInNewTab ? 1 : 0)"
         )
 #endif
-
-        if let url = navigationAction.request.url,
-           shouldOpenInSystemBrowser(navigationAction, url: url),
-           BrowserReplNavigationGuard.shared.allowsExternal(panelID: owner?.id, action: navigationAction, target: .systemBrowser) {
-            clearAttemptedRequest(discardPendingBypasses: true)
-            let reportTerminalCancellation: @MainActor () -> Void = terminalPolicyCancellationReporter?(navigationAction, webView) ?? {}
-            let opened = NSWorkspace.shared.open(url)
-#if DEBUG
-            cmuxDebugLog(
-                "browser.nav.decidePolicy.action kind=openExternalIntentInSystemBrowser opened=\(opened ? 1 : 0) " +
-                "url=\(browserNavigationDebugURL(url))"
-            )
-#endif
-            if opened {
-                reportTerminalCancellation()
-            } else if restartNavigationForUserAgentPolicyIfNeeded(
-                navigationAction,
-                in: webView,
-                decisionHandler: decisionHandler
-            ) {
-                return
-            }
-            decisionHandler(opened ? .cancel : .allow)
-            return
-        }
-
-        if handleAuthCallbackNavigationAction(navigationAction, webView: webView, decisionHandler: decisionHandler) {
-            return
-        }
 
         if let url = navigationAction.request.url,
            navigationAction.targetFrame?.isMainFrame != false,
@@ -804,58 +741,6 @@ import WebKit
         decisionHandler(.allow)
     }
 
-    let authCallbackNavigationPolicy = BrowserAuthCallbackNavigationPolicy(
-        trustedSourcePageOrigin: AuthEnvironment.appSessionHandoffOrigin,
-        callbackScheme: AuthEnvironment.callbackScheme
-    )
-
-    /// Handles auth-callback-shaped navigation actions. Returns `true` when
-    /// the navigation was consumed (delivered in-app or blocked); the caller
-    /// must stop policy evaluation in that case.
-    private func handleAuthCallbackNavigationAction(
-        _ navigationAction: WKNavigationAction,
-        webView: WKWebView,
-        decisionHandler: (WKNavigationActionPolicy) -> Void
-    ) -> Bool {
-        guard let url = navigationAction.request.url else { return false }
-        let disposition = authCallbackNavigationPolicy.disposition(
-            for: navigationAction,
-            url: url
-        )
-        return authCallbackNavigationPolicy.consume(
-            disposition: disposition,
-            callbackURL: url,
-            sourcePageURL: webView.url,
-            cancelNavigation: { [self] in
-                clearAttemptedRequest(discardPendingBypasses: true)
-                decisionHandler(.cancel)
-            },
-            reportTerminalCancellation: { [self] in
-                let report: @MainActor () -> Void = terminalPolicyCancellationReporter?(navigationAction, webView) ?? {}
-                report()
-            },
-            deliver: authCallbackNavigationPolicy.deliverAuthCallbackInApp,
-            completion: { [weak self, weak webView] delivered, returnURL in
-                guard let self, let webView else { return }
-#if DEBUG
-                cmuxDebugLog(
-                    "browser.nav.decidePolicy.action kind=deliverNativeAuthCallbackInApp " +
-                    "delivered=\(delivered ? 1 : 0) scheme=\(url.scheme ?? "nil")"
-                )
-#endif
-                BrowserAuthCallbackNavigationPolicy.finishDelivery(
-                    delivered: delivered,
-                    returnURL: returnURL,
-                    in: webView,
-                    prepareReturnRequest: { [weak self] request in
-                        self?.recordAttemptedRequest(request)
-                    },
-                    presentAlert: presentAlert
-                )
-            }
-        )
-    }
-
     private func restartNavigationForUserAgentPolicyIfNeeded(
         _ navigationAction: WKNavigationAction,
         in webView: WKWebView,
@@ -891,16 +776,6 @@ import WebKit
                     )
                 })
             }
-        )
-    }
-
-    private func shouldOpenInSystemBrowser(_ navigationAction: WKNavigationAction, url: URL) -> Bool {
-        guard navigationAction.targetFrame?.isMainFrame != false else { return false }
-        guard navigationAction.navigationType == .linkActivated else { return false }
-        return externalNavigationPolicy.shouldOpenInSystemBrowser(
-            url,
-            sourceURL: navigationAction.sourceFrame.request.url
-                ?? owner?.webView.url
         )
     }
 

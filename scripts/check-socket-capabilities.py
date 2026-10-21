@@ -52,8 +52,6 @@ debug.notification.status
 debug.panel_snapshot
 debug.panel_snapshot.reset
 debug.portal.stats
-debug.pro_welcome_checklist.show
-debug.native_pricing.show
 debug.right_sidebar.focus
 debug.session_snapshot_benchmark
 debug.session_snapshot_seed_scrollback
@@ -73,7 +71,6 @@ debug.window_hints
 debug.workspace_todo.checklist_add_field
 dogfood.feedback.submit
 feed.text
-mobile.dev_stack_auth.configure
 mobile.directory.list
 mobile.directory.search
 mobile.rpc.methods

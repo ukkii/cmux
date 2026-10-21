@@ -4,8 +4,7 @@ internal import Foundation
 /// `session.restore_previous`, `session.import`, `session.export`,
 /// `settings.open`,
 /// `extension.sidebar.snapshot`, `workspace.action`, `surface.action` /
-/// `tab.action`, `surface.drag_to_split` / `surface.split_off`, and the
-/// DEBUG-only `mobile.dev_stack_auth.configure`), lifted byte-faithfully from
+/// `tab.action`, and `surface.drag_to_split` / `surface.split_off`), lifted byte-faithfully from
 /// the former `TerminalController` bodies.
 extension ControlCommandCoordinator {
     /// The system-domain slice of the seam. A typed view of ``context`` so the
@@ -45,10 +44,6 @@ extension ControlCommandCoordinator {
             return tabAction(request.params)
         case "surface.drag_to_split", "surface.split_off":
             return surfaceSplitOff(request.params)
-#if DEBUG
-        case "mobile.dev_stack_auth.configure":
-            return mobileDevStackAuthConfigure(request.params)
-#endif
         default:
             return nil
         }

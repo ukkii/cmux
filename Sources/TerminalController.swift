@@ -2,7 +2,6 @@ import CmuxSettingsUI
 import AppKit
 import CmuxRemoteSession
 import CmuxCore
-import CmuxAuthRuntime
 import CmuxBrowser
 import CmuxControlSocket
 import CmuxFoundation
@@ -130,11 +129,6 @@ class TerminalController {
     var tabManager: TabManager?
     private let externalNavigationHandler = BrowserExternalNavigationHandler()
     let workspaceCreateIdempotencyCache = WorkspaceCreateIdempotencyCache(capacity: 256)
-    /// The shared auth coordinator + account flow, injected once via
-    /// `attachAuth` at app startup (AppDelegate `configure`) before the socket
-    /// listener starts. Socket auth commands read these on the main actor.
-    @MainActor private(set) var authCoordinator: AuthCoordinator?
-    @MainActor private(set) var accountFlow: HostAccountFlow?
     @MainActor private(set) var caffeineController: CaffeineController?
     @MainActor var agentChatTranscriptService: AgentChatTranscriptService?
     /// App-lifetime automation engine, attached by the composition root after
@@ -341,8 +335,7 @@ class TerminalController {
         "browser.tab.switch",
         "notification.open",
         "notification.jump_to_unread",
-        "debug.command_palette.toggle", "debug.pro_welcome_checklist.show",
-        "debug.native_pricing.show",
+        "debug.command_palette.toggle",
         "debug.notification.focus",
         "debug.app.activate",
         "debug.right_sidebar.focus",
@@ -981,17 +974,6 @@ class TerminalController {
         transport.isProcessDescendant(pid, of: myPid)
     }
 
-    /// Inject the auth graph. Call once at the composition root, before the
-    /// socket listener accepts auth commands.
-    @MainActor
-    func attachAuth(
-        coordinator: AuthCoordinator,
-        accountFlow: HostAccountFlow
-    ) {
-        self.authCoordinator = coordinator
-        self.accountFlow = accountFlow
-    }
-
     /// Injects the app-lifetime browser import coordinator before socket RPCs start.
     @MainActor
     func attachBrowserDataImportCoordinator(_ coordinator: BrowserDataImportCoordinator) {
@@ -1454,48 +1436,6 @@ class TerminalController {
             return v2Result(id: request.id, v2AgentRecoveryList(params: request.params))
         case "session.agent_recovery.restore":
             return v2Result(id: request.id, v2AgentRecoveryRestore(params: request.params))
-        case "auth.status":
-            let semaphore = DispatchSemaphore(value: 0)
-            Task { @MainActor [weak self] in
-                await self?.authCoordinator?.awaitBootstrapped()
-                semaphore.signal()
-            }
-            semaphore.wait()
-            return v2Ok(id: request.id, result: v2AuthStatusPayload(timedOut: false))
-        case "auth.sign_in_url":
-            var signInURL: String?
-            v2MainSync {
-                MainActor.assumeIsolated {
-                    signInURL = self.accountFlow?.manualSignInURL.absoluteString
-                }
-            }
-            var result: [String: Any] = [:]
-            if let signInURL {
-                result["url"] = signInURL
-            }
-            return v2Ok(id: request.id, result: result)
-        case "auth.begin_sign_in":
-            let timeoutSeconds = (request.params["timeout_seconds"] as? Double) ?? 300
-            let semaphore = DispatchSemaphore(value: 0)
-            nonisolated(unsafe) var signedIn = false
-            Task { @MainActor [weak self] in
-                signedIn = await self?.accountFlow?.signIn(
-                    timeout: timeoutSeconds
-                ) ?? false
-                semaphore.signal()
-            }
-            semaphore.wait()
-            return v2Ok(id: request.id, result: v2AuthStatusPayload(timedOut: !signedIn))
-        case "auth.sign_out":
-            let semaphore = DispatchSemaphore(value: 0)
-            Task { @MainActor [weak self] in
-                await self?.accountFlow?.signOut(timeout: 5)
-                semaphore.signal()
-            }
-            semaphore.wait()
-            return v2Ok(id: request.id, result: v2AuthStatusPayload(timedOut: false))
-        case _ where Self.authTeamSocketMethods.contains(request.method):
-            return v2AuthTeamResponse(request)
         case "feed.push":
             return v2Result(
                 id: request.id,
@@ -2841,8 +2781,7 @@ class TerminalController {
         case "caffeine.set":
             return v2Result(id: id, v2CaffeineSet(params: params))
         // system.identify (forwards to the still-shared v2Identify), system.tree,
-        // auth.login, and the DEBUG-only mobile.dev_stack_auth.configure handled
-        // by ControlCommandCoordinator.
+        // and auth.login handled by ControlCommandCoordinator.
 
         // Windows (`window.*`) are handled above by ControlCommandCoordinator.
 
@@ -3469,55 +3408,6 @@ class TerminalController {
 
     // MARK: - V2 Helpers (encoding + result plumbing)
     // MARK: - V2 Helpers (encoding + result plumbing)
-
-    private nonisolated func v2AuthStatusPayload(timedOut: Bool) -> [String: Any] {
-        var result: [String: Any] = [:]
-        v2MainSync {
-            MainActor.assumeIsolated {
-                guard let coordinator = self.authCoordinator else {
-                    result = [
-                        "signed_in": false,
-                        "is_restoring_session": false,
-                        "is_loading": false,
-                        "timed_out": timedOut
-                    ]
-                    return
-                }
-                let isSigningIn = self.accountFlow?.isPresentingSignIn ?? false
-                var status: [String: Any] = [
-                    "signed_in": coordinator.isAuthenticated,
-                    "is_restoring_session": coordinator.isRestoringSession,
-                    "is_loading": coordinator.isLoading || isSigningIn,
-                    "timed_out": timedOut
-                ]
-                if let user = coordinator.currentUser {
-                    var userDict: [String: Any] = ["id": user.id]
-                    if let email = user.primaryEmail { userDict["email"] = email }
-                    if let name = user.displayName { userDict["display_name"] = name }
-                    status["user"] = userDict
-                }
-                if let teamID = coordinator.resolvedTeamID {
-                    status["selected_team_id"] = teamID
-                }
-                // A signed-in session without a team scope keeps the pairing
-                // host and Cloud down; report it so the state is diagnosable.
-                status["team_scope_ready"] = coordinator.authenticatedTeamScope != nil
-                status["team_scope_recovering"] = coordinator.hasPendingTeamScopeRecovery
-                if !coordinator.availableTeams.isEmpty {
-                    status["teams"] = coordinator.availableTeams.map { team -> [String: Any] in
-                        var dict: [String: Any] = [
-                            "id": team.id,
-                            "display_name": team.displayName
-                        ]
-                        if let slug = team.slug { dict["slug"] = slug }
-                        return dict
-                    }
-                }
-                result = status
-            }
-        }
-        return result
-    }
 
     nonisolated func v2OrNull(_ value: Any?) -> Any {
         // Avoid relying on `?? NSNull()` inference (Swift toolchains can disagree).

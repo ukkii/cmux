@@ -228,7 +228,7 @@ def test_cli_workflow_inputs_route_the_required_cli_lane() -> None:
         "tests/fixtures/glaeda-external-request.json",
         "tests/fixtures/glaeda-external-result.json",
         "scripts/generate-cmux-config-schema.py",
-        "web/data/cmux.schema.json",
+        "schemas/cmux.schema.json",
         "cmux.xcodeproj/project.pbxproj",
         "Packages/macOS/CmuxFoundation/Sources/CmuxFoundation/Process/AgentPIDProcessIdentity.swift",
         # Steps of compile admission the CLI product depends on.
@@ -5942,7 +5942,7 @@ def test_static_preflight_rejects_stale_embedded_schema_before_native_work() -> 
         generator = repo / "scripts/generate-cmux-config-schema.py"
         generator.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / "scripts/generate-cmux-config-schema.py", generator)
-        schema = repo / "web/data/cmux.schema.json"
+        schema = repo / "schemas/cmux.schema.json"
         schema.parent.mkdir(parents=True)
         schema.write_text('{"type":"object"}\n')
         generated = repo / "Packages/macOS/CmuxFoundation/Sources/CmuxFoundation/ConfigValidation"

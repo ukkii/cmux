@@ -1,6 +1,6 @@
 import CmuxSurfaceCatalogModel
 import Foundation
-import struct CmuxSettings.AccountCatalogSection
+import struct CmuxSettings.AppCatalogSection
 import Testing
 
 #if canImport(cmux_DEV)
@@ -31,7 +31,7 @@ extension WorkspaceCreateWorkingDirectoryTests {
         let controller = TerminalController.shared
         let previousManager = controller.activeTabManagerForCallerNotification()
         let defaults = UserDefaults.standard
-        let welcomeShownKey = AccountCatalogSection().welcomeShown.userDefaultsKey
+        let welcomeShownKey = AppCatalogSection().welcomeShown.userDefaultsKey
         let previousWelcomeShown = defaults.object(forKey: welcomeShownKey)
         defer {
             controller.setActiveTabManager(previousManager)
@@ -135,7 +135,7 @@ extension WorkspaceCreateWorkingDirectoryTests {
 
     @Test func automaticWelcomeRidesShellStartupEnvironmentInsteadOfTypedInput() throws {
         let defaults = UserDefaults.standard
-        let welcomeShownKey = AccountCatalogSection().welcomeShown.userDefaultsKey
+        let welcomeShownKey = AppCatalogSection().welcomeShown.userDefaultsKey
         let previousWelcomeShown = defaults.object(forKey: welcomeShownKey)
         defer {
             if let previousWelcomeShown {
@@ -170,7 +170,7 @@ extension WorkspaceCreateWorkingDirectoryTests {
 
     @Test func automaticWelcomeTypesFallbackWhenShellIntegrationIsUnavailable() throws {
         let defaults = UserDefaults.standard
-        let welcomeShownKey = AccountCatalogSection().welcomeShown.userDefaultsKey
+        let welcomeShownKey = AppCatalogSection().welcomeShown.userDefaultsKey
         let previousWelcomeShown = defaults.object(forKey: welcomeShownKey)
         defer {
             if let previousWelcomeShown {

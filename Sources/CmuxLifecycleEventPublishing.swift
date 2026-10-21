@@ -229,8 +229,6 @@ extension Workspace {
             return "workspace_todo"
         case .notifications:
             return "notifications"
-        case .accountSignIn:
-            return "account_sign_in"
         case .chief:
             return "chief"
         }
