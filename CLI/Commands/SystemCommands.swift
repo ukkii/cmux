@@ -408,15 +408,14 @@ struct SSHTmuxCommand: SharedLegacyFacadeCommand {
 }
 
 struct LocalTmuxCommand: SharedLegacyFacadeCommand {
-    // See VMCommand's comment: no catch-all argument alongside `subcommands`, and
+    // No catch-all argument alongside `subcommands` (ArgumentParser rejects it), and
     // `defaultSubcommand` absorbs anything that doesn't name a declared one. The
     // legacy parser has no default action -- bare `cmux local-tmux` throws its
     // usage -- but the facade only decides what ArgumentParser *accepts*: `run()`
     // delegates to `CMUXCLI.run()`, which re-parses argv and produces the legacy
     // result either way. Without a default, ArgumentParser rejects an unknown verb
     // with "Unexpected argument" before the legacy parser can report its own
-    // "Unknown local-tmux subcommand" error. `list` matches the read-only default
-    // that `vm`, `auth`, and `remotes` already use.
+    // "Unknown local-tmux subcommand" error. `list` is the read-only default.
     static let configuration = CommandConfiguration(
         commandName: "local-tmux",
         subcommands: [
@@ -626,46 +625,6 @@ struct SSHPTYAttachCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(commandName: "ssh-pty-attach", shouldDisplay: false, helpNames: [])
 }
 
-/// Internal plumbing entry point, not part of the documented usage() surface.
-struct VMPtyAttachCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("id"), completion: vmCompletion) var id: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "vm-pty-attach", shouldDisplay: false, helpNames: [])
-}
-
-/// Internal plumbing entry point, not part of the documented usage() surface.
-struct VMPtyConnectCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("id"), completion: vmCompletion) var id: String?
-    @Option(name: .customLong("config"), completion: .file()) var config: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "vm-pty-connect", shouldDisplay: false, helpNames: [])
-}
-
-/// Internal plumbing entry point, not part of the documented usage() surface.
-/// Runs inside the pane that `cmux vm tui` opens.
-struct VMTuiConnectCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("config"), completion: .file()) var config: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "vm-tui-connect", shouldDisplay: false, helpNames: [])
-}
-
-/// Internal plumbing entry point, not part of the documented usage() surface.
-/// Spawned detached by `vm-tui-connect` to approve the enrollment invitation.
-struct VMTuiApproveCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("id"), completion: vmCompletion) var id: String?
-    @Option(name: .customLong("invitation-id")) var invitationID: String?
-    @Option(name: .customLong("invite-file"), completion: .file()) var inviteFile: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "vm-tui-approve", shouldDisplay: false, helpNames: [])
-}
-
-/// Hidden compatibility alias for workspaces created before the split helper was nested under `cmux vm`.
-struct VMSSHAttachTopLevelCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("id"), completion: vmCompletion) var id: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "vm-ssh-attach", shouldDisplay: false, helpNames: [])
-}
-
 struct TodoCommand: SharedLegacyFacadeCommand {
     @Option(name: .customLong("workspace"), completion: workspaceCompletion) var workspaceID: String?
     @Option(name: .customLong("window"), completion: windowCompletion) var windowID: String?
@@ -824,58 +783,6 @@ struct AutomationReloadCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(commandName: "reload", helpNames: [])
 }
 
-struct VPNCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
-    static let configuration = CommandConfiguration(
-        commandName: "vpn",
-        subcommands: [
-            VPNUpCommand.self,
-            VPNDownCommand.self,
-            VPNStatusCommand.self,
-            VPNRevokeCommand.self,
-        ],
-        defaultSubcommand: VPNStatusCommand.self,
-        helpNames: []
-    )
-}
-
-struct VPNUpCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "up", helpNames: [], aliases: ["on"])
-}
-
-struct VPNDownCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "down", helpNames: [], aliases: ["off"])
-}
-
-struct VPNStatusCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "status", helpNames: [])
-}
-
-struct VPNRevokeCommand: SharedLegacyFacadeCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "revoke", helpNames: [])
-}
-
-struct BillingCommand: SharedLegacyFacadeCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
-    // No `defaultSubcommand`: a bare `cmux billing` throws its usage.
-    static let configuration = CommandConfiguration(
-        commandName: "billing",
-        subcommands: [BillingCheckoutCommand.self],
-        helpNames: []
-    )
-}
-
-struct BillingCheckoutCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("plan"), completion: .list(["go", "pro", "max"])) var plan: String?
-    @Flag(name: .customLong("no-open")) var noOpen = false
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "checkout", helpNames: [])
-}
-
 /// Dispatched before the legacy parser's command switch; its argv (including
 /// `run -c '<command>'`) must reach `runSudoCommand` untouched.
 struct SudoCommand: SharedLegacyFacadeCommand {
@@ -936,4 +843,13 @@ struct VaultForkCommand: SharedLegacyFacadeCommand {
     @Flag(name: .customLong("open")) var open = false
     @Argument(parsing: .allUnrecognized) var arguments: [String] = []
     static let configuration = CommandConfiguration(commandName: "fork", helpNames: [])
+}
+
+struct RemoteDaemonStatusCommand: SharedLegacyFacadeCommand {
+    @Option(name: .customLong("os")) var operatingSystem: String?
+    @Option(name: .customLong("arch")) var architecture: String?
+    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
+
+    // The legacy parser deliberately prints status for --help.
+    static let configuration = CommandConfiguration(commandName: "remote-daemon-status", helpNames: [])
 }

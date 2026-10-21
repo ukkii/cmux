@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxSurfaceCatalogModel
 import AppKit
 import Foundation
@@ -424,16 +423,6 @@ import Testing
             #expect(envelope["ok"] as? Bool == true)
             #expect(workspace.panelCustomTitles[panelId] == "my renamed tab")
             #expect(workspace.panelCustomTitleSources[panelId] == .user)
-        }
-    }
-
-    @Test func codexNativeTitleSyncRenamesCloudPlacementByStableTabID() async throws {
-        try await withCloudNameFixture { fixture in
-            let probe = try await fixture.call("surface.sync_codex_native_title", extra: ["probe": true])
-            let context = try #require(SurfaceAgentNameContext(wire: probe["cloud_name_context"]))
-            try await fixture.agentName("Calculate 2+2", context: context)
-            try fixture.expectParity("Calculate 2+2")
-            #expect(fixture.provider.writes.map(\.0) == ["tab_a"])
         }
     }
 

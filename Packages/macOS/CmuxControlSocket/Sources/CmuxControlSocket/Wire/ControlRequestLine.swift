@@ -2,14 +2,9 @@ import Foundation
 
 /// Serializes a v2 control-socket request with its `method` key first.
 ///
-/// Every connection's line reader routes a request by the first 4 KiB of its
-/// line (``ControlClientLineReader/classifyTopLevelMethod(in:)``), so that
-/// CodeRouter handoff frames stay capped before any JSON decoding. A longer
-/// line whose `method` key falls outside that prefix is closed without a
-/// reply, by design. `JSONSerialization` writes dictionary keys in hash order,
-/// which differs from one process to the next, so a request with large params
-/// could put `method` after them and fail at random (#21222). Writing
-/// `method` first keeps an ordinary request of any size routable.
+/// `JSONSerialization` writes dictionary keys in hash order, which differs
+/// from one process to the next. Writing `method` first keeps the wire form
+/// stable and lets a reader see the route before large params (#21222).
 /// lint:allow namespace-type: stateless wire encoding helper with no instance state.
 public struct ControlRequestLine {
     private init() {}

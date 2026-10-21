@@ -43,8 +43,7 @@ extension TabManager: SidebarGitHosting {
 
     func isRemoteTerminalPanel(workspaceId: UUID, panelId: UUID) -> Bool {
         guard let workspace = tabs.first(where: { $0.id == workspaceId }) else { return false }
-        return workspace.isRemoteTerminalSurface(panelId) ||
-            workspace.cloudDirectoryProvenanceRequired(panelId: panelId)
+        return workspace.isRemoteTerminalSurface(panelId)
     }
 
     func gitProbeDirectory(workspaceId: UUID, panelId: UUID) -> String? {
@@ -112,8 +111,6 @@ extension TabManager: SidebarGitHosting {
     }
 
     func updateReportedSurfaceDirectory(tabId: UUID, surfaceId: UUID, directory: String, displayLabel: String? = nil) {
-        // A Cloud pane's local renderer/launcher cannot outrank the revisioned daemon graph.
-        if tabs.first(where: { $0.id == tabId })?.cloudDirectoryProvenanceRequired(panelId: surfaceId) == true { return }
         if let workspace = tabs.first(where: { $0.id == tabId }),
            !workspace.allowsLocalDirectoryFallback(panelId: surfaceId) {
             updateRemoteSurfaceDirectory(tabId: tabId, surfaceId: surfaceId, directory: directory, displayLabel: displayLabel)

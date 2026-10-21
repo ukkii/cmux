@@ -43,20 +43,14 @@ extension DockSplitStore {
             ?? transfer.panel.transferredSurfaceMachine, kind: AppDelegate.shared?.surfaceResourceKind(for: transfer.panel)) == nil
     }
 
+    /// Every restored Dock panel is accepted: only local surfaces exist.
     func acceptsRestoredDisplay(_ snapshot: SessionPanelSnapshot) -> Bool {
-        if let resource = snapshot.browser?.cloudResource {
-            return surfaceOwnershipPolicy.rejection(for: resource.machine, kind: resource.kind) == nil
-        }
-        if let raw = snapshot.browser?.urlString, URL(string: raw)?.path == "/vnc.html" {
-            return scope == .global || surfaceOwnershipPolicy.rejection(for: nil) == nil
-        }
-        return true
+        true
     }
 
     func machineOwningSurface(_ panelID: UUID) -> SurfaceMachineID? {
         guard panels[panelID] != nil else { return nil }
         if let machine = SurfaceCatalog.shared.machineOwningPanel(panelID), !machine.isLocal { return machine }
-        if let resource = (panels[panelID] as? DeferredBrowserPanel)?.sessionPanelSnapshot.browser?.cloudResource { return resource.machine }
         return panels[panelID]?.transferredSurfaceMachine
             ?? detachedSurfaceTransfersByPanelId[panelID]?.surfaceMachine
             ?? .local
@@ -78,7 +72,7 @@ enum TerminalRemoteMachineClassification {
 }
 
 extension DockSplitStore {
-    /// A Dock hosts a remote terminal only by transfer: a Cloud or SSH
+    /// A Dock hosts a remote terminal only by transfer: an SSH
     /// projection, or a remote PTY surface moved in from a remote workspace.
     func terminalRunsOnAnotherMachine(_ panelID: UUID) -> Bool {
         if detachedSurfaceTransfersByPanelId[panelID]?.isRemoteTerminal == true { return true }

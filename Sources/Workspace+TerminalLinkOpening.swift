@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxCore
 import CmuxPanes
 import CmuxSurfaceCatalogModel
@@ -27,15 +26,8 @@ extension Workspace: TerminalLinkOpenContainer {
 
     /// Resolve the connection from the terminal's authoritative owner, including native SSH projections.
     func remoteTerminalFilePreviewConfiguration(for surfaceID: UUID) -> WorkspaceRemoteConfiguration? {
-        guard let configuration = remoteConfiguration, configuration.transport == .ssh else { return nil }
-        if usesSSHTui {
-            let expectedMachine = SurfaceMachineID(rawValue: SSHTuiConnection(configuration: configuration).id)
-            guard machineOwningSurface(surfaceID) == expectedMachine else {
-                return nil
-            }
-        } else if !isRemoteTerminalSurface(surfaceID) {
-            return nil
-        }
+        guard let configuration = remoteConfiguration, configuration.transport == .ssh,
+              isRemoteTerminalSurface(surfaceID) else { return nil }
         return configuration
     }
 
@@ -46,15 +38,6 @@ extension Workspace: TerminalLinkOpenContainer {
               let panel = terminalPanel(for: target.surfaceID) else { return false }
         _ = panel.hostedView.openRemoteFilePreview(tokens: [rawValue])
         return true
-    }
-
-    func cloudTerminalLinkTarget(url: URL, sourcePanelId: UUID) -> CloudTerminalLinkTarget? {
-        guard let target = surfaceOwnershipTarget(for: sourcePanelId),
-              let resource = SurfaceCatalog.shared.resource(forPanel: target.surfaceID)
-                ?? SurfaceCatalog.shared.resource(forPanel: target.containerPanelID),
-              let address = SurfaceCatalog.shared.machineInfo(for: resource.machine)?.privateAddress,
-              let target = CmuxTuiSurfaceProvider.cloudTerminalLinkTarget(url: url, resource: resource, privateAddress: address) else { return nil }
-        return target
     }
 
     func deferTerminalFileLinkOpen(

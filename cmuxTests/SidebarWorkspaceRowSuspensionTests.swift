@@ -25,7 +25,6 @@ struct SidebarWorkspaceRowSuspensionTests {
             isMuted: false,
             customColorHex: nil,
             hasManualCustomColor: false,
-            cloudWorkspaceLabel: nil,
             remoteWorkspaceSidebarText: nil,
             remoteConnectionStatusText: "",
             remoteStateHelpText: "",

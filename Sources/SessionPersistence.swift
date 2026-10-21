@@ -1720,8 +1720,6 @@ struct SessionFilePreviewPanelSnapshot: Codable, Sendable {
 /// Marker for a workspace todo pane; the pane has no content of its own (the checklist
 /// persists on the workspace), so the panel `type` plus this empty marker is enough to restore it.
 struct SessionWorkspaceTodoPanelSnapshot: Codable, Sendable {}
-/// Marker for a CodeRouter guide pane; the guide content is static and needs no payload.
-struct SessionCoderouterGuidePanelSnapshot: Codable, Sendable {}
 /// Marker for the global notifications pane; its feed lives in the notification store.
 struct SessionNotificationsPanelSnapshot: Codable, Sendable {}
 /// A Chief pane: the messages live in Chief's own store, so only the shown conversation is kept.
@@ -1787,11 +1785,47 @@ struct SessionPanelSnapshot: Codable, Sendable {
     var agentSession: SessionAgentSessionPanelSnapshot? = nil
     var project: SessionProjectPanelSnapshot?
     var workspaceTodo: SessionWorkspaceTodoPanelSnapshot? = nil
-    var coderouterGuide: SessionCoderouterGuidePanelSnapshot? = nil
     var notificationsPanel: SessionNotificationsPanelSnapshot? = nil
     var chief: SessionChiefPanelSnapshot? = nil
 }
 extension SessionPanelSnapshot: WorkspaceSessionRemoteRestorePanelSnapshot {}
+
+/// Decodes a persisted panel list while dropping panels whose kind belongs to a
+/// removed feature (``PanelType/retiredRawValues``), so older manifests still
+/// restore their remaining panels. Any other malformed panel keeps failing the
+/// decode exactly as before.
+@propertyWrapper
+struct RetiredPanelTolerantList: Codable, Sendable {
+    var wrappedValue: [SessionPanelSnapshot]
+
+    init(wrappedValue: [SessionPanelSnapshot]) {
+        self.wrappedValue = wrappedValue
+    }
+
+    private struct PanelTypeProbe: Decodable {
+        var type: String
+    }
+
+    init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var panels: [SessionPanelSnapshot] = []
+        while !container.isAtEnd {
+            do {
+                panels.append(try container.decode(SessionPanelSnapshot.self))
+            } catch {
+                // A failed element decode does not advance the container; the
+                // probe consumes the element so a retired kind can be skipped.
+                let probe = try container.decode(PanelTypeProbe.self)
+                guard PanelType.retiredRawValues.contains(probe.type.lowercased()) else { throw error }
+            }
+        }
+        wrappedValue = panels
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try wrappedValue.encode(to: encoder)
+    }
+}
 
 // The pane layout value types and Bonsplit codec live in CmuxPanes so the
 // reusable topology boundary is independent of the app's session models. Keep
@@ -1818,19 +1852,10 @@ struct SessionCanvasPaneSnapshot: Codable, Equatable, Sendable {
     var selectedPanelId: UUID? = nil
 }
 
-/// A cloud machine bound to a workspace through the cmux-tui remote daemon, persisted so a
-/// restored `vm:<id>` workspace stays that machine's workspace (`workspace(forCloudVMID:)`,
-/// the sidebar cloud button's Base reuse, `vm.terminal_open` targeting). Only the binding is
-/// persisted: the pane's link is a process and is not replayed on restore.
-struct SessionCloudVMBindingSnapshot: Codable, Sendable, Equatable {
-    var vmID: String
-    var isBase: Bool
-    /// The machine's cmux-tui workspace this local workspace stands for; absent in
-    /// legacy snapshots and for machine-only bindings (`vm shell`).
-    var remoteWorkspaceID: String? = nil
-    /// The team that owns the machine. Absent in snapshots written before
-    /// multi-team Cloud; restore then adopts the selected team.
-    var teamID: String? = nil
+/// The binding of a workspace to a machine of the removed cmux Cloud product.
+/// Decoded only so restore can recognize and drop those workspaces; never written.
+struct SessionLegacyCloudVMBindingSnapshot: Codable, Sendable, Equatable {
+    var vmID: String?
 }
 
 struct SessionWorkspaceSnapshot: Codable, Sendable {
@@ -1870,22 +1895,15 @@ struct SessionWorkspaceSnapshot: Codable, Sendable {
     /// Canvas pane frames in z-order; persisted whenever any exist so
     /// positions survive toggling back to splits across restarts.
     var canvasPanes: [SessionCanvasPaneSnapshot]? = nil
-    var panels: [SessionPanelSnapshot]
+    @RetiredPanelTolerantList var panels: [SessionPanelSnapshot]
     var statusEntries: [SessionStatusEntrySnapshot]
     var logEntries: [SessionLogEntrySnapshot]
     var progress: SessionProgressSnapshot?
     var gitBranch: SessionGitBranchSnapshot?
     var remote: SessionRemoteWorkspaceSnapshot?
-    /// cmux-tui cloud machine binding; absent in manifests written before the Cloud tree and for
-    /// workspaces that are not cloud machines.
-    var cloudVM: SessionCloudVMBindingSnapshot? = nil
-    /// Remote surfaces this workspace's panes projected (`SurfaceCatalog`); absent for
-    /// workspaces that only ever showed local panes, so older manifests decode unchanged.
-    var surfaceProjections: [SurfaceProjectionRecord]? = nil
-    /// The team that owns each Cloud machine this workspace shows, by machine
-    /// id. Restore reconnects those panes with that team even when another
-    /// team is selected. Absent in manifests written before multi-team Cloud.
-    var cloudMachineTeams: [String: String]? = nil
+    /// Legacy cmux Cloud machine binding. Present only in manifests written while
+    /// Cloud existed; restore drops such workspaces (`isLegacyCloudWorkspaceSnapshot`).
+    var cloudVM: SessionLegacyCloudVMBindingSnapshot? = nil
     /// Optional so manifests written before this field decode cleanly.
     var environment: [String: String]? = nil
     /// Manual task-status override raw values and the persisted checklist. Optional-with-nil-default

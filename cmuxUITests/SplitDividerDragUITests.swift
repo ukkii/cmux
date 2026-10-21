@@ -107,26 +107,16 @@ final class SplitDividerDragUITests: SettingsUITestCase {
     }
 
     func testDraggingPaneTabReordersTabsInStandardMode() throws {
-        try assertTabDragReorders(cloudWorkspace: false, dragSelectedTab: true)
+        try assertTabDragReorders(dragSelectedTab: true)
     }
 
     func testDraggingUnselectedPaneTabReordersTabsInStandardMode() throws {
-        try assertTabDragReorders(cloudWorkspace: false, dragSelectedTab: false)
-    }
-
-    /// Lawrence's report: in a Cloud workspace, pressing a tab and dragging it
-    /// over its neighbour neither showed a drag nor reordered the tabs.
-    func testDraggingPaneTabReordersTabsInCloudWorkspace() throws {
-        try assertTabDragReorders(cloudWorkspace: true, dragSelectedTab: true)
-    }
-
-    func testDraggingUnselectedPaneTabReordersTabsInCloudWorkspace() throws {
-        try assertTabDragReorders(cloudWorkspace: true, dragSelectedTab: false)
+        try assertTabDragReorders(dragSelectedTab: false)
     }
 
     /// Two tabs, Alpha then Beta, with Beta selected. Drags Beta before Alpha,
     /// or the unselected Alpha after Beta; both end as Beta|Alpha.
-    private func assertTabDragReorders(cloudWorkspace: Bool, dragSelectedTab: Bool) throws {
+    private func assertTabDragReorders(dragSelectedTab: Bool) throws {
         let dataPath = "/tmp/cmux-ui-test-split-drag-tabs-\(UUID().uuidString).json"
         try? FileManager.default.removeItem(atPath: dataPath)
         let app = XCUIApplication.cmuxTestApplication()
@@ -136,9 +126,6 @@ final class SplitDividerDragUITests: SettingsUITestCase {
         app.launchEnvironment["CMUX_TAG"] = "ui-split-drag-\(UUID().uuidString.prefix(8))"
         app.launchEnvironment["CMUX_UI_TEST_BONSPLIT_TAB_DRAG_SETUP"] = "1"
         app.launchEnvironment["CMUX_UI_TEST_BONSPLIT_TAB_DRAG_PATH"] = dataPath
-        if cloudWorkspace {
-            app.launchEnvironment["CMUX_UI_TEST_BONSPLIT_CLOUD_WORKSPACE"] = "1"
-        }
         // The app's drag log explains a drag that never started.
         let logPath = "/tmp/cmux-ui-test-split-drag-log-\(UUID().uuidString).log"
         app.launchEnvironment["CMUX_DEBUG_LOG"] = logPath
@@ -160,9 +147,6 @@ final class SplitDividerDragUITests: SettingsUITestCase {
         if let setupError = ready["setupError"], !setupError.isEmpty {
             XCTFail("Setup failed: \(setupError)")
             return
-        }
-        if cloudWorkspace {
-            XCTAssertEqual(ready["cloudWorkspace"], "1", "Expected the workspace to be bound to a Cloud machine")
         }
         let alphaTitle = ready["alphaTitle"] ?? "UITest Alpha"
         let betaTitle = ready["betaTitle"] ?? "UITest Beta"
@@ -214,18 +198,8 @@ final class SplitDividerDragUITests: SettingsUITestCase {
         try assertTabDragOntoPaneEdgeSplits(rightSidebarMode: nil)
     }
 
-    /// Reported regression: with the right sidebar's Cloud panel open, a pane tab
-    /// dropped on a pane edge did not split, in a local workspace.
-    func testDraggingPaneTabOntoPaneEdgeSplitsWithCloudPanelOpen() throws {
-        try assertTabDragOntoPaneEdgeSplits(rightSidebarMode: "machines")
-    }
-
     func testDraggingSidebarToolOntoPaneEdgeCreatesSplit() throws {
         try assertSidebarToolDragSplits(rightSidebarMode: "files")
-    }
-
-    func testDraggingSidebarToolOntoPaneEdgeCreatesSplitWithCloudPanelOpen() throws {
-        try assertSidebarToolDragSplits(rightSidebarMode: "machines")
     }
 
     /// Two tabs, Alpha and Beta (selected), in one pane. Dropping Beta on the

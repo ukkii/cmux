@@ -22,14 +22,12 @@ struct ChiefStarterPrompt: Equatable {
     /// Sends at once (true) or waits in the box for the user to finish.
     var sends: Bool
 
-    /// The chips, in order. Three, so they stay one or two short lines in a
+    /// The chips, in order. Two, so they stay one or two short lines in a
     /// 360 pt pane.
     static var all: [ChiefStarterPrompt] {
         [
             ChiefStarterPrompt(title: ChiefStrings.firstRunAgentStatus, text: ChiefStrings.firstRunAgentStatus,
                                symbol: "square.stack.3d.up", sends: true),
-            ChiefStarterPrompt(title: ChiefStrings.firstRunCloudMachine, text: ChiefStrings.firstRunCloudMachine + " ",
-                               symbol: "cloud", sends: false),
             ChiefStarterPrompt(title: ChiefStrings.firstRunRemember, text: fillText(ChiefStrings.firstRunRememberFill),
                                symbol: "bookmark", sends: false),
         ]

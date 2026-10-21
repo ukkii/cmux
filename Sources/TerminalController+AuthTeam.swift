@@ -1,5 +1,4 @@
 import CmuxAuthRuntime
-import CmuxCloud
 import CmuxControlSocket
 import Foundation
 import OSLog

@@ -1,10 +1,8 @@
-import CmuxCloud
-import CmuxSurfaceCatalogModel
 import Bonsplit
 import CmuxSettings
 import Foundation
 
-/// Agent callbacks name stable projections through the Cloud authority boundary.
+/// Agent callbacks that apply AI- or agent-provided titles to workspaces and panels.
 extension TerminalController {
     /// `surface.sync_codex_native_title`: applies Codex's already-resolved
     /// native thread title to the panel's raw title tier, the same tier used
@@ -45,7 +43,7 @@ extension TerminalController {
         }
 
         if v2Bool(params, "probe") == true {
-            return v2MainSync { self.cloudNameProbe(workspaceId: workspaceId, panelId: panelId, manager: tabManager) }
+            return .ok([:])
         }
         guard let title = v2String(params, "title")?.trimmingCharacters(in: .whitespacesAndNewlines),
               !title.isEmpty else {
@@ -67,10 +65,7 @@ extension TerminalController {
                 : workspace.panelIdFromSurfaceId(TabID(uuid: panelId))
             guard let resolvedPanelId else { return }
             found = true
-            applied = SurfaceCatalog.shared.submitCloudPanelRename(
-                workspace: workspace, panelID: resolvedPanelId, title: title, source: .auto,
-                context: SurfaceAgentNameContext(wire: params["cloud_name_context"])
-            ) ?? tabManager.updatePanelTitle(tabId: workspaceId, panelId: resolvedPanelId, title: title)
+            applied = tabManager.updatePanelTitle(tabId: workspaceId, panelId: resolvedPanelId, title: title)
         }
 
         guard found else {
@@ -117,14 +112,6 @@ extension TerminalController {
                     userOwned = workspace.effectiveCustomTitleSource == .user
                 }
                 result["workspace_user_owned"] = v2OrNull(userOwned)
-                if let panelId = v2UUID(params, "panel_id") {
-                    v2MainSync {
-                        if case .ok(let values) = self.cloudNameProbe(workspaceId: workspaceId, panelId: panelId, manager: tabManager),
-                           let cloudValues = values as? [String: Any] {
-                            result.merge(cloudValues) { _, new in new }
-                        }
-                    }
-                }
             }
             return .ok(result)
         }
@@ -170,11 +157,8 @@ extension TerminalController {
                     ? panelId
                     : workspace.panelIdFromSurfaceId(TabID(uuid: panelId))
                 if let resolvedPanelId,
-                   !(panelOnlyIfMultiple && workspace.panels.count < 2 && workspace.cloudVMBinding == nil) {
-                    panelApplied = SurfaceCatalog.shared.submitCloudPanelRename(
-                        workspace: workspace, panelID: resolvedPanelId, title: title, source: .auto,
-                        context: SurfaceAgentNameContext(wire: params["cloud_name_context"])
-                    ) ?? workspace.setPanelCustomTitle(panelId: resolvedPanelId, title: title, source: .auto)
+                   !(panelOnlyIfMultiple && workspace.panels.count < 2) {
+                    panelApplied = workspace.setPanelCustomTitle(panelId: resolvedPanelId, title: title, source: .auto)
                 }
             }
         }
@@ -200,15 +184,5 @@ extension TerminalController {
             "panel_applied": v2OrNull(panelApplied),
             "enabled": true
         ])
-    }
-
-
-    @MainActor
-    private func cloudNameProbe(workspaceId: UUID, panelId: UUID, manager: TabManager) -> V2CallResult {
-        guard let workspace = manager.workspacesById[workspaceId],
-              let resolved = workspace.panels[panelId] != nil ? panelId : workspace.panelIdFromSurfaceId(TabID(uuid: panelId))
-        else { return .ok([:]) }
-        let context = SurfaceCatalog.shared.cloudAgentNameContext(workspaceID: workspaceId, panelID: resolved)
-        return .ok(["cloud_name_context": v2OrNull(context?.wire)])
     }
 }

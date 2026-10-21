@@ -204,25 +204,6 @@ extension TextBoxInputContainer {
         shellActivityState == .promptIdle
     }
 
-    static func shouldRejectCloudImageCommandTemplate(
-        action: TextBoxSubmitAction,
-        shouldForceTextEntrySubmit: Bool,
-        imageTransferTarget: TerminalImageTransferTarget,
-        parts: [TextBoxSubmissionPart]
-    ) -> Bool {
-        guard action.kind == .commandTemplate,
-              !shouldForceTextEntrySubmit,
-              imageTransferTarget == .cloud else {
-            return false
-        }
-        return parts.contains { part in
-            if case .attachment(let attachment) = part {
-                return attachment.isImage
-            }
-            return false
-        }
-    }
-
     var shouldUseTextEntryFallbackForCommandTemplate: Bool {
         Self.shouldUseTextEntryFallbackForCommandTemplate(
             action: selectedSubmitAction,

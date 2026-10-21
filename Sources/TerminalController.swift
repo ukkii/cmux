@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxSettingsUI
 import AppKit
 import CmuxRemoteSession
@@ -37,18 +36,9 @@ extension Notification.Name {
     static let workstreamEventReceived = Notification.Name("cmux.workstreamEventReceived")
 }
 
-struct CodeRouterHandoffSessionBinding: Sendable, Equatable {
-    let authSessionGeneration: UInt64
-    let resolvedTeamID: String?
-}
-
 private struct SocketLineProcessingResult: Sendable {
     let response: String?
     let passwordAuthorization: SocketPasswordAuthorization
-    /// AuthCoordinator session and selected-team state captured before a
-    /// CodeRouter handoff worker starts. A lease response is written only
-    /// while both values are still current on the main actor.
-    let codeRouterHandoffSessionBinding: CodeRouterHandoffSessionBinding?
 }
 // Agent notification gating types (AgentTurnCompleteMode / AgentNotificationMeta /
 // agentNotificationShouldDeliver) live in AgentNotificationGate.swift;
@@ -124,17 +114,11 @@ nonisolated private func v2RemotePTYUserFacingErrorMessage(_ message: String) ->
 @MainActor
 class TerminalController {
     static let shared = TerminalController()
-    /// Bounded socket-worker deadline around the hosted CodeRouter mint.
-    nonisolated static let codeRouterHandoffWorkerTimeoutSeconds: TimeInterval = 22
     private enum ReloadConfigurationWaitResult: Sendable {
         case committed
         case failed
         case busy
     }
-    /// The app-managed Cloud tunnel, set by the AppDelegate composition root
-    /// next to `VMClient.bootstrap`. Nil only before startup finishes; the
-    /// `vm.tunnel_*` socket verbs report browser access as unavailable until then.
-    var cloudTunnel: CloudTunnelCoordinator?
 #if DEBUG
     nonisolated let windowScreenshotCaptureCoordinator =
         WindowScreenshotCaptureCoordinator()
@@ -151,10 +135,6 @@ class TerminalController {
     /// listener starts. Socket auth commands read these on the main actor.
     @MainActor private(set) var authCoordinator: AuthCoordinator?
     @MainActor private(set) var accountFlow: HostAccountFlow?
-    /// Hosted CodeRouter handoff service. The service is created at the same
-    /// composition boundary as AuthCoordinator and is read from a worker lane
-    /// through `v2MainSync`; it never exposes Stack credentials to the socket.
-    @MainActor private(set) var codeRouterHandoffService: (any CodeRouterHandoffMinting)?
     @MainActor private(set) var caffeineController: CaffeineController?
     @MainActor var agentChatTranscriptService: AgentChatTranscriptService?
     /// App-lifetime automation engine, attached by the composition root after
@@ -166,9 +146,6 @@ class TerminalController {
     private nonisolated let socketPasswordFileWatcher: FileWatcher?
     nonisolated let socketClientCapabilityAuthority: SocketClientCapabilityAuthority
     private nonisolated let socketClientPreauthorizationLimiter: SocketClientPreauthorizationLimiter
-    /// Ten-second, single-use `exec` transition grants for signed CodeRouter.
-    nonisolated let codeRouterHandoffArmGrantStore =
-        CodeRouterHandoffArmGrantStore()
     /// Bounds worker threads and completion contexts parked for synchronous
     /// `reload_config` acknowledgements. Excess callers receive backpressure.
     private nonisolated let reloadConfigurationWaiterAdmission =
@@ -354,7 +331,6 @@ class TerminalController {
         "workspace.previous",
         "workspace.last",
         "workspace.group.focus",
-        "workspace.cloud_vm_open",
         "surface.focus", "surface.jump_to_last_prompt",
         "pane.focus",
         "pane.last",
@@ -368,7 +344,7 @@ class TerminalController {
         "debug.command_palette.toggle", "debug.pro_welcome_checklist.show",
         "debug.native_pricing.show",
         "debug.notification.focus",
-        "debug.app.activate", "debug.cloudtree.spacing",
+        "debug.app.activate",
         "debug.right_sidebar.focus",
         "feed.jump",
         // Shows Chief Home in the target window, like workspace.select.
@@ -537,26 +513,6 @@ class TerminalController {
         )
         self.socketPathMarkerStore = socketPathMarkerStore
         self.remoteProxyBroker = remoteProxyBroker
-        // Managed Cloud VM daemon endpoints go stale when the machine's preview rotates
-        // (sandbox recreation, preview re-creation). Before each proxy retry, re-mint the
-        // endpoint through the backend so the broker never redials a dead URL forever.
-        (remoteProxyBroker as? RemoteProxyBroker)?.configurationRefresher = { configuration in
-            guard let vmID = configuration.managedCloudVMID else { return nil }
-            guard let attach = try? await VMClient.shared.openAttach(id: vmID, requireDaemon: true),
-                  case .websocket(let endpoint) = attach,
-                  let daemon = endpoint.daemon else {
-                return nil
-            }
-            return configuration.withDaemonWebSocketEndpoint(
-                WorkspaceRemoteWebSocketDaemonEndpoint(
-                    url: daemon.url,
-                    headers: daemon.headers,
-                    token: daemon.token,
-                    sessionId: daemon.sessionId,
-                    expiresAtUnix: daemon.expiresAtUnix
-                )
-            )
-        }
         let simulatorOwnershipFileManager = FileManager()
         let simulatorApplicationSupportDirectory = simulatorOwnershipFileManager.urls(
             for: .applicationSupportDirectory,
@@ -1030,13 +986,10 @@ class TerminalController {
     @MainActor
     func attachAuth(
         coordinator: AuthCoordinator,
-        accountFlow: HostAccountFlow,
-        codeRouterHandoffService: (any CodeRouterHandoffMinting)? = nil
+        accountFlow: HostAccountFlow
     ) {
         self.authCoordinator = coordinator
         self.accountFlow = accountFlow
-        self.codeRouterHandoffService = codeRouterHandoffService
-            ?? CodeRouterHandoffClient(auth: coordinator)
     }
 
     /// Injects the app-lifetime browser import coordinator before socket RPCs start.
@@ -1153,70 +1106,6 @@ class TerminalController {
         return transport.writeAll(Data(payload.utf8), to: socket)
     }
 
-    /// Writes one CodeRouter handoff response only while both authorization
-    /// domains are current. The main-actor section is intentionally
-    /// synchronous: AuthCoordinator.signOut advances its generation on the
-    /// same actor, so it cannot interleave between the generation check and
-    /// the bounded socket write.
-    private nonisolated func writeCodeRouterHandoffResponse(
-        _ responseData: Data,
-        socket: Int32,
-        authorizationGeneration: UInt64,
-        expectedSessionBinding: CodeRouterHandoffSessionBinding?,
-        trustedPeerAuditToken: SocketPeerAuditToken?,
-        trustedPeerProcessStartTime: SocketPeerProcessStartTime?,
-        codeRouterPeerVerifier: CodeRouterSocketPeerVerifier = .production
-    ) -> Bool? {
-        v2MainSync(commandKey: "coderouter.handoff.complete") {
-            guard let trustedPeerAuditToken,
-                  let trustedPeerProcessStartTime,
-                  let coordinator = self.authCoordinator,
-                  Self.codeRouterHandoffSessionBindingIsCurrent(
-                      expectedGeneration: expectedSessionBinding?.authSessionGeneration,
-                      expectedTeamID: expectedSessionBinding?.resolvedTeamID,
-                      currentGeneration: coordinator.authSessionGeneration,
-                      currentTeamID: coordinator.resolvedTeamID,
-                      isAuthenticated: coordinator.isAuthenticated
-                  ) else {
-                return nil
-            }
-            let socketTransport = self.transport
-            return self.socketServer.withTrustedPeerConnectionAuthorization(
-                authorizationGeneration
-            ) {
-                // Keep this exact-token dynamic validation in the same short
-                // generation-locked body as the secret write. An intervening
-                // exec or PID reuse changes the token and fails closed.
-                guard socketTransport.peerAuditToken(of: socket)
-                        == trustedPeerAuditToken,
-                      socketTransport.processStartTime(
-                          of: trustedPeerAuditToken.processID
-                      ) == trustedPeerProcessStartTime,
-                      codeRouterPeerVerifier.isTrusted(
-                          trustedPeerAuditToken
-                      ) else {
-                    return false
-                }
-                return socketTransport.writeAll(responseData, to: socket)
-            }
-        }
-    }
-
-    nonisolated static func codeRouterHandoffSessionBindingIsCurrent(
-        expectedGeneration: UInt64?,
-        expectedTeamID: String?,
-        currentGeneration: UInt64,
-        currentTeamID: String?,
-        isAuthenticated: Bool
-    ) -> Bool {
-        guard isAuthenticated,
-              let expectedGeneration else {
-            return false
-        }
-        return expectedGeneration == currentGeneration
-            && expectedTeamID == currentTeamID
-    }
-
     /// Interim bridged view of a decoded `ControlRequest` with Foundation
     /// (`Any`) field shapes, so the existing command bodies keep their
     /// `[String: Any]` params until they migrate onto the typed DTOs in the
@@ -1283,8 +1172,7 @@ class TerminalController {
     ]
 
     nonisolated func socketWorkerV2Response(
-        handling parsedRequest: ControlRequest,
-        codeRouterTeamID: String? = nil
+        handling parsedRequest: ControlRequest
     ) -> String? {
         let request = V2SocketRequest(bridging: parsedRequest)
         return withSocketCommandPolicy(commandKey: request.method, isV2: true, params: request.params) {
@@ -1370,16 +1258,10 @@ class TerminalController {
                         message: "feed.push without an id requires wait_timeout_seconds 0"
                     )
                 }
-                _ = socketWorkerV2Response(
-                    request,
-                    codeRouterTeamID: codeRouterTeamID
-                )
+                _ = socketWorkerV2Response(request)
                 return nil
             }
-            return socketWorkerV2Response(
-                request,
-                codeRouterTeamID: codeRouterTeamID
-            )
+            return socketWorkerV2Response(request)
         }
     }
 
@@ -1565,98 +1447,13 @@ class TerminalController {
     }
 
     private nonisolated func socketWorkerV2Response(
-        _ request: V2SocketRequest,
-        codeRouterTeamID: String? = nil
+        _ request: V2SocketRequest
     ) -> String {
         switch request.method {
         case "session.agent_recovery.list":
             return v2Result(id: request.id, v2AgentRecoveryList(params: request.params))
         case "session.agent_recovery.restore":
             return v2Result(id: request.id, v2AgentRecoveryRestore(params: request.params))
-        case "coderouter.handoff.complete":
-            guard request.params.count == 2,
-                  let protocolVersion = request.params["protocolVersion"]
-                    as? NSNumber,
-                  CFGetTypeID(protocolVersion) != CFBooleanGetTypeID(),
-                  protocolVersion.intValue == 2,
-                  protocolVersion.doubleValue == 2,
-                  let challenge = request.params["challenge"] as? String,
-                  SocketClientCapabilityProof().decodeBase64URL32(challenge)
-                    != nil else {
-                return v2Error(
-                    id: request.id,
-                    code: "invalid_params",
-                    message: "coderouter.handoff.complete requires protocolVersion 2 and a challenge"
-                )
-            }
-            guard let codeRouterTeamID, !codeRouterTeamID.isEmpty else {
-                return v2Error(
-                    id: request.id,
-                    code: "team_required",
-                    message: "CodeRouter handoff requires an armed team"
-                )
-            }
-
-            let service = v2MainSync(commandKey: request.method) {
-                self.codeRouterHandoffService
-            }
-            guard let service else {
-                return v2Error(
-                    id: request.id,
-                    code: "not_authenticated",
-                    message: Self.codeRouterHandoffLocalizedMessage(.notSignedIn)
-                )
-            }
-            return v2AsyncResultCall(
-                id: request.id,
-                timeoutSeconds: Self.codeRouterHandoffWorkerTimeoutSeconds
-            ) {
-                do {
-                    let lease = try await service.mint(
-                        teamID: codeRouterTeamID
-                    )
-                    guard lease.teamID.utf8.count <= 200,
-                          !lease.teamID.isEmpty,
-                          lease.teamID == codeRouterTeamID,
-                          lease.teamID.unicodeScalars.allSatisfy({
-                              let category = $0.properties.generalCategory
-                              return !$0.properties.isWhitespace
-                                  && category != .control
-                                  && category != .format
-                          }),
-                          CodeRouterHandoffClient.isValidLeaseSyntax(lease.lease),
-                          lease.expiresAt.utf8.count <= 128,
-                          let expiry = CmuxRFC3339DateParser().date(from: lease.expiresAt),
-                          expiry > Date() else {
-                        return .err(
-                            code: "coderouter_handoff_invalid_response",
-                            message: Self.codeRouterHandoffLocalizedMessage(.invalidResponse),
-                            data: nil
-                        )
-                    }
-                    // This is the one intended secret-bearing response. The
-                    // socket authorization gate has already run before this
-                    // worker lane, and no event mapping is registered for the
-                    // handoff method.
-                    return .ok([
-                        "teamId": lease.teamID,
-                        "lease": lease.lease,
-                        "expiresAt": lease.expiresAt,
-                    ])
-                } catch let error as CodeRouterHandoffClientError {
-                    return .err(
-                        code: error.code,
-                        message: Self.codeRouterHandoffLocalizedMessage(error),
-                        data: nil
-                    )
-                } catch {
-                    return .err(
-                        code: "coderouter_handoff_failed",
-                        message: Self.codeRouterHandoffLocalizedMessage(nil),
-                        data: nil
-                    )
-                }
-            }
         case "auth.status":
             let semaphore = DispatchSemaphore(value: 0)
             Task { @MainActor [weak self] in
@@ -1924,34 +1721,19 @@ class TerminalController {
             return v2Result(id: request.id, v2SurfaceReadText(params: request.params))
         case "surface.input_state":
             return v2Result(id: request.id, v2SurfaceInputState(params: request.params))
-        case "workspace.ssh.open":
-            return v2VmCall(id: request.id, timeoutSeconds: 190) {
-                try await self.openSSHTuiWorkspace(params: request.params)
-            }
         case "surface.ssh_session_attach.resolve":
             return v2AsyncResultCall(id: request.id, timeoutSeconds: 180) {
-                if let result = await self.tuiSSHSessionAttachResolve(params: request.params) { return result }
-                return self.v2SSHSessionAttachResolve(params: request.params)
+                self.v2SSHSessionAttachResolve(params: request.params)
             }
         case "workspace.env":
             return v2Result(id: request.id, v2WorkspaceEnv(params: request.params))
         case "workspace.remote.pty_sessions":
             return v2AsyncResultCall(id: request.id, timeoutSeconds: 180) {
-                if let result = await self.tuiSSHSessions(params: request.params) {
-                    guard request.params["all_workspaces"] as? Bool == true else { return result }
-                    // The legacy transport's blocking reads stay on this worker,
-                    // outside the native graph's main-actor projection path.
-                    return self.mergeRemotePTYSessionLists(
-                        tui: result,
-                        legacy: self.v2WorkspaceRemotePTYSessions(params: request.params)
-                    )
-                }
-                return self.v2WorkspaceRemotePTYSessions(params: request.params)
+                self.v2WorkspaceRemotePTYSessions(params: request.params)
             }
         case "workspace.remote.pty_close":
             return v2AsyncResultCall(id: request.id, timeoutSeconds: 180) {
-                if let result = await self.closeTuiSSHSession(params: request.params) { return result }
-                return self.v2WorkspaceRemotePTYClose(params: request.params)
+                self.v2WorkspaceRemotePTYClose(params: request.params)
             }
         case "workspace.remote.pty_detach":
             return v2Result(id: request.id, v2WorkspaceRemotePTYDetach(params: request.params))
@@ -1990,31 +1772,6 @@ class TerminalController {
 #if DEBUG
         case "debug.sidebar.simulate_drag":
             return v2Result(id: request.id, v2DebugSidebarSimulateDrag(params: request.params))
-        case "debug.cloudtree.gallery":
-            // `{style?: id, show?: bool}`: optionally select a Cloud tree style
-            // preset, then (by default) present the side-by-side gallery window.
-            let requestedStyle = (request.params["style"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let requestedStyle, !requestedStyle.isEmpty, CloudTreeStyle.preset(id: requestedStyle) == nil {
-                return v2Error(
-                    id: request.id,
-                    code: "invalid_params",
-                    message: "unknown style '\(requestedStyle)'; expected one of \(CloudTreeStyle.presets.map(\.id).joined(separator: ", "))"
-                )
-            }
-            let show = Self.surfaceBool(request.params["show"]) ?? true
-            let selected: String = v2MainSync {
-                if let requestedStyle, let style = CloudTreeStyle.preset(id: requestedStyle) {
-                    CloudTreeStyleStore.current = style
-                }
-                if show {
-                    CloudTreeStyleGalleryWindowController.shared.show()
-                }
-                return CloudTreeStyleStore.current.id
-            }
-            return v2Ok(id: request.id, result: [
-                "styles": CloudTreeStyle.presets.map(\.id),
-                "selected": selected,
-            ])
         case "debug.window_hints":
             // Hint mode's labels while they show (`active`, what is typed, each label's target).
             let payload: [String: Any] = v2MainSync {
@@ -2073,21 +1830,6 @@ class TerminalController {
             return socketWorkerCurrentWorkResponse(id: request.id, params: request.params)
         case "surface.catalog", "surface.project", "surface.new_terminal":
             return socketWorkerSurfaceResponse(method: request.method, id: request.id, params: request.params)
-        case let method where method.hasPrefix("vm."):
-            // The CLI's own wait (cloud_client_timeout_ms) is transport
-            // metadata, not a method param: strip it before any handler
-            // validates params, and bind it so every control-plane request the
-            // handler makes states the earliest budget (CloudRequestBudget).
-            let budget = Self.socketWorkerVMDispatch(request.params)
-            return CloudRequestBudget.live.withBudgetSync(seconds: budget.seconds) {
-                socketWorkerCloudVMResponse(method: method, id: request.id, params: budget.params)
-            }
-        case let method where method.hasPrefix("remotes."):
-            return socketWorkerRemotesResponse(method: method, id: request.id, params: request.params)
-        case let method where method.hasPrefix("aiAccounts."):
-            return socketWorkerAIAccountsResponse(method: method, id: request.id, params: request.params)
-        case let method where method.hasPrefix("coderouter."):
-            return socketWorkerCoderouterResponse(method: method, id: request.id, params: request.params)
         default:
 #if !DEBUG
             // debug.sidebar.simulate_drag stays policy-listed in Release but
@@ -2097,7 +1839,6 @@ class TerminalController {
             if request.method == "debug.sidebar.simulate_drag"
                 || request.method == "debug.global_search.query"
                 || request.method == "debug.window.screenshot"
-                || request.method == "debug.cloudtree.gallery"
                 || request.method == "debug.window_hints" {
                 return v2Error(id: request.id, code: "method_not_found", message: "Unknown method")
             }
@@ -2184,8 +1925,7 @@ class TerminalController {
         let lineReader = ControlClientAsyncLineReader(
             socket: socket,
             initialLimits: initialReadLimits,
-            authorizationRevocationSignal: authorizationRevocationSignal,
-            codeRouterHandshakeMaximumBytes: 4_096
+            authorizationRevocationSignal: authorizationRevocationSignal
         )
         let writer = ControlClientAsyncWriter(socket: socket)
 
@@ -2237,25 +1977,12 @@ class TerminalController {
             }
         }
         var passwordAuthorization = SocketPasswordAuthorization()
-        var pendingCodeRouterHandoffChallenge:
-            PendingCodeRouterHandoffChallenge?
         let rateLimiter = ControlClientRateLimiter()
         while let line = await lineReader.nextLine(shouldContinueReading: {
             self.socketServer.isConnectionAuthorizationCurrent(authorizationGeneration)
         }) {
             let receivedCommand = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !receivedCommand.isEmpty else { continue }
-            // Arm, begin, and complete use an exact JSON frame. Do not let
-            // Foundation trimming turn a surrounding-whitespace frame into a
-            // valid proof-bearing request.
-            let isCodeRouterHandshakeRoute =
-                Self.isCodeRouterHandoffCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffBeginCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffArmCommand(receivedCommand)
-            guard !isCodeRouterHandshakeRoute || line == receivedCommand else {
-                _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
-                return
-            }
             guard socketAuthorizationIsCurrent(
                 authorizationGeneration,
                 passwordAuthorization: &passwordAuthorization
@@ -2263,36 +1990,10 @@ class TerminalController {
                 _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
                 return
             }
-            let isCodeRouterPeerCommand =
-                Self.isCodeRouterHandoffCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffBeginCommand(receivedCommand)
-                    || Self.isCodeRouterHandoffArmCommand(receivedCommand)
-            let currentPeerAuditToken = isCodeRouterPeerCommand
-                ? transport.peerAuditToken(of: socket)
-                : peerAuditToken
-            let currentPeerStartTime = if isCodeRouterPeerCommand,
-                                          let pid {
-                transport.processStartTime(of: pid)
-            } else {
-                peerProcessStartTime
-            }
-            guard !isCodeRouterPeerCommand
-                    || (peerAuditToken?.processID == pid
-                        && peerAuditToken != nil
-                        && currentPeerAuditToken == peerAuditToken
-                        && peerProcessStartTime != nil
-                        && currentPeerStartTime == peerProcessStartTime),
-                  pendingCodeRouterHandoffChallenge == nil
-                    || Self.isCodeRouterHandoffCommand(receivedCommand),
-                  let commandAuthorization = authorizedSocketCommand(
+            guard let commandAuthorization = authorizedSocketCommand(
                 receivedCommand,
                 peerProcessID: pid,
-                peerHasSameUID: peerHasSameUID,
-                peerAuditToken: peerAuditToken,
-                peerProcessStartTime: peerProcessStartTime,
-                authorizationGeneration: authorizationGeneration,
-                pendingCodeRouterHandoffChallenge:
-                    pendingCodeRouterHandoffChallenge
+                peerHasSameUID: peerHasSameUID
             ) else {
                 let response = pid == nil
                     ? Self.socketClientVerificationFailedResponse
@@ -2320,62 +2021,6 @@ class TerminalController {
                 await preauthorizationLimiter.release()
             }
 
-            if Self.isCodeRouterHandoffBeginCommand(trimmed) {
-                guard let authorization = commandAuthorization.codeRouterHandoffBeginAuthorization,
-                      let challenge = Self.makeCodeRouterHandoffChallenge() else {
-                    _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
-                    return
-                }
-                let response = v2Ok(
-                    id: "coderouter-handoff-begin",
-                    result: ["protocolVersion": 2, "challenge": challenge]
-                )
-                guard await writer.writeAll(Data((response + "\n").utf8)) else { return }
-                pendingCodeRouterHandoffChallenge = PendingCodeRouterHandoffChallenge(
-                    authorization: authorization,
-                    challenge: challenge
-                )
-                lineReader.allowCodeRouterHandoffCompletion(timeoutMilliseconds: 2_000)
-                continue
-            }
-            if Self.isCodeRouterHandoffArmCommand(trimmed) {
-                let response = processCodeRouterHandoffArmCommand(
-                    trimmed,
-                    socket: socket,
-                    peerAuditToken: peerAuditToken,
-                    authorizationGeneration: authorizationGeneration,
-                    verifiedProof: commandAuthorization.codeRouterHandoffArmProof
-                )
-                _ = await writer.writeAll(Data((response + "\n").utf8))
-                return
-            }
-            if Self.isCodeRouterHandoffCommand(trimmed) {
-                // Keep the signed mint and final atomic authorization/write
-                // together; ordinary traffic uses the asynchronous dispatcher.
-                let result = processSocketLine(
-                    trimmed,
-                    passwordAuthorization: passwordAuthorization,
-                    trustedCodeRouterPeerAuditToken: commandAuthorization.trustedCodeRouterPeerAuditToken,
-                    expectedCodeRouterHandoffSessionBinding: commandAuthorization.codeRouterHandoffSessionBinding
-                )
-                pendingCodeRouterHandoffChallenge = nil
-                if let response = result.response {
-                    guard writeCodeRouterHandoffResponse(
-                        Data((response + "\n").utf8),
-                        socket: socket,
-                        authorizationGeneration: authorizationGeneration,
-                        expectedSessionBinding: result.codeRouterHandoffSessionBinding,
-                        trustedPeerAuditToken: commandAuthorization.trustedCodeRouterPeerAuditToken,
-                        trustedPeerProcessStartTime: peerProcessStartTime
-                    ) != nil else {
-                        _ = await writer.writeAll(Data((Self.socketClientAccessDeniedResponse + "\n").utf8))
-                        return
-                    }
-                }
-                // A lease is never published to the event bus and completion
-                // always closes the connection, including a failed write.
-                return
-            }
             if isEventsStreamRequest(trimmed) {
                 if let response = authResponseIfNeeded(
                     for: trimmed,
@@ -2420,22 +2065,8 @@ class TerminalController {
 
     private nonisolated func processSocketLine(
         _ command: String,
-        passwordAuthorization: SocketPasswordAuthorization,
-        trustedCodeRouterPeerAuditToken: SocketPeerAuditToken? = nil,
-        expectedCodeRouterHandoffSessionBinding:
-            CodeRouterHandoffSessionBinding? = nil
+        passwordAuthorization: SocketPasswordAuthorization
     ) -> SocketLineProcessingResult {
-        let codeRouterHandoffSessionBinding: CodeRouterHandoffSessionBinding?
-        if Self.isCodeRouterHandoffCommand(command) {
-            // Capture the auth generation and selected team before the
-            // asynchronous mint begins. The final writer rechecks both on the
-            // main actor, so sign-out or a team switch cannot race a lease into
-            // an already-revoked socket response.
-            codeRouterHandoffSessionBinding =
-                expectedCodeRouterHandoffSessionBinding
-        } else {
-            codeRouterHandoffSessionBinding = nil
-        }
 #if DEBUG
         let debugInfo = Self.socketCommandDebugInfo(command)
         let debugStart = DispatchTime.now().uptimeNanoseconds
@@ -2448,8 +2079,7 @@ class TerminalController {
         }
 #endif
         var nextPasswordAuthorization = passwordAuthorization
-        if trustedCodeRouterPeerAuditToken == nil,
-           let response = authResponseIfNeeded(
+        if let response = authResponseIfNeeded(
             for: command,
             passwordAuthorization: &nextPasswordAuthorization
         ) {
@@ -2463,16 +2093,11 @@ class TerminalController {
 #endif
             return SocketLineProcessingResult(
                 response: response,
-                passwordAuthorization: nextPasswordAuthorization,
-                codeRouterHandoffSessionBinding:
-                    codeRouterHandoffSessionBinding
+                passwordAuthorization: nextPasswordAuthorization
             )
         }
 
-        let response = processCommandUsingSocketExecutionPolicy(
-            command,
-            codeRouterTeamID: codeRouterHandoffSessionBinding?.resolvedTeamID
-        )
+        let response = processCommandUsingSocketExecutionPolicy(command)
 #if DEBUG
         if let response {
             Self.debugLogSocketCommandEndIfNeeded(
@@ -2485,9 +2110,7 @@ class TerminalController {
 #endif
         return SocketLineProcessingResult(
             response: response,
-            passwordAuthorization: nextPasswordAuthorization,
-            codeRouterHandoffSessionBinding:
-                codeRouterHandoffSessionBinding
+            passwordAuthorization: nextPasswordAuthorization
         )
     }
 
@@ -2737,8 +2360,7 @@ class TerminalController {
 #endif
 
     private nonisolated func processCommandUsingSocketExecutionPolicy(
-        _ command: String,
-        codeRouterTeamID: String? = nil
+        _ command: String
     ) -> String? {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -2798,7 +2420,7 @@ class TerminalController {
             }
             if policy.runsOnSocketWorker {
                 return CmuxAutomationInvocationContext.$eventOrigin.withValue(automationOrigin) {
-                    socketWorkerV2Response(handling: request, codeRouterTeamID: codeRouterTeamID)
+                    socketWorkerV2Response(handling: request)
                 }
             }
             return CmuxAutomationInvocationContext.$eventOrigin.withValue(automationOrigin) {
@@ -3235,12 +2857,6 @@ class TerminalController {
         // terminal_session_end) handled by
         // ControlCommandCoordinator. The worker-lane
         // workspace.remote.pty_* methods stay on the app-side worker path.
-        case "workspace.cloud_vm_open":
-            return v2Result(id: id, self.v2WorkspaceCloudVMOpen(params: params))
-        case "workspace.cloud_vm_terminal_ready":
-            return v2Result(id: id, self.v2WorkspaceCloudVMTerminalReady(params: params))
-        case "workspace.cloud_vm_bind":
-            return v2Result(id: id, self.v2WorkspaceCloudVMBind(params: params))
         case "workspace.set_auto_title":
             return v2Result(id: id, self.v2WorkspaceSetAutoTitle(params: params))
         case "surface.sync_codex_native_title":
@@ -3273,20 +2889,6 @@ class TerminalController {
         case "agent.resolve_delivery_target": return v2Result(id: id, self.v2AgentResolveDeliveryTarget(params: params))
         case "agent.hibernation.session_end": return v2Result(id: id, self.v2AgentHibernationSessionEnd(params: params))
         #if DEBUG
-        case "debug.cloudtree.rows":
-            // The Cloud sidebar's rows from the same builder the sidebar uses, so
-            // dogfood can assert what is listed (duplicate rows were invisible to
-            // `cloud tree --json`, which reports catalog state, not rows).
-            let rows = CloudTreeNodeBuilder.flattened(SurfaceCatalog.shared.sidebarNodes()).map { node -> [String: Any] in
-                var row: [String: Any] = ["id": node.id, "kind": node.structureTag]
-                if case .display(let resource, _, _) = node.kind { row["resource"] = resource.id.rawValue; row["title"] = resource.title }
-                return row
-            }
-            return v2Ok(id: id, result: ["rows": rows])
-        case "debug.cloudtree.spacing":
-            // Explicit window presentation needs AppKit; the socket awaits the main-actor lane.
-            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-            return v2Ok(id: id, result: ["window": "cmux.cloudSidebarDebugLab"])
         case "debug.notification.status":
             return v2Ok(id: id, result: notificationDebugStatus())
         case "debug.notification.mode":
@@ -3425,50 +3027,6 @@ class TerminalController {
             default:
                 return v2Error(id: id, code: "method_not_found", message: "Unknown method")
             }
-    }
-
-    private nonisolated static func codeRouterHandoffLocalizedMessage(
-        _ error: CodeRouterHandoffClientError?
-    ) -> String {
-        guard let error else {
-            return String(
-                localized: "cli.coderouter.handoff.notAuthenticated",
-                defaultValue: "CodeRouter handoff requires a signed-in cmux account. Run `cmux auth login`, then retry.",
-                bundle: .main
-            )
-        }
-        switch error {
-        case .notSignedIn:
-            return String(
-                localized: "cli.coderouter.handoff.notAuthenticated",
-                defaultValue: "CodeRouter handoff requires a signed-in cmux account. Run `cmux auth login`, then retry.",
-                bundle: .main
-            )
-        case .sessionChanged:
-            return String(
-                localized: "cli.coderouter.handoff.sessionChanged",
-                defaultValue: "The cmux account or team changed during the handoff. Try again.",
-                bundle: .main
-            )
-        case .expiredLease:
-            return String(
-                localized: "cli.coderouter.handoff.expired",
-                defaultValue: "The cmux handoff lease expired. Try again.",
-                bundle: .main
-            )
-        case .sessionUnavailable, .backendUnreachable:
-            return String(
-                localized: "cli.coderouter.handoff.unavailable",
-                defaultValue: "The cmux service is not available. Check your connection and try again.",
-                bundle: .main
-            )
-        case .invalidTeam, .invalidResponse, .redirectedResponse, .httpStatus:
-            return String(
-                localized: "cli.coderouter.handoff.failed",
-                defaultValue: "The cmux service rejected the CodeRouter handoff. Try again.",
-                bundle: .main
-            )
-        }
     }
 
     func v2Identify(params: [String: Any]) -> [String: Any] {
@@ -4068,23 +3626,18 @@ class TerminalController {
         return JSONValue(foundationObject: id)
     }
     /// Bridge an async throws closure into a socket RPC response. Runs the work on a detached
-    /// Task (so VMClient's URLSession hops are free to use any actor) and blocks the socket
-    /// worker thread on a semaphore. Mirrors the auth.begin_sign_in pattern above.
+    /// Task and blocks the socket worker thread on a semaphore. Mirrors the
+    /// auth.begin_sign_in pattern above.
     nonisolated func v2VmCall(
         id: Any?,
         timeoutSeconds: TimeInterval? = 17 * 60,
-        transportUnsupportedMachineID: String? = nil,
-        daemonUnavailableMessage: String? = nil,
         _ work: @escaping () async throws -> [String: Any]
     ) -> String {
         let semaphore = DispatchSemaphore(value: 0)
         nonisolated(unsafe) var result: Result<[String: Any], Error>?
-        // Control-plane requests inside `work` state the earliest of this
-        // worker's limit and the socket client's budget the dispatcher bound
-        // (the Task inherits it), so the server answers before either gives up.
         let task = Task {
             do {
-                result = .success(try await CloudRequestBudget.live.withBudget(seconds: timeoutSeconds) { try await work() })
+                result = .success(try await work())
             } catch {
                 result = .failure(error)
             }
@@ -4096,7 +3649,7 @@ class TerminalController {
                 return v2Error(
                     id: id,
                     code: "timeout",
-                    message: "VM request timed out after \(Int(timeoutSeconds)) seconds"
+                    message: "Request timed out after \(Int(timeoutSeconds)) seconds"
                 )
             }
         } else {
@@ -4107,50 +3660,6 @@ class TerminalController {
         case .success(let payload):
             return v2Ok(id: id, result: payload)
         case .failure(let error):
-            if case VMClientError.disabledByManagedPolicy = error {
-                return v2Error(id: id, code: "cloud_disabled", message: String(describing: error))
-            }
-            if case VMClientError.cloudMachinesDisabled = error {
-                return v2Error(id: id, code: "cloud_disabled", message: String(describing: error))
-            }
-            if let deliveryError = error as? CloudFileDelivery.DeliveryError {
-                return v2Error(id: id, code: "vm_file_delivery_failed", message: deliveryError.localizedDescription)
-            }
-            if let combinedError = error as? CloudFileDelivery.OperationAndCleanupError {
-                return v2Error(id: id, code: "vm_file_delivery_failed", message: combinedError.localizedDescription)
-            }
-            if case VMClientError.lifecycleUnsupported = error {
-                return v2Error(id: id, code: "vm_operation_unsupported", message: String(describing: error))
-            }
-            // Network policy refusals name the offending entry; the generic
-            // Cloud VM line would hide which domain or range was wrong.
-            if let editError = error as? CloudNetworkPolicyEditError {
-                return v2Error(id: id, code: "invalid_params", message: editError.errorDescription ?? String(describing: editError))
-            }
-            if let requestError = error as? CloudNetworkPolicyRequestError {
-                let code = requestError == .unsupported ? "vm_operation_unsupported" : "invalid_network_policy"
-                return v2Error(id: id, code: code, message: requestError.errorDescription ?? String(describing: requestError))
-            }
-            if let deliveryError = error as? CloudEnvDelivery.DeliveryError {
-                return v2Error(id: id, code: "vm_env_delivery_failed", message: deliveryError.localizedDescription)
-            }
-            if let combinedError = error as? CloudEnvDelivery.OperationAndCleanupError {
-                return v2Error(id: id, code: "vm_env_delivery_failed", message: combinedError.localizedDescription)
-            }
-            if let linkError = error as? CloudMachineLink.LinkError,
-               linkError.category == .daemonUnavailable {
-                return v2Error(
-                    id: id,
-                    code: "vm_tui_daemon_unavailable",
-                    message: daemonUnavailableMessage ?? String(
-                        localized: "socket.cloudVM.daemonUnavailable",
-                        defaultValue: "The Cloud VM connection is unavailable. Wake the machine or retry the command."
-                    )
-                )
-            }
-            if let failure = error as? SSHTuiOpenFailure {
-                return v2Error(id: id, code: "ssh_failed", message: failure.reason)
-            }
             if let catalogError = error as? SurfaceCatalogError {
                 switch catalogError {
                 case .nothingToOpen:
@@ -4159,189 +3668,21 @@ class TerminalController {
                     return v2Error(id: id, code: "not_found", message: catalogError.localizedDescription)
                 default:
                     // Preserve the catalog's actionable ownership or transport detail.
-                    // Falling through to the generic VM message hides whether the
-                    // machine is disconnected, the surface is stale, or the provider
-                    // cannot perform this operation.
                     return v2Error(id: id, code: "vm_error", message: catalogError.localizedDescription)
                 }
-            }
-            if let vmError = error as? VMClientError,
-               Self.isCloudVMAuthenticationError(vmError) {
-                // Keep the auth boundary explicit for every VM verb. The CLI
-                // can then return a stable non-zero auth-required failure
-                // instead of presenting a generic backend error. A server 401
-                // means the app still holds a session the service rejects, so
-                // `cmux auth login` alone would short-circuit on "already
-                // signed in" — the fix is sign out, then sign in.
-                let message: String
-                if case .httpStatus = vmError {
-                    message = String(
-                        localized: "socket.cloudVM.sessionRejected",
-                        defaultValue: "The cmux Cloud service rejected this session. Run `cmux auth logout`, then `cmux auth login`, and retry."
-                    )
-                } else {
-                    message = String(
-                        localized: "socket.cloudVM.authRequired",
-                        defaultValue: "Cloud VM access requires sign-in. Run `cmux auth login`, then retry."
-                    )
-                }
-                return v2Error(
-                    id: id,
-                    code: "auth_required",
-                    message: message
-                )
-            }
-            if let vmError = error as? VMClientError,
-               let machineID = transportUnsupportedMachineID,
-               Self.isCloudVMTransportUnsupportedError(vmError) {
-                // `vm.cmux_remote_info` is the shared attach path for `vm shell`,
-                // `vm open`, `vm tui`, and the sidebar, so the message names the
-                // machine and the missing transport rather than guessing the
-                // caller, and points at commands that do not need that transport.
-                let alternative = String(
-                    format: String(
-                        localized: "socket.cloudVM.transportUnsupported.useExec",
-                        defaultValue: "Use `cmux vm exec %1$@ -- <command>`; `cmux vm ssh %1$@` works where the provider offers SSH."
-                    ),
-                    machineID,
-                    machineID
-                )
-                let message = String(
-                    format: String(
-                        localized: "socket.cloudVM.transportUnsupported",
-                        defaultValue: "%1$@ offers no `%2$@` transport (its provider has no cmux-tui daemon route), so cmux cannot attach a terminal to it. %3$@"
-                    ),
-                    machineID,
-                    "cmux-remote",
-                    alternative
-                )
-                return v2Error(
-                    id: id,
-                    code: "transport_unsupported",
-                    message: message,
-                    data: Self.cloudVMBackendErrorData(error)
-                )
             }
             return v2Error(
                 id: id,
                 code: "vm_error",
-                message: Self.cloudVMSafeErrorMessage(error),
-                data: Self.cloudVMBackendErrorData(error)
+                message: String(describing: error)
             )
         case nil:
             return v2Error(
                 id: id,
                 code: "vm_error",
-                message: "unknown vm error"
+                message: "unknown error"
             )
         }
-    }
-    /// Backend error metadata passthrough so the CLI can make compatibility
-    /// decisions structurally instead of parsing formatted display text.
-    private nonisolated static func cloudVMBackendErrorData(_ error: Error) -> [String: Any]? {
-        guard case let VMClientError.httpStatus(status, body) = error else {
-            return nil
-        }
-        var payload: [String: Any] = ["http_status": status]
-        let object = body.data(using: .utf8)
-            .flatMap { try? JSONSerialization.jsonObject(with: $0, options: []) as? [String: Any] }
-        if let code = object?["error"] as? String, !code.isEmpty {
-            payload["backend_code"] = code
-        }
-        if let retryable = object?["retryable"] as? Bool {
-            payload["retryable"] = retryable
-        }
-        // The server trace id (support reference) travels with the structured
-        // error so the CLI and scripts can log it without parsing display text.
-        if let traceID = object?["traceId"] as? String, !traceID.isEmpty {
-            payload["trace_id"] = traceID
-        }
-        return payload
-    }
-
-    /// Surface only the server's public copy, never a raw response body or
-    /// provider diagnostics. Keep the support reference after sanitization.
-    private nonisolated static func cloudVMSafeErrorMessage(_ error: Error) -> String {
-        let fallback = String(
-            localized: "socket.cloudVM.requestFailed",
-            defaultValue: "The Cloud VM request failed. Retry, or check the machine's status with `cmux vm ls`."
-        )
-        if let catalogError = error as? SurfaceCatalogError {
-            switch catalogError {
-            case .unknownResource, .noProvider, .ambiguousRemotePlacement:
-                // These messages are app-owned copy with routing identifiers,
-                // not provider-supplied failure diagnostics.
-                let safe = CloudVMActionLauncher.sanitizedCloudVMStartOutput(catalogError.localizedDescription)
-                return safe.isEmpty || safe == CloudVMActionLauncher.hiddenOutputPlaceholder ? fallback : safe
-            default:
-                break
-            }
-        }
-        // An ownership rejection is app-owned copy naming the workspace rule
-        // that blocked the open; the generic Cloud VM line would hide it.
-        if let rejection = error as? SurfaceTransferRejection {
-            return rejection.message
-        }
-        // Remote tmux requests come through this wrapper too. Their errors are about an ssh
-        // host, and `RemoteTmuxError.message` already flattens and caps any remote text.
-        if let remoteTmuxError = error as? RemoteTmuxError {
-            return remoteTmuxError.message
-        }
-        guard case let VMClientError.httpStatus(status, body) = error else {
-            guard let vmError = error as? VMClientError else { return fallback }
-            let safe = CloudVMActionLauncher.sanitizedCloudVMStartOutput(String(describing: vmError))
-            return safe.isEmpty || safe == CloudVMActionLauncher.hiddenOutputPlaceholder ? fallback : safe
-        }
-        guard let data = body.data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return formattedCloudVMHTTPError(status: status, body: "")
-        }
-        // Reuse the formatter's HTTP code and action copy, but pass only public
-        // fields. Provider details and unvalidated support references stay out.
-        var publicObject: [String: Any] = [:]
-        for key in ["error", "message", "reason", "action", "retryAfterSeconds"] {
-            publicObject[key] = object[key]
-        }
-        if let ui = object["ui"] as? [String: Any] {
-            var publicUI: [String: Any] = [:]
-            for key in ["title", "message", "retryAfterSeconds"] {
-                publicUI[key] = ui[key]
-            }
-            publicObject["ui"] = publicUI
-        }
-        let ui = object["ui"] as? [String: Any]
-        if let trace = (object["traceId"] as? String) ?? (ui?["traceId"] as? String),
-           trace.count == 32, trace.allSatisfy(\.isHexDigit) {
-            publicObject["traceId"] = trace
-        }
-        guard let publicData = try? JSONSerialization.data(withJSONObject: publicObject),
-              let publicBody = String(data: publicData, encoding: .utf8) else { return fallback }
-        let safe = CloudVMActionLauncher.sanitizedCloudVMStartOutput(
-            formattedCloudVMHTTPError(status: status, body: publicBody)
-        )
-        return safe.isEmpty || safe == CloudVMActionLauncher.hiddenOutputPlaceholder ? fallback : safe
-    }
-
-    private nonisolated static func isCloudVMAuthenticationError(_ error: VMClientError) -> Bool {
-        switch error {
-        case .notSignedIn:
-            return true
-        case .httpStatus(let status, _):
-            return status == 401
-        case .sessionRefreshFailed, .backendUnreachable, .malformedResponse, .lifecycleUnsupported, .disabledByManagedPolicy, .cloudMachinesDisabled:
-            return false
-        }
-    }
-
-    private nonisolated static func isCloudVMTransportUnsupportedError(_ error: VMClientError) -> Bool {
-        guard case let .httpStatus(status, body) = error, status == 501 else {
-            return false
-        }
-        guard let data = body.data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-            return false
-        }
-        return object["error"] as? String == "vm_attach_transport_unsupported"
     }
 
     nonisolated func v2AsyncResultCall(
@@ -4900,7 +4241,7 @@ class TerminalController {
                 guard let app = AppDelegate.shared else { return }
                 for summary in app.listMainWindowSummaries() {
                     guard let owner = app.tabManagerFor(windowId: summary.windowId) else { continue }
-                    for workspace in owner.tabs where workspace.isRemoteWorkspace && !workspace.usesSSHTui {
+                    for workspace in owner.tabs where workspace.isRemoteWorkspace {
                         targets.append(
                             RemotePTYSocketTarget(
                                 controller: workspace.remotePTYSessionControllerForSocketCommand(),
@@ -7327,9 +6668,8 @@ class TerminalController {
         return resolveBrowserNavigableURL(trimmed) ?? URL(string: trimmed)
     }
 
-    // Internal (not private): `CloudTreeService.openDesktop/openPort` open the same browser
-    // split the socket verb does, so the sidebar, `cmux vm desktop`, and `cmux vm open` share
-    // one path.
+    // Internal (not private): other app paths open the same browser split the socket
+    // verb does, so they share one path.
     func v2BrowserOpenSplit(
         params: [String: Any],
         diffViewerRegistration: DiffViewerSessionPreparation

@@ -317,16 +317,6 @@
 	<array>
 		<dict>
 			<key>UTTypeIdentifier</key>
-			<string>com.cmux.cloud-sidebar-row</string>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>Cloud Sidebar Row</string>
-		</dict>
-		<dict>
-			<key>UTTypeIdentifier</key>
 			<string>com.splittabbar.tabtransfer</string>
 			<key>UTTypeDescription</key>
 			<string>Bonsplit Tab Transfer</string>

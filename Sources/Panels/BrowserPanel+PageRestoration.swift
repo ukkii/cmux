@@ -117,7 +117,6 @@ extension BrowserPanel {
         let conditions = BrowserDiscardRestoreStrategy.Conditions(
             isExplicitReload: isExplicitReload,
             usesRemoteWorkspaceProxy: usesRemoteWorkspaceProxy,
-            usesCloudAccessRouting: retainsCloudResourceForDuplication || cloudBrowserMachineID != nil,
             hasRecoverableWebContentTermination: hasRecoverableWebContentTermination,
             requiresInsecureHTTPConsent: browserShouldBlockInsecureHTTPURL(url)
         )
@@ -327,15 +326,13 @@ extension BrowserPanel {
     }
 
     /// Session state to write to the session file, or nil when this pane's
-    /// state must not persist: private profiles, remote and cloud routing,
+    /// state must not persist: private profiles, remote routing,
     /// error pages, form submissions, restored URL history and oversized state.
     /// Live state is also dropped while its current entry is not the URL the
     /// snapshot saves, because a relaunch restores it for that URL.
     func persistableInteractionStateForSessionSnapshot() -> Data? {
         guard shouldPersistSessionSnapshot(),
               !usesRemoteWorkspaceProxy,
-              !retainsCloudResourceForDuplication,
-              cloudBrowserMachineID == nil,
               navigationDelegate?.activeErrorPageDisplayURL == nil else {
             return nil
         }
@@ -403,5 +400,21 @@ private struct BrowserSnapshotEncodingSource: @unchecked Sendable {
             using: .jpeg,
             properties: [.compressionFactor: 0.6]
         )
+    }
+}
+
+extension BrowserPanel {
+    /// The URL a session snapshot persists for this pane: the error page's
+    /// display URL when one is active, otherwise the current URL.
+    func preferredURLStringForSessionSnapshot() -> String? {
+        if let displayURL = restorableDisplayURLForCurrentErrorPage(liveURL: webView.url),
+           let value = Self.serializableSessionHistoryURLString(displayURL) {
+            return value
+        }
+        if let currentURL,
+           let value = Self.serializableSessionHistoryURLString(currentURL) {
+            return value
+        }
+        return nil
     }
 }

@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxComputerUse
 import AppKit
 import CmuxAppKitSupportUI
@@ -225,11 +224,9 @@ struct cmuxApp: App {
         KeyboardShortcutSettings.settingsFileStore.applyDeferredManagedDefaultSideEffects()
         StartupBreadcrumbLog.append("app.init.keyboardShortcuts.sideEffectsApplied")
         StartupBreadcrumbLog.append("app.init.tabManager.begin")
-        let (cloudMachinePinStore, cloudWorkspaceCoordinator) = Self.makeCloudWorkspaceComposition(auth: authComposition)
         let tabManager = TabManager(
             workspaceCustomizationStore: workspaceCustomizationStore,
             nativeSSHConnectionBroker: TerminalController.shared.nativeSSHConnectionBroker,
-            cloudWorkspaceSelection: cloudWorkspaceCoordinator.makeSelectionState(),
             sshClipboardWriteTrustStore: AppDelegate.shared?.sshClipboardWriteTrustStore
         )
         let historyMenuCoordinator = HistoryMenuCoordinator(
@@ -304,24 +301,16 @@ struct cmuxApp: App {
 
         // UI tests need AppDelegate wiring even if SwiftUI appearance callbacks are skipped.
         StartupBreadcrumbLog.append("app.init.delegate.configure.begin")
-        let cloudWorkspaceOperationController = CloudWorkspaceOperationController(
-            isAvailable: { cloudWorkspaceCoordinator.isAvailable }
-        )
         appDelegate.configure(
             tabManager: tabManager,
             notificationStore: notificationStore,
             sidebarState: sidebarState,
             settingsRuntime: settingsRuntime,
             auth: authComposition,
-            cloudMachinePinStore: cloudMachinePinStore,
-            cloudWorkspaceCoordinator: cloudWorkspaceCoordinator,
-            cloudWorkspaceOperationController: cloudWorkspaceOperationController,
-            newMachineSheetPresenter: NewMachineSheetPresenter.shared,
             automationEngine: automationEngine,
             browserDataImportCoordinator: browserDataImportCoordinator,
             computerUseRuntimeService: computerUseRuntimeService
         )
-        hostSettingsActions.cloudActivationCoordinator = appDelegate.cloudActivationCoordinator
         historyMenuCoordinator.refreshIfNeeded()
         StartupBreadcrumbLog.append("app.init.delegate.configured")
     }
@@ -653,41 +642,6 @@ struct cmuxApp: App {
                     Button("Browser Import Hint Debug…") {
                         BrowserImportHintDebugWindowController.shared.show()
                     }
-                    Button("Cloud Tree Style Gallery…") {
-                        CloudTreeStyleGalleryWindowController.shared.show()
-                    }
-                    Button(String(localized: "debug.menu.cloudSidebarSpacingLab", defaultValue: "Cloud Sidebar Spacing Lab…")) {
-                        AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-                    }
-                    Menu("Cloud Terminal Error Style") {
-                        Button("Preview in Selected Terminal") {
-                            guard let workspace = activeTabManager.selectedWorkspace,
-                                  let panelID = workspace.focusedPanelId,
-                                  workspace.terminalPanel(for: panelID) != nil else { return }
-                            let failure = CloudPaneCreationFailure(
-                                machine: .cloud("preview"),
-                                error: CmuxTuiSurfaceProvider.ProviderError.stateUnavailable("preview")
-                            )
-                            workspace.setCloudMaterializationFailure(
-                                surfaceID: panelID,
-                                detail: failure.errorText,
-                                reference: "Design preview"
-                            )
-                        }
-                        Divider()
-                        Button("Compact") {
-                            UserDefaults.standard.set("compact", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Compact + 1px Border") {
-                            UserDefaults.standard.set("compact-bordered", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Dialog") {
-                            UserDefaults.standard.set("dialog", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Inline") {
-                            UserDefaults.standard.set("inline", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                    }
                     Button(
                         String(
                             localized: "debug.menu.browserProfilePopoverDebug",
@@ -879,15 +833,6 @@ struct cmuxApp: App {
                     }
                 }
 
-                if CloudMachinesFeature.isEnabled && AppDelegate.shared?.auth?.accountFlow.isAuthenticated == true {
-                    splitCommandButton(title: String(localized: "menu.file.newCloudWorkspace", defaultValue: "New Cloud Workspace"), shortcut: menuShortcut(for: .newCloudWorkspace)) {
-                        _ = AppDelegate.shared?.performNewCloudWorkspaceOnResolvedMachineAction(tabManager: activeTabManager, debugSource: "menu.newCloudWorkspace")
-                    }
-                    splitCommandButton(title: String(localized: "menu.file.newCloudMachine", defaultValue: "New Cloud Machine"), shortcut: menuShortcut(for: .newCloudMachine)) {
-                        _ = AppDelegate.shared?.performNewCloudMachineAction(tabManager: activeTabManager, debugSource: "menu.newCloudMachine")
-                    }
-                }
-
                 if CmuxFeatureFlags.shared.isSimulatorEnabled {
                     Button(String(localized: "menu.file.newSimulatorPane", defaultValue: "New Simulator Pane")) {
                         performNewSimulatorPaneFromMenu()
@@ -1053,7 +998,6 @@ struct cmuxApp: App {
         }
         helpCommands
         historyCommands
-        cloudCommands
         CommandGroup(after: .toolbar) {
             splitCommandButton(title: String(localized: "menu.view.toggleLeftSidebar", defaultValue: "Toggle Left Sidebar"), shortcut: menuShortcut(for: .toggleSidebar)) {
                 // The AppKit-hosted Settings window has no SwiftUI
@@ -1663,7 +1607,6 @@ struct cmuxApp: App {
         BackgroundDebugWindowController.shared.show()
         StartupAppearanceDebugWindowController.shared.show()
         MenuBarExtraDebugWindowController.shared.show()
-        AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
         PDFPreviewChromeDebugWindowController.shared.show()
         FeedPreviewWindowController.shared.show()
         FeedTextEditorDebugWindowController.shared.show()
@@ -1693,10 +1636,8 @@ private struct MainWindowBootstrapView: View {
     }
 }
 private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
-    "cmux.newMachine",
     "cmux.settings",
     "cmux.about",
-    "cmux.cloud.welcome",
     "cmux.licenses",
     "cmux.browser-popup",
     "cmux.browserProfilePopoverDebug",
@@ -1721,16 +1662,12 @@ private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
     "cmux.sidebarDebug",
     "cmux.menubarDebug",
     "cmux.spinnerGallery",
-    "cmux.cloudTreeStyleGallery",
-    "cmux.cloudSidebarDebugLab",
     "cmux.backgroundDebug",
     "cmux.startupAppearanceDebug",
     "cmux.bonsplitTabBarDebug",
     "cmux.titlebarLayoutDebug",
     "cmux.devWindowDisplay",
     "cmux.sidebarFooterIconBalanceDebug",
-    "cmux.cloudPaneCreationFailure.card",
-    "cmux.cloudCreateTeam",
     "cmux.sudo.approval",
 ]
 
@@ -1941,9 +1878,6 @@ private struct DebugWindowControlsView: View {
                         Button("Menu Bar Extra Debug…") {
                             MenuBarExtraDebugWindowController.shared.show()
                         }
-                        Button(String(localized: "debug.menu.cloudSidebarSpacingLab", defaultValue: "Cloud Sidebar Spacing Lab…")) {
-                            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-                        }
                         Button(
                             String(
                                 localized: "debug.menu.pdfPreviewChromeDebug",
@@ -1980,7 +1914,6 @@ private struct DebugWindowControlsView: View {
                             BonsplitTabBarDebugWindowController.shared.show()
                             StartupAppearanceDebugWindowController.shared.show()
                             MenuBarExtraDebugWindowController.shared.show()
-                            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
                             PDFPreviewChromeDebugWindowController.shared.show()
                             TabBarBackdropLabWindowController.shared.show()
                             FeedTextEditorDebugWindowController.shared.show()

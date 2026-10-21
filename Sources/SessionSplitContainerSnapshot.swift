@@ -8,7 +8,7 @@ import Foundation
 struct SessionSplitContainerSnapshot: Codable, Sendable {
     var focusedPanelId: UUID?
     var layout: SessionWorkspaceLayoutSnapshot
-    var panels: [SessionPanelSnapshot]
+    @RetiredPanelTolerantList var panels: [SessionPanelSnapshot]
     /// Original workspace ownership for panels transferred into this container.
     /// Absent for panels created directly in the container and for legacy snapshots.
     var sourceWorkspaceIdsByPanelId: [UUID: UUID]? = nil

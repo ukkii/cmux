@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import Foundation
 import Testing
@@ -755,22 +754,6 @@ struct CheckoutAttributionTests {
             #expect(token.count <= 64, "\(token)")
             #expect(token.unicodeScalars.allSatisfy { ("a"..."z").contains($0) || ("0"..."9").contains($0) || $0 == "_" }, "\(token)")
         }
-    }
-
-    @Test
-    func vmRequiresProErrorTextLinksWithATypedSource() {
-        let text = defaultCloudVMAction(status: 402, errorCode: "vm_requires_pro")
-        #expect(text.contains("cmux_source=\(ProUpgradeSource.vmRequiresProError.rawValue)"))
-        #expect(text.contains("cmux_client=mac"))
-    }
-
-    @Test
-    func vmMemoryRequiresPlanErrorTextNamesMaxAndLinksTheMaxCheckout() {
-        let text = defaultCloudVMAction(status: 402, errorCode: "vm_memory_requires_plan")
-        #expect(text.contains("cmux Max"))
-        #expect(text.contains(ProUpgradePresenter.checkoutURL(source: .vmMemoryRequiresPlanError, plan: .max).absoluteString))
-        #expect(text.contains("cmux_source=\(ProUpgradeSource.vmMemoryRequiresPlanError.rawValue)"))
-        #expect(text.contains("cmux_client=mac"))
     }
 
     /// Pro is the server's default plan, so its checkout carries no `plan`;

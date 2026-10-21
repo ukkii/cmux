@@ -150,18 +150,6 @@ struct ManagedCapabilityPolicyGateTests {
         ))
     }
 
-    @Test func closedHistoryPurgeRecognizesBothCloudTransports() {
-        let local = Workspace()
-        let localSnapshot = local.sessionSnapshot(includeScrollback: false)
-        #expect(!ClosedItemHistoryStore.workspaceSnapshotHostsCloudVM(localSnapshot))
-
-        var tuiBound = localSnapshot
-        tuiBound.cloudVM = SessionCloudVMBindingSnapshot(vmID: "policy-purge", isBase: true)
-        #expect(ClosedItemHistoryStore.workspaceSnapshotHostsCloudVM(tuiBound))
-        // The same predicate session restore uses under `DisableCloud`.
-        #expect(TabManager.isCloudVMWorkspaceSnapshotForManagedPolicy(tuiBound))
-    }
-
     @Test func tlsTrustBypassIsNeitherOfferedNorHonoredUnderThePolicy() throws {
         let allowed = PolicyFlag(value: true)
         let state = BrowserSSLTrustBypassState(isBypassAllowed: { allowed.value })
@@ -233,21 +221,6 @@ struct ManagedCapabilityPolicyGateTests {
         // the refusal never finished. Main's batch 5 fails here only in sequence.
         #expect(refused, "logs=\(engine.logsPayload(limit: 32))")
         #expect(calls.count == 0)
-    }
-
-    @Test func closedCloudWorkspaceCannotBeRestoredUnderPolicy() {
-        let manager = TabManager(createInitialWorkspace: false, managedDevicePolicy: policy(.disableCloud, disabled: true))
-        let workspace = Workspace()
-        var snapshot = workspace.sessionSnapshot(includeScrollback: false)
-        snapshot.cloudVM = SessionCloudVMBindingSnapshot(vmID: "policy-blocked", isBase: true)
-        let entry = ClosedWorkspaceHistoryEntry(
-            workspaceId: workspace.id,
-            windowId: nil,
-            workspaceIndex: 0,
-            snapshot: snapshot
-        )
-        #expect(!manager.restoreClosedWorkspace(entry))
-        #expect(manager.tabs.isEmpty)
     }
 
     @Test func remoteDropUploadFailsClosedUnderThePolicy() throws {

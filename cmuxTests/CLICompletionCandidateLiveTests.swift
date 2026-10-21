@@ -118,7 +118,7 @@ struct CLICompletionCandidateLiveTests {
                     result: [
                         "workspaces": [
                             ["id": "6E079F88-C679-4DFE-A92D-B7DD4C31B69E", "ref": "workspace:1"],
-                            // No `ref`: `vm.list` publishes only `id`, and the rest
+                            // No `ref`: some lists publish only `id`, and the rest
                             // of the CLI reads these lists with an `id ?? ref`
                             // fallback. Reading `ref` alone dropped the entry and
                             // silently shrank the candidate set.

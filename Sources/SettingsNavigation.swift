@@ -7,7 +7,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
     case terminal
     case textBox
     case sleepyMode
-    case cloudMachines
     case sidebarAppearance
     case customSidebars
     case betaFeatures
@@ -37,8 +36,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
             return String(localized: "settings.section.textBox", defaultValue: "TextBox")
         case .sleepyMode:
             return String(localized: "settings.section.sleepyMode", defaultValue: "Sleepy Mode")
-        case .cloudMachines:
-            return String(localized: "settings.section.cloudMachines", defaultValue: "Cloud")
         case .workspaceColors:
             return String(localized: "settings.section.workspaceColors", defaultValue: "Workspace Colors")
         case .sidebarAppearance:
@@ -80,8 +77,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
             return "textformat"
         case .sleepyMode:
             return "moon.zzz"
-        case .cloudMachines:
-            return "cloud"
         case .workspaceColors:
             return "paintpalette"
         case .sidebarAppearance:
@@ -123,8 +118,6 @@ enum SettingsNavigationTarget: String, CaseIterable, Identifiable {
             return "\(title) textbox text box rich input prompt new terminal workspace split tab focus height"
         case .sleepyMode:
             return "\(title) sleepy mode screensaver caffeinate keep awake lock touch id battery wifi clock mascot theme glow pixel"
-        case .cloudMachines:
-            return "\(title) cloud machines vm virtual machine persistent computer plan upgrade fleet"
         case .workspaceColors:
             return "\(title) palette tabs"
         case .sidebarAppearance:

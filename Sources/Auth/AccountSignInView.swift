@@ -75,7 +75,7 @@ private struct AccountSignInIdleView: View {
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             Button(String(localized: "account.signIn.start", defaultValue: "Sign In"), action: onSignIn)
-                .cloudProminentButtonStyle()
+                .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("AccountSignInStartButton")
         }
     }
@@ -145,7 +145,7 @@ private struct AccountSignInFailureView: View {
                 )
             }
             Button(String(localized: "account.signIn.tryAgain", defaultValue: "Try Again"), action: onTryAgain)
-                .cloudProminentButtonStyle()
+                .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("AccountSignInRetryButton")
             if hasFallbackLink {
                 AccountSignInFallbackActions(

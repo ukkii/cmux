@@ -20,7 +20,6 @@ extension Workspace {
     func installTerminalVisualBellRouting(for terminalPanel: TerminalPanel) {
         terminalPanel.surface.onExplicitInput = { [weak self, weak terminalPanel] in
             guard let self, let terminalPanel else { return }
-            terminalPanel.onManualMirrorExplicitInput?()
             terminalPanel.recordExplicitInput()
             TerminalController.shared.noteAcceptedAgentInput(surfaceID: terminalPanel.id)
             AgentAutoResumeCoordinator.shared.userDidInput(surfaceId: terminalPanel.id)

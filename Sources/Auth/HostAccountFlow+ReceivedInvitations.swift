@@ -1,5 +1,4 @@
 import AppKit
-import CmuxCloud
 import CmuxSettingsUI
 import Foundation
 

@@ -80,8 +80,8 @@ struct OMCCommand: AgentLauncherCommand {
     static let configuration = CommandConfiguration(commandName: "omc", helpNames: [])
 }
 
-/// Short form of `cmux vm agent`; not part of the documented usage() surface.
-struct VMAgentShortFormCommand: AgentLauncherCommand {
+/// `cmux agent`: local agent messaging and hibernation; not part of the documented usage() surface.
+struct AgentShortFormCommand: AgentLauncherCommand {
     @Argument(parsing: .captureForPassthrough) var arguments: [String] = []
     static let configuration = CommandConfiguration(commandName: "agent", shouldDisplay: false, helpNames: [])
 }
@@ -94,20 +94,6 @@ struct AgentHibernationCommand: LegacyHookCommand {
     @Argument(parsing: .allUnrecognized, completion: .list(["on", "off", "hibernate", "wake"]))
     var arguments: [String] = []
     static let configuration = CommandConfiguration(commandName: "agent-hibernation", helpNames: [])
-}
-
-struct CoderouterCommand: AgentLauncherCommand {
-    // Only the verbs cmux handles itself (`CMUXCLI.cmuxOwnedCoderouterVerbs`).
-    // Every other verb, and all of `cr`, passes through to the CodeRouter CLI,
-    // so the arguments stay a passthrough rather than a subcommand tree.
-    @Argument(parsing: .captureForPassthrough, completion: .list(["status", "machines", "claude", "agent"]))
-    var arguments: [String] = []
-    static let configuration = CommandConfiguration(
-        commandName: "coderouter",
-        abstract: CMUXCLI.localizedCoderouterAliases(),
-        helpNames: [],
-        aliases: ["cr"]
-    )
 }
 
 /// Internal Codex Teams watcher launched by the app-server coordinator.

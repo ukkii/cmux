@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import Bonsplit
 import CMUXAgentLaunch
@@ -30,7 +29,7 @@ enum FileExplorerRootSyncPolicy {
         switch mode {
         case .files, .find:
             return true
-        case .sessions, .feed, .dock, .machines, .customSidebar:
+        case .sessions, .feed, .dock, .customSidebar:
             return false
         }
     }
@@ -73,8 +72,6 @@ struct RightSidebarPanelView: View {
     let onOpenFilePreview: (String) -> Void
     let onOpenAsPane: (RightSidebarMode) -> Void
     let onClose: () -> Void
-    let cloudActivationCoordinator: CloudActivationCoordinator = AppDelegate.shared?.cloudActivationCoordinator
-        ?? CloudActivationCoordinator.unconfigured()
     /// Live data context for the Custom mode's JS/Swift sidebar (built by the
     /// window's ContentView, which owns the unread model this view never sees).
     let customSidebarDataContext: (Date) -> [String: SwiftValue]
@@ -114,10 +111,7 @@ struct RightSidebarPanelView: View {
 
     private var featureAvailableModes: [RightSidebarMode] {
         _ = managedPolicyRevision
-        return RightSidebarMode.availableModes(
-            feedEnabled: feedEnabled,
-            machinesEnabled: CloudMachinesFeature.isAvailable
-        )
+        return RightSidebarMode.availableModes(feedEnabled: feedEnabled)
     }
 
     /// Feature-available tabs in the user's order, for the customization
@@ -204,7 +198,6 @@ struct RightSidebarPanelView: View {
         }
         .onChange(of: fileExplorerState.isVisible) { _, visible in
             if visible { hasMountedRightSidebarContent = true }
-            else { fileExplorerState.cloudTeamPickerPresentation.isPresented = false }
         }
         .onChange(of: feedEnabled) { _, _ in refreshModeAvailabilityAndFocusIfNeeded() }
         .onReceive(NotificationCenter.default.publisher(for: RightSidebarTabPreferences.didChangeNotification)) { _ in
@@ -477,15 +470,6 @@ struct RightSidebarPanelView: View {
                 )
             case .dock:
                 dockPanel(windowAppearance: windowAppearance)
-            case .machines:
-                MachinesPanelView(
-                    chromeBackgroundColor: windowAppearance.resolvedChromeBackgroundColor,
-                    machinePinStore: AppDelegate.shared?.cloudMachinePinStore,
-                    tabManager: tabManager,
-                    teamPickerPresentation: fileExplorerState.cloudTeamPickerPresentation,
-                    activationCoordinator: cloudActivationCoordinator,
-                    coderouterStore: tabManager.coderouterAccountStore
-                )
             case .customSidebar:
                 customSidebarPanel
             }

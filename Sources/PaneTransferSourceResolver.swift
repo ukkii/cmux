@@ -48,9 +48,8 @@ struct PaneTransferSourceResolver {
         filePreview: @escaping FilePreviewLookup = { id in
             FilePreviewDragRegistry.shared.entry(id: id)
         },
-        surfaceResource: @escaping SurfaceResourceLookup = { id in
-            SurfaceResourceDragRegistry.shared.group(id: id)
-        },
+        // No in-app drag source registers surface-resource groups any more.
+        surfaceResource: @escaping SurfaceResourceLookup = { _ in nil },
         surfaceIsLive: @escaping LivenessLookup = { id in
             AppDelegate.shared?.locateContainerSurface(tabId: id) != nil
         },
@@ -148,7 +147,7 @@ struct PaneTransferSourceResolver {
         case .filePreview:
             FilePreviewDragRegistry.shared.discard(id: id)
         case .surfaceResources:
-            SurfaceResourceDragRegistry.shared.discard(id: id)
+            break
         case .workspaceMerge:
             WorkspaceMergeDragRegistry.shared.discard(id: id)
         case .chiefConversation:

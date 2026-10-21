@@ -116,11 +116,8 @@ struct WorkspaceCanvasHostView: View {
         case .project: return "folder"
         case .extensionBrowser: return "puzzlepiece.extension"
         case .workspaceTodo: return "checklist"
-        case .coderouterGuide: return "questionmark.circle"
         case .notifications: return "bell"
-        case .cloudVMLoading: return "cloud.fill"
         case .accountSignIn: return "person.crop.circle"
-        case .cloudVPNSetup: return "network"
         case .chief: return ChiefPanel.iconSystemName
         }
     }

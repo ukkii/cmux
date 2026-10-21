@@ -1,4 +1,3 @@
-import CmuxCloud
 
 /// What the sidebar footer's Upgrade badge does. The view calls these; tests
 /// call them with a no-op opener.

@@ -7,7 +7,6 @@ import UniformTypeIdentifiers
 import WebKit
 import ObjectiveC.runtime
 import Bonsplit
-import CmuxCloud
 import CmuxSurfaceCatalogModel
 import CmuxSettings
 import UserNotifications

@@ -9,8 +9,7 @@ import os
 ///
 /// Resolution semantics (flags must never break the app):
 /// - A value from the injected `remoteFlagValueProvider` (a test seam; the app
-///   provides none) is authoritative when present. The legacy Cloud definition
-///   is kept only for tagged debug tooling and is not in `allFlags`.
+///   provides none) is authoritative when present.
 /// - Otherwise a permitted local override applies, then the explicit per-flag
 ///   default.
 ///
@@ -32,7 +31,6 @@ final class CmuxFeatureFlags {
     private static let appKitSidebarListDefault = true
     private static let goPlanDefault = false
     private static let agentInboxQuickViewDefault = false
-    nonisolated static let cloudMachinesDefault = true
     private nonisolated static let conversationSidebarDefault = false
 
     private static let overrideKeyPrefix = "cmux.flags.override."
@@ -321,30 +319,11 @@ final class CmuxFeatureFlags {
         self.publishesOffMainSnapshot = publishesOffMainSnapshot
         self.pinsFlagsToLocalValues = pinsFlagsToLocalValues
         self.remoteFlagValueProvider = remoteFlagValueProvider
-        // Cloud's local value is now a first-use activation marker, so it must
-        // survive tagged debug artifact reloads just like any other persisted
-        // product state. The explicit dogfood marker may still opt a fresh
-        // debug artifact in; only the temporary remote override is reset when
-        // a tagged artifact is reopened.
-        if overrideCapability.enablesCloudDogfood {
-            defaults.set(true, forKey: BetaFeaturesCatalogSection().cloudMachines.userDefaultsKey)
-            defaults.set(true, forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
-        } else if overrideCapability.isTaggedDebugArtifact {
-            defaults.removeObject(forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
-            if overrideCapability.hasCloudDogfoodMarker {
-                defaults.set(false, forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
-            }
-        }
         Self.removeLegacyRemoteState(defaults: defaults)
         localOverridesByKey = Self.allFlags.reduce(into: [:]) { values, definition in
             if let value = Self.storedOverrideValue(for: definition.key, defaults: defaults) {
                 values[definition.key] = value
             }
-        }
-        // Cloud is retired from remote delivery but tagged debug artifacts
-        // still use its persisted local override as a compatibility control.
-        if let value = Self.storedOverrideValue(for: Self.cloudMachinesFlag.key, defaults: defaults) {
-            localOverridesByKey[Self.cloudMachinesFlag.key] = value
         }
         recomputeEffectiveValues()
     }
@@ -401,10 +380,6 @@ final class CmuxFeatureFlags {
             }
             defaults.removeObject(forKey: Self.overrideDefaultsKey(for: definition.key))
         }
-        if localOverridesByKey.removeValue(forKey: Self.cloudMachinesFlag.key) != nil {
-            clearedAnyOverride = true
-        }
-        defaults.removeObject(forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
         guard clearedAnyOverride else { return }
         recomputeEffectiveValues()
         postChangeIfNeeded(previousResolutions: previousResolutions)

@@ -5,8 +5,6 @@ extension ShortcutAction {
     public var displayName: String {
         switch self {
         case .openSettings: return "Settings…"
-        case .openTeamPicker:
-            return String(localized: "shortcut.openTeamPicker.label", defaultValue: "Open Team Picker")
         case .reloadConfiguration: return "Reload Configuration"
         case .showHideAllWindows: return "Show/Hide All Windows"
         case .globalSearch: return "Global Search"
@@ -24,10 +22,6 @@ extension ShortcutAction {
             return String(localized: "shortcut.newLocalWorkspace.label", defaultValue: "New Local Workspace")
         case .newBrowserWorkspace:
             return String(localized: "shortcut.newBrowserWorkspace.label", defaultValue: "New Browser Workspace")
-        case .newCloudWorkspace:
-            return String(localized: "shortcut.newCloudWorkspace.label", defaultValue: "New Cloud Workspace")
-        case .newCloudMachine:
-            return String(localized: "shortcut.newCloudMachine.label", defaultValue: "New Cloud Machine")
         case .saveLayoutTemplate:
             return String(localized: "shortcut.saveLayoutTemplate.label", defaultValue: "Save Layout as Template…")
         case .openFolder: return "Open Folder"
@@ -54,7 +48,6 @@ extension ShortcutAction {
         case .switchRightSidebarToSessions: return "Show Sidebar Vault"
         case .switchRightSidebarToFeed: return "Show Sidebar Feed"
         case .switchRightSidebarToDock: return "Show Sidebar Dock"
-        case .switchRightSidebarToMachines: return "Show Sidebar Cloud"
         case .triggerFlash: return "Flash Focused Panel"
         case .nextSurface: return "Next Surface"
         case .prevSurface: return "Previous Surface"

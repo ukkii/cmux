@@ -1,5 +1,4 @@
 import CmuxFoundation
-import CmuxCloud
 import AppKit
 import CmuxBrowser
 import CmuxTerminalCore

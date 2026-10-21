@@ -38,9 +38,6 @@ struct CmuxCommand: AsyncParsableCommand {
             AuthCommand.self,
             LoginCommand.self,
             LogoutCommand.self,
-            AIAccountsCommand.self,
-            VMCommand.self,
-            RemotesCommand.self,
             RemoteDaemonStatusCommand.self,
             ListWindowsCommand.self,
             CurrentWindowCommand.self,
@@ -140,8 +137,7 @@ struct CmuxCommand: AsyncParsableCommand {
             OMXCommand.self,
             OMCCommand.self,
             AgentHibernationCommand.self,
-            CoderouterCommand.self,
-            VMAgentShortFormCommand.self,
+            AgentShortFormCommand.self,
             CodexTeamsWatchCommand.self,
             CodexTeamsAppServerSupervisorCommand.self,
             NotifyCommand.self,
@@ -199,15 +195,8 @@ struct CmuxCommand: AsyncParsableCommand {
             SSHSessionCleanupCommand.self,
             SSHSessionEndCommand.self,
             SSHPTYAttachCommand.self,
-            VMPtyAttachCommand.self,
-            VMPtyConnectCommand.self,
-            VMTuiConnectCommand.self,
-            VMTuiApproveCommand.self,
-            VMSSHAttachTopLevelCommand.self,
             AutomationCommand.self,
             GlaedaCommand.self,
-            VPNCommand.self,
-            BillingCommand.self,
             SudoCommand.self,
             VaultCommand.self,
             TodoCommand.self,
@@ -229,8 +218,8 @@ struct CmuxCommand: AsyncParsableCommand {
     /// suggestions draw from. The router does not consult it: only
     /// `facadeNativeCommandNames` reach ArgumentParser.
     /// Cached: building this walks every subcommand's `configuration`, which
-    /// evaluates localized abstracts and (for `coderouter`) locates the app
-    /// bundle, so recomputing it on every invocation is measurably slow.
+    /// evaluates localized abstracts, so recomputing it on every invocation is
+    /// measurably slow.
     static let declaredCommandNames: Set<String> = {
         var names: Set<String> = []
         for subcommand in configuration.subcommands {

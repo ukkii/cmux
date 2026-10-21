@@ -20,8 +20,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
     case textBox
     /// Sleepy Mode screensaver + keep-awake lock.
     case sleepyMode
-    /// Cloud Machines: persistent cloud VM plan and entry points.
-    case cloudMachines
     case sidebarAppearance
     /// User/agent-authored custom sidebars: enable gate and renderer choice.
     case customSidebars
@@ -59,7 +57,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
         case .terminal: return String(localized: "settings.section.terminal", defaultValue: "Terminal")
         case .textBox: return String(localized: "settings.section.textBox", defaultValue: "TextBox")
         case .sleepyMode: return String(localized: "settings.section.sleepyMode", defaultValue: "Sleepy Mode")
-        case .cloudMachines: return String(localized: "settings.section.cloudMachines", defaultValue: "Cloud")
         case .sidebarAppearance: return String(localized: "settings.section.sidebarAppearance", defaultValue: "Sidebar")
         case .customSidebars: return String(localized: "settings.section.customSidebars", defaultValue: "Custom Sidebars")
         case .betaFeatures: return String(localized: "settings.section.betaFeatures", defaultValue: "Beta Features")
@@ -84,7 +81,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
         case .terminal: return "terminal"
         case .textBox: return "textformat"
         case .sleepyMode: return "moon.zzz"
-        case .cloudMachines: return "cloud"
         case .sidebarAppearance: return "sidebar.left"
         case .customSidebars: return "sidebar.squares.left"
         case .betaFeatures: return "exclamationmark.triangle"
@@ -111,7 +107,6 @@ public enum SettingsSectionID: String, CaseIterable, Identifiable, Sendable, Has
         case .terminal: return "scrollbar copy on select agent resume hibernation"
         case .textBox: return "textbox text box rich input prompt default new terminal workspace split tab focus show"
         case .sleepyMode: return "sleepy mode screensaver caffeinate keep awake lock touch id battery wifi clock mascot theme glow pixel"
-        case .cloudMachines: return "cloud machines vm virtual machine persistent computer plan upgrade fleet sandbox"
         case .sidebarAppearance: return "sidebar details branches material terminal background"
         case .customSidebars: return "custom sidebars vibe swift json interpreted renderer in-process remote worker isolated"
         case .betaFeatures: return "beta experimental unstable feed right sidebar"

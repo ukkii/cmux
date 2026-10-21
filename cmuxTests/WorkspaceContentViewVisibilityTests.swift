@@ -239,7 +239,7 @@ final class WorkspaceContentViewVisibilityTests {
         for _ in 0..<7 {
             tabManager.addWorkspace(
                 workingDirectory: projectRoot.path,
-                initialSurface: .cloudVMLoading,
+                initialSurface: .browser,
                 select: tabManager.tabs.isEmpty,
                 autoWelcomeIfNeeded: false
             )
@@ -363,13 +363,13 @@ final class WorkspaceContentViewVisibilityTests {
         // state, so the count below depended on how fast the runner was.
         let tabManager = TabManager(autoWelcomeIfNeeded: false, createInitialWorkspace: false)
         let selectedWorkspace = tabManager.addWorkspace(
-            initialSurface: .cloudVMLoading,
+            initialSurface: .browser,
             select: true,
             autoWelcomeIfNeeded: false
         )
         let workspaceId = selectedWorkspace.id
         let unaffectedWorkspace = tabManager.addWorkspace(
-            initialSurface: .cloudVMLoading,
+            initialSurface: .browser,
             select: false,
             autoWelcomeIfNeeded: false
         )

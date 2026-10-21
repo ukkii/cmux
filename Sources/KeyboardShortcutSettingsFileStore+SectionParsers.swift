@@ -39,13 +39,6 @@ extension CmuxSettingsFileStore {
             snapshot: &snapshot
         )
         parseBetaToggle(
-            root["cloud"] as? [String: Any],
-            nestedPath: ["beta", "machines", "enabled"],
-            setting: betaFeatures.cloudMachines,
-            sourcePath: sourcePath,
-            snapshot: &snapshot
-        )
-        parseBetaToggle(
             root["remoteTmux"] as? [String: Any],
             nestedPath: ["beta", "enabled"],
             setting: betaFeatures.remoteTmux,

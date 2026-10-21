@@ -49,11 +49,9 @@ public struct SettingsWindowRoot: View {
         let defaults = UserDefaults.standard
         let restoredSection = defaults.string(forKey: Self.selectedSectionDefaultsKey)
             .flatMap(SettingsSectionID.init(rawValue:)) ?? .account
-        let cloudAvailable = !ManagedDevicePolicy().isEnforced(.disableCloud)
-            && runtime.hostActions.isCloudMachinesAvailable
         _mountModel = State(initialValue: mountModel ?? SettingsSectionMountModel(
             initial: initialSection ?? restoredSection,
-            order: Self.mountOrder(cloudAvailable: cloudAvailable)
+            order: Self.mountOrder()
         ))
     }
     /// A targeted open's section, shown until the first navigation request
@@ -64,15 +62,10 @@ public struct SettingsWindowRoot: View {
     /// section that was mounted before is rebuilt when it becomes active
     /// again, so its rows only exist once this matches.
     @State var shownPaneSection: SettingsSectionID?
-    @State private var cloudDisabledByPolicy = ManagedDevicePolicy().isEnforced(.disableCloud)
-    @State private var cloudFeatureFlagRevision = 0
     /// Never read in this body, so a keystroke does not re-render the root
     /// or its detail pane; see ``SettingsSearchQuery``.
     @State private var searchQuery: SettingsSearchQuery
 
-    var cloudSectionIdentity: String {
-        "cloud-machines-section-\(cloudFeatureFlagRevision)"
-    }
     /// Loaded when the window opens so the App pane renders its agent
     /// sound matrix at full height on every visit.
     @State var soundAgentCache = NotificationSoundAgentCache()
@@ -122,13 +115,6 @@ public struct SettingsWindowRoot: View {
     var catalog: SettingCatalog { runtime.catalog }
     var hostActions: SettingsHostActions { runtime.hostActions }
     var accountFlow: AccountFlow? { runtime.accountFlow }
-    /// Whether the Cloud section (and its sidebar row) is offered at all. The
-    /// host owns the managed-policy decision; first-use activation belongs to
-    /// the Cloud tab itself.
-    var isCloudSectionAvailable: Bool {
-        _ = cloudFeatureFlagRevision
-        return !cloudDisabledByPolicy && hostActions.isCloudMachinesAvailable
-    }
     /// Resolves the selected section pane from the persisted raw value,
     /// defaulting to ``SettingsSectionID/account`` when the stored value
     /// is unrecognized (e.g., after dropping a case).
@@ -163,8 +149,7 @@ public struct SettingsWindowRoot: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SettingsSidebarList(
                 query: searchQuery,
-                selection: sidebarSelectionBinding,
-                isCloudSectionAvailable: isCloudSectionAvailable
+                selection: sidebarSelectionBinding
             )
         } detail: {
             detailScroll
@@ -191,17 +176,6 @@ public struct SettingsWindowRoot: View {
             }
         }
         .task {
-            let signals = ManagedDevicePolicy.changeSignals()
-            cloudDisabledByPolicy = ManagedDevicePolicy().isEnforced(.disableCloud)
-            // A profile installed before this window opened: the persisted
-            // selection may still point at the hidden Cloud section.
-            leaveCloudSectionIfDisabledByPolicy()
-            for await _ in signals {
-                cloudDisabledByPolicy = ManagedDevicePolicy().isEnforced(.disableCloud)
-                leaveCloudSectionIfDisabledByPolicy()
-            }
-        }
-        .task {
             await soundAgentCache.loadIfNeeded { await hostActions.notificationSoundAgentOptions() }
         }
         .onReceive(NotificationCenter.default.publisher(for: Self.sidebarToggleRequestName)) { _ in
@@ -209,10 +183,6 @@ public struct SettingsWindowRoot: View {
             // reach the split view; the host app routes its sidebar-toggle
             // menu command here when the Settings window is key.
             columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("cmuxFeatureFlagsDidChange"))) { _ in
-            cloudFeatureFlagRevision &+= 1
-            leaveCloudSectionIfDisabledByPolicy()
         }
     }
     public static let navigationRequestName = Notification.Name("cmux.settings.navigate")
@@ -239,20 +209,6 @@ public struct SettingsWindowRoot: View {
             && selectedEntry != nil
             && selectedEntryTarget == target
         navigate(to: target, preferSectionSelection: !shouldPreserveSearchSelection)
-    }
-
-    /// Moves a selection that rests on an unavailable Cloud section to Account,
-    /// both at first render and on a transition.
-    private func leaveCloudSectionIfDisabledByPolicy() {
-        if !isCloudSectionAvailable {
-            // If the Cloud slot is the outstanding progressive mount, its
-            // intentionally empty content has no onAppear to advance the
-            // queue. Skip it explicitly so later sections still mount.
-            _ = mountModel.skip(.cloudMachines)
-        }
-        if !isCloudSectionAvailable && selectedSection == .cloudMachines {
-            navigate(to: .account)
-        }
     }
 
     func sidebarEntries(matching query: String) -> [SettingsSearchIndex.Entry] { searchIndex.match(query) }

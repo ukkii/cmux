@@ -68,7 +68,6 @@ extension ShortcutAction {
     private var builtInDefaultStroke: ShortcutStroke? {
         switch self {
         case .openSettings: return ShortcutStroke(key: ",", command: true)
-        case .openTeamPicker: return ShortcutStroke(key: "t", command: true, shift: true, option: true)
         case .reloadConfiguration: return ShortcutStroke(key: ",", command: true, shift: true)
         case .showHideAllWindows: return ShortcutStroke(key: ".", command: true, option: true, control: true)
         case .globalSearch: return ShortcutStroke(key: "f", command: true, option: true)
@@ -82,8 +81,6 @@ extension ShortcutAction {
         case .newTab: return ShortcutStroke(key: "n", command: true)
         case .newLocalWorkspace: return ShortcutStroke(key: "n", command: true, option: true, control: true)
         case .newBrowserWorkspace: return ShortcutStroke(key: "n", command: true, option: true)
-        case .newCloudWorkspace: return ShortcutStroke(key: "y", command: true)
-        case .newCloudMachine: return ShortcutStroke(key: "y", command: true, shift: true)
         case .saveLayoutTemplate: return ShortcutStroke(key: "s", command: true, control: true)
         case .openFolder: return ShortcutStroke(key: "o", command: true)
         case .reopenPreviousSession: return ShortcutStroke(key: "o", command: true, shift: true)
@@ -105,7 +102,6 @@ extension ShortcutAction {
         case .switchRightSidebarToSessions: return ShortcutStroke(key: "3", control: true)
         case .switchRightSidebarToFeed: return ShortcutStroke(key: "4", control: true)
         case .switchRightSidebarToDock: return ShortcutStroke(key: "5", control: true)
-        case .switchRightSidebarToMachines: return ShortcutStroke(key: "6", control: true)
         case .triggerFlash: return ShortcutStroke(key: "h", command: true, shift: true)
         case .nextSidebarTab: return ShortcutStroke(key: "]", command: true, control: true)
         case .prevSidebarTab: return ShortcutStroke(key: "[", command: true, control: true)

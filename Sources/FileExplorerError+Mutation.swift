@@ -36,7 +36,7 @@ extension FileExplorerError {
         }
     }
 
-    /// Maps the exit status of a remote (SSH or Cloud) mutation script.
+    /// Maps the exit status of a remote (SSH) mutation script.
     ///
     /// Both remote paths use ``SSHFileExplorerMutationCommand/alreadyExistsStatus``
     /// and ``SSHFileExplorerMutationCommand/permissionDeniedStatus``.

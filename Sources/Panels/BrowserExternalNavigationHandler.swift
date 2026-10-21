@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxBrowser
 import CmuxCore

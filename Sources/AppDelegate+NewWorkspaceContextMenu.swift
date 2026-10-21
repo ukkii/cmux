@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import Foundation
 
@@ -74,15 +73,13 @@ extension AppDelegate {
 
     func makeNewWorkspaceContextMenu(
         context: MainWindowContext,
-        cmuxConfigStore: CmuxConfigStore,
-        isAuthenticated: Bool? = nil
+        cmuxConfigStore: CmuxConfigStore
     ) -> NSMenu? {
-        let isAuthenticated = isAuthenticated ?? (AppDelegate.shared?.auth?.accountFlow.isAuthenticated == true)
         let model = NewWorkspaceMenuModel.build(
             newWorkspaceContextMenuItems: cmuxConfigStore.newWorkspaceContextMenuItems.filter { item in
                 guard case .action(let menuAction) = item,
                       case .builtIn(let builtIn) = menuAction.action.action else { return true }
-                return Self.isBuiltInActionAvailableInNewWorkspaceMenu(builtIn, isAuthenticated: isAuthenticated)
+                return Self.isBuiltInActionAvailableInNewWorkspaceMenu(builtIn)
             },
             agentChatAction: resolvedBuiltInNewAgentChatAction(cmuxConfigStore: cmuxConfigStore),
             templateNames: savedLayoutNames(),
@@ -104,13 +101,9 @@ extension AppDelegate {
     /// opens (not at config load) so flag and setting flips apply at once.
     /// Mirrors the command palette's gates for the same actions.
     static func isBuiltInActionAvailableInNewWorkspaceMenu(
-        _ action: CmuxSurfaceTabBarBuiltInAction,
-        isAuthenticated: Bool? = nil
+        _ action: CmuxSurfaceTabBarBuiltInAction
     ) -> Bool {
         switch action {
-        case .newCloudWorkspace, .newCloudMachine, .cloudVM:
-            return CloudMachinesFeature.isEnabled
-                && (isAuthenticated ?? (AppDelegate.shared?.auth?.accountFlow.isAuthenticated == true))
         case .newBrowser, .newAgentChat:
             return BrowserAvailabilitySettings.isEnabled()
         case .newSimulator:

@@ -1,7 +1,6 @@
 import CmuxSSHClipboardTrust
 import AppKit
 import CmuxAgentChat
-import CmuxCloudMachines
 import CmuxFoundation
 import CmuxTerminalCore
 import SwiftUI
@@ -224,10 +223,6 @@ class TabManager: ObservableObject {
         (windowDockTitleRoutingStores.objectEnumerator()?.allObjects as? [DockSplitStore]) ?? []
     }
     let workspaceSwitchCoordinator = WorkspaceSwitchCoordinator()
-    let cloudWorkspaceSelection: CloudWorkspaceSelectionState
-    /// Shared by the inline Cloud sidebar and any Cloud tool pane in this
-    /// window so CodeRouter reads and removals never overlap.
-    let coderouterAccountStore = CoderouterAccountStore()
 
     var tabs: [Workspace] {
         get { workspaces.tabs }
@@ -290,7 +285,6 @@ class TabManager: ObservableObject {
     /// Legacy `@Published selectedTabId` willSet; `selectedTabId` still
     /// reads the old value here, exactly like the original property observer.
     func selectedWorkspaceIdWillChange(to newValue: UUID?) {
-        recordCloudWorkspaceSelection()
         if !isRestoringSessionSnapshot {
             let terminalTarget = newValue
                 .flatMap { workspacesById[$0] }
@@ -341,7 +335,6 @@ class TabManager: ObservableObject {
     /// chain, run synchronously after storage changed.
     func selectedWorkspaceIdDidChange(from oldValue: UUID?) {
             guard selectedTabId != oldValue else { return }
-            recordCloudWorkspaceSelection()
             defer {
                 workspaceSwitchCoordinator.selectionDidCommit(
                     from: oldValue,
@@ -598,13 +591,11 @@ class TabManager: ObservableObject {
         closeTabWarningDefaults: UserDefaults = .standard,
         managedDevicePolicy: ManagedDevicePolicy = ManagedDevicePolicy(),
         fileContentChangeCoordinator: FileContentChangeCoordinator? = nil,
-        cloudWorkspaceSelection: CloudWorkspaceSelectionState? = nil,
         sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore? = nil
     ) {
         let tabDragTransferRegistry = tabDragTransferRegistry ?? TabDragTransferRegistry()
         self.managedDevicePolicy = managedDevicePolicy
         self.sshClipboardWriteTrustStore = sshClipboardWriteTrustStore ?? SSHClipboardWriteTrustStore(defaults: .standard)
-        self.cloudWorkspaceSelection = cloudWorkspaceSelection ?? CloudWorkspaceSelectionState(scopeProvider: { nil })
         self.settings = settings
         self.defaultWorkspaceWorkingDirectoryProvider = defaultWorkspaceWorkingDirectoryProvider
         self.ghosttyWorkingDirectoryInheritanceProvider = ghosttyWorkingDirectoryInheritanceProvider
@@ -873,8 +864,6 @@ class TabManager: ObservableObject {
     }
 
     func gitProbeDirectory(for workspace: Workspace, panelId: UUID) -> String? {
-        // Cloud cwd belongs to another machine and is never a local git/gh probe target.
-        if workspace.cloudDirectoryProvenanceRequired(panelId: panelId) { return nil }
         if let directory = workspace.reportedPanelDirectory(panelId: panelId) { return normalizedWorkingDirectory(directory) }
         guard workspace.allowsLocalDirectoryFallback(panelId: panelId) else { return nil }
         let rawDirectory = workspace.terminalPanel(for: panelId)?.requestedWorkingDirectory ?? (!workspace.usesRemoteDirectoryProvenance && workspace.focusedPanelId == panelId ? workspace.currentDirectory : nil)
@@ -1473,8 +1462,6 @@ class TabManager: ObservableObject {
                 // single-panel title sync keeps the workspace title following
                 // the page title once the user navigates.
                 defaultTitle = String(localized: "browser.newTab", defaultValue: "New tab")
-            case .cloudVMLoading:
-                defaultTitle = String(localized: "workspace.cloudVM.defaultTitle", defaultValue: "Cloud VM")
             }
             let newWorkspace = makeWorkspaceForCreation(
                 id: id,
@@ -2632,7 +2619,6 @@ class TabManager: ObservableObject {
         // manager may close its own live workspaces; stale or foreign objects must
         // never tear down terminals or publish a second close.
         guard tabs.contains(where: { $0.id == workspace.id }) else { return }
-        MachineCreateCoordinator.shared.cancelOperations(forPresentationWorkspace: workspace.id)
         panelTitleUpdateCoalescer.flushNow()
         // Closing a mirrored remote tmux workspace DETACHES from the remote session,
         // leaving it alive on the server for resume. Killing the session is never a
@@ -2724,7 +2710,6 @@ class TabManager: ObservableObject {
         panelTitleUpdateCoalescer.flushNow()
         sidebarGitMetadataService.resetAllWorkspaceGitProbeTracking()
 
-        MachineCreateCoordinator.shared.cancelOperations(forPresentationWorkspaces: Set(closingWorkspaces.map(\.id)))
         for workspace in closingWorkspaces {
             finalizeWorkspaceForRemoval(workspace, clearsWorkspaceGitProbes: false)
         }
@@ -5248,8 +5233,8 @@ class TabManager: ObservableObject {
         excludingStableIdentities callerExcludedStableIdentities: Set<UUID> = [],
         excludingWorkspaceIds callerExcludedWorkspaceIds: Set<UUID> = []
     ) -> Bool {
-        guard !managedDevicePolicy.isEnforced(.disableCloud)
-                || !Self.isCloudVMWorkspaceSnapshotForManagedPolicy(entry.snapshot) else {
+        // cmux Cloud was removed; a closed Cloud workspace has nothing to reopen.
+        guard !Self.isLegacyCloudWorkspaceSnapshot(entry.snapshot) else {
             return false
         }
         let promptBatch = SurfaceResumeRunPromptBatch.shared
@@ -7056,52 +7041,27 @@ extension TabManager {
         }
         workspace.retireFromOwningTabManager()
     }
-    /// - Parameter cloudDisabledByPolicy: The `DisableCloud` managed policy.
-    ///   While forced, no Cloud workspace is restored at all: a restored Cloud
-    ///   tab is a dead pane at best and an attach entrypoint at worst.
-    static func normalizedCloudVMSessionRestoreWorkspaces<S: Sequence>(
+    /// Drops workspaces of the removed cmux Cloud product from a restore. A
+    /// restored Cloud tab would be a dead pane. Selection follows the same
+    /// local workspace; a dropped selection falls back to the first survivor
+    /// (the caller creates a fresh local workspace when nothing survives).
+    static func droppingLegacyCloudSessionRestoreWorkspaces<S: Sequence>(
         _ snapshots: S,
-        selectedWorkspaceIndex: Int?,
-        cloudDisabledByPolicy: Bool = ManagedDevicePolicy().isEnforced(.disableCloud)
+        selectedWorkspaceIndex: Int?
     ) -> ([SessionWorkspaceSnapshot], Int?) where S.Element == SessionWorkspaceSnapshot {
         let snapshots = Array(snapshots)
-        if cloudDisabledByPolicy {
-            var indexMap: [Int: Int] = [:]
-            var filtered: [SessionWorkspaceSnapshot] = []
-            for (index, snapshot) in snapshots.enumerated()
-            where !isCloudVMWorkspaceSnapshotForManagedPolicy(snapshot) {
-                indexMap[index] = filtered.count
-                filtered.append(snapshot)
-            }
-            // Selection follows the same local workspace; a dropped Cloud
-            // selection falls back to the first survivor (the caller creates a
-            // fresh local workspace when nothing survives).
-            let remappedSelection = selectedWorkspaceIndex.flatMap { indexMap[$0] }
-                ?? (filtered.isEmpty ? nil : 0)
-            return (filtered, remappedSelection)
-        }
-        let cloudIndexes = snapshots.indices.filter { isCloudVMSessionRestoreWorkspace(snapshots[$0]) }
-        guard !cloudIndexes.isEmpty else {
-            return (snapshots, selectedWorkspaceIndex)
-        }
-
-        let managedCloudIndexes = cloudIndexes.filter { isManagedCloudVMSessionRestoreWorkspace(snapshots[$0]) }
-        let selectedManagedCloudIndex = selectedWorkspaceIndex.flatMap { selected in
-            managedCloudIndexes.contains(selected) ? selected : nil
-        }
-        let keptCloudIndex = selectedManagedCloudIndex ?? managedCloudIndexes.first
         var indexMap: [Int: Int] = [:]
         var filtered: [SessionWorkspaceSnapshot] = []
-        for (index, snapshot) in snapshots.enumerated() {
-            if cloudIndexes.contains(index), index != keptCloudIndex {
-                continue
-            }
+        for (index, snapshot) in snapshots.enumerated()
+        where !isLegacyCloudWorkspaceSnapshot(snapshot) {
             indexMap[index] = filtered.count
             filtered.append(snapshot)
         }
-
+        guard filtered.count != snapshots.count else {
+            return (snapshots, selectedWorkspaceIndex)
+        }
         let remappedSelection = selectedWorkspaceIndex.flatMap { indexMap[$0] }
-            ?? keptCloudIndex.flatMap { indexMap[$0] }
+            ?? (filtered.isEmpty ? nil : 0)
         return (filtered, remappedSelection)
     }
 
@@ -7147,10 +7107,9 @@ extension TabManager {
         // mountedWorkspaceIds empty and cause a frozen blank launch state (#399).
         var newTabs: [Workspace] = []
         var restoredPanelIdsByWorkspaceIndex: [[UUID: UUID]] = []
-        let (normalizedWorkspaceSnapshots, selectedWorkspaceIndex) = Self.normalizedCloudVMSessionRestoreWorkspaces(
+        let (normalizedWorkspaceSnapshots, selectedWorkspaceIndex) = Self.droppingLegacyCloudSessionRestoreWorkspaces(
             snapshot.workspaces.prefix(SessionPersistencePolicy.maxWorkspacesPerWindow),
-            selectedWorkspaceIndex: snapshot.selectedWorkspaceIndex,
-            cloudDisabledByPolicy: managedDevicePolicy.isEnforced(.disableCloud)
+            selectedWorkspaceIndex: snapshot.selectedWorkspaceIndex
         )
         let workspaceSnapshots = normalizedWorkspaceSnapshots
             .prefix(SessionPersistencePolicy.maxWorkspacesPerWindow)

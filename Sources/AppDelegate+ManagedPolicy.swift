@@ -1,10 +1,9 @@
-import CmuxCloud
 import AppKit
 import CmuxSettings
 import Foundation
 
-/// Runtime enforcement for MDM managed policies (`DisableEmbeddedBrowser`,
-/// `DisableCloud`, and `DisableRemoteConnections`):
+/// Runtime enforcement for MDM managed policies (`DisableEmbeddedBrowser`
+/// and `DisableRemoteConnections`):
 /// installs the transition observer and tears down live resources when a
 /// policy activates mid-session.
 extension AppDelegate {
@@ -21,9 +20,6 @@ extension AppDelegate {
             enforceBrowserURLAllowlistPolicy: { [weak self] in
                 self?.enforceBrowserURLAllowlistPolicy()
             },
-            enforceCloudPolicy: { [weak self] in
-                self?.applyManagedCloudPolicy()
-            },
             enforceRemoteConnectionsPolicy: { [weak self] in
                 self?.endRemoteConnectionsForManagedPolicy()
             },
@@ -34,41 +30,6 @@ extension AppDelegate {
                 self?.reconcileSocketListenerConfiguration(source: "managed_policy")
             }
         )
-        cloudFeatureFlagObserver = CloudFeatureAvailabilityObserver(
-            isEnabled: { CloudMachinesFeature.isEnabled },
-            didChange: { [weak self] enabled in self?.applyCloudFeatureFlag(enabled: enabled) }
-        )
-    }
-
-    /// Applies a remote Cloud flag transition at the owning attachment
-    /// boundary. Existing workspace configurations and catalog identities stay
-    /// persisted; only controllers, retries, and transport tasks are stopped.
-    func applyCloudFeatureFlag(enabled: Bool) {
-        if !enabled {
-            MachineCreateCoordinator.shared.cancelAllForAuthTransition(cleanupCreatedMachines: false)
-            CloudVMActionLauncher.shared.cancelAllForAuthTransition()
-            cloudWorkspaceOperationController?.cancelAll()
-            let detail = String(
-                localized: "cloud.feature.disabled",
-                defaultValue: "Cloud Machines are temporarily unavailable."
-            )
-            for manager in allTabManagersForManagedPolicyEnforcement() {
-                for workspace in manager.tabs where workspace.isManagedCloudVMWorkspace {
-                    workspace.disconnectRemoteConnection(
-                        clearConfiguration: false,
-                        disconnectedDetail: detail
-                    )
-                }
-            }
-        } else {
-            for manager in allTabManagersForManagedPolicyEnforcement() {
-                for workspace in manager.tabs where workspace.isManagedCloudVMWorkspace {
-                    guard let configuration = workspace.remoteConfiguration else { continue }
-                    _ = workspace.configureRemoteConnection(configuration, autoConnect: true)
-                }
-            }
-        }
-        CmuxTuiSurfaceProviderRegistry.shared.syncPollingToActivationPolicy()
     }
 
     /// `DisableComputerUse` transitions, both directions: activation stops the
@@ -88,7 +49,7 @@ extension AppDelegate {
     }
 
     /// `DisableRemoteConnections` activation. Every live cmux-created remote
-    /// connection ends: remote workspaces (SSH, Mosh, and Cloud attachments)
+    /// connection ends: remote workspaces (SSH and Mosh)
     /// disconnect and drop their configuration so no reconnect path can
     /// redial, remote tmux mirrors detach and close, and their SSH control
     /// masters exit. Remote tmux sessions stay alive on their hosts; only
@@ -106,40 +67,6 @@ extension AppDelegate {
             }
         }
         remoteTmuxController.detachAllForManagedPolicy()
-    }
-
-    /// `DisableCloud` transitions, both directions. Activation ends Cloud
-    /// access through the same path sign-out uses — Cloud workspaces, their
-    /// closed-history records, in-flight launcher children, and the managed
-    /// VPN configuration — after the surface registry drops its providers and
-    /// private-network links. Lifting the policy restarts Cloud discovery so
-    /// the sidebar and surface catalog return without a relaunch; every
-    /// per-call gate (`CloudMachinesFeature`, `VMClient`, the tunnel
-    /// coordinator, the socket verbs) already reads the live policy.
-    /// Transitions are serialized on ``managedCloudPolicyTask`` and the policy
-    /// is re-read after every suspension, so a lift that arrives while a
-    /// teardown is still running cannot be overtaken by it.
-    func applyManagedCloudPolicy() {
-        let previous = managedCloudPolicyTask
-        managedCloudPolicyTask = Task { @MainActor [weak self] in
-            _ = await previous?.value
-            guard let self else { return }
-            guard ManagedDevicePolicy().isEnforced(.disableCloud) else {
-                CmuxTuiSurfaceProviderRegistry.shared.start(catalog: .shared)
-                return
-            }
-            await CmuxTuiSurfaceProviderRegistry.shared.accessDidEnd()
-            guard ManagedDevicePolicy().isEnforced(.disableCloud) else {
-                // The profile was removed mid-teardown: Cloud is allowed again,
-                // so restart discovery instead of ending live access.
-                CmuxTuiSurfaceProviderRegistry.shared.start(catalog: .shared)
-                return
-            }
-            self.endCloudVMAccess(reason: .managedPolicy)
-            // endCloudVMAccess starts VPN removal too. Discovery cannot be
-            // re-armed until that part of the same transition has drained.
-            await self.cloudTunnelTeardownTask?.value
-        }
     }
 
     /// Closes every live browser pane — main area and Docks, across all

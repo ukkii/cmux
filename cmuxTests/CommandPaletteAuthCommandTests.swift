@@ -18,33 +18,12 @@ struct CommandPaletteAuthCommandTests {
         #expect(visibleAuthCommandIDs(context) == [ContentView.commandPaletteAuthSignInCommandId])
     }
 
-    @Test func signedInContextShowsSignOutAndTeamPicker() {
-        var context = CommandPaletteContextSnapshot()
-        context.setBool(CommandPaletteContextKeys.authSignedIn, true)
-        context.setBool(CommandPaletteContextKeys.authWorking, false)
-        #expect(visibleAuthCommandIDs(context) == [
-            ContentView.commandPaletteAuthSignOutCommandId,
-            ContentView.commandPaletteAuthTeamPickerCommandId,
-            ContentView.commandPaletteAuthTeamMembersCommandId
-        ])
-    }
-
     @Test(arguments: [false, true])
     func workingAuthContextHidesAccountCommands(signedIn: Bool) {
         var context = CommandPaletteContextSnapshot()
         context.setBool(CommandPaletteContextKeys.authSignedIn, signedIn)
         context.setBool(CommandPaletteContextKeys.authWorking, true)
         #expect(visibleAuthCommandIDs(context).isEmpty)
-    }
-
-    @Test func teamPickerIsACloudCommandUsingTheCustomizableShortcut() throws {
-        let command = try #require(ContentView.commandPaletteAuthCommandContributions().first {
-            $0.commandId == ContentView.commandPaletteAuthTeamPickerCommandId
-        })
-        #expect(command.subtitle(CommandPaletteContextSnapshot()) == String(
-            localized: "command.cloudVM.subtitle", defaultValue: "Cloud"
-        ))
-        #expect(ContentView.commandPaletteShortcutAction(forCommandID: command.commandId) == .openTeamPicker)
     }
 
     private func visibleAuthCommandIDs(_ context: CommandPaletteContextSnapshot) -> [String] {

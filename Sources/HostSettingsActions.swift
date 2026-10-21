@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxComputerUse
 import AppKit
 import CMUXMobileCore
@@ -14,7 +13,6 @@ nonisolated private let hostSettingsLogger = Logger(subsystem: "com.cmuxterm.app
 /// Routes Settings actions to app-owned services, keeping the package independent.
 @MainActor
 final class HostSettingsActions: SettingsHostActions {
-    var cloudActivationCoordinator: CloudActivationCoordinator?
     private let configFileURL: URL
     private let browserDataImportCoordinator: BrowserDataImportCoordinator
     private let automationConfigStore: AutomationConfigStore
@@ -73,11 +71,9 @@ final class HostSettingsActions: SettingsHostActions {
             )
             alert.runModal()
         },
-        cloudActivationCoordinator: CloudActivationCoordinator? = nil,
         runComputerUseOnboardingAction:
             @escaping @MainActor (ComputerUseOnboardingWindowController.StartingPoint) -> Void
     ) {
-        self.cloudActivationCoordinator = cloudActivationCoordinator
         self.configFileURL = configFileURL
         self.automationConfigStore = automationConfigStore
         self.openAutomationRulesFile = openAutomationRulesFile

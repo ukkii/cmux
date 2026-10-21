@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxSurfaceCatalogModel
 import CmuxFoundation
 import CmuxNotifications
@@ -3014,5 +3013,44 @@ final class TerminalNotificationStore: ObservableObject {
             runTag: TaggedRunBadgeSettings.normalizedTag()
         )
         NSApp?.dockTile.badgeLabel = label
+    }
+}
+
+extension TerminalNotificationPolicyEffects {
+    /// Applies the admitted workspace-reorder effect under the live setting.
+    /// `off` never reorders, `notifications` moves the workspace at once, and
+    /// `agentActivity` routes the move through the shared activity throttle,
+    /// which moves the workspace itself.
+    @MainActor
+    func applySidebarOrdering(
+        defaults: UserDefaults,
+        workspaceId: UUID,
+        controller: WorkspaceActivityReorderController? = nil,
+        moveLocalWorkspace: () -> Void
+    ) {
+        guard reorderWorkspace else { return }
+        switch UserDefaultsSettingsClient(defaults: defaults).value(for: SettingCatalog().app.reorderOnNotification) {
+        case .off:
+            return
+        case .notifications:
+            moveLocalWorkspace()
+        case .agentActivity:
+            (controller ?? .shared).notificationRequestsReorder(workspaceId: workspaceId)
+        }
+    }
+}
+
+extension TerminalNotificationStore {
+    /// Both notification effect lanes use the same ordering path. The caller
+    /// already applied mute, cooldown, effect policy, and the reorder setting.
+    func applySidebarOrdering(for notification: TerminalNotification, effects: TerminalNotificationPolicyEffects) {
+        effects.applySidebarOrdering(
+            defaults: .standard,
+            workspaceId: notification.tabId,
+            moveLocalWorkspace: {
+                AppDelegate.shared?.tabManagerFor(tabId: notification.tabId)?
+                    .moveTabToTopForNotification(notification.tabId)
+            }
+        )
     }
 }

@@ -55,9 +55,6 @@
       <FileRef
          location = "group:CmuxTerminalPrediction">
       </FileRef>
-      <FileRef
-         location = "group:CmuxTerminalSizing">
-      </FileRef>
    </Group>
    <Group
       location = "container:Packages/iOS"
@@ -170,24 +167,6 @@
       </FileRef>
       <FileRef
          location = "group:CmuxChief">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxCloud">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxCloudBannerCore">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxCloudImagePaste">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxCloudMachines">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxCloudResizeCore">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxCloudTui">
       </FileRef>
       <FileRef
          location = "group:CmuxCommandPalette">

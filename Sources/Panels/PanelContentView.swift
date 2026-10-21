@@ -201,13 +201,6 @@ struct PanelContentView: View {
                     onRequestPanelFocus: onRequestPanelFocus
                 )
             }
-        case .coderouterGuide:
-            if panel is CoderouterGuidePanel {
-                CoderouterGuidePanelView(
-                    isFocused: isFocused,
-                    onRequestPanelFocus: onRequestPanelFocus
-                )
-            }
         case .notifications:
             if panel is NotificationsPanel {
                 NotificationsPage(
@@ -217,23 +210,10 @@ struct PanelContentView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { onRequestPanelFocus() }
             }
-        case .cloudVMLoading:
-            if let loadingPanel = panel as? CloudVMLoadingPanel {
-                CloudVMLoadingPanelView(panel: loadingPanel)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
         case .accountSignIn:
             if let accountSignInPanel = panel as? AccountSignInPanel {
                 AccountSignInPanelView(
                     panel: accountSignInPanel,
-                    appearance: appearance,
-                    onRequestPanelFocus: onRequestPanelFocus
-                )
-            }
-        case .cloudVPNSetup:
-            if let cloudVPNSetupPanel = panel as? CloudVPNSetupPanel {
-                CloudVPNSetupPanelView(
-                    model: cloudVPNSetupPanel.model,
                     appearance: appearance,
                     onRequestPanelFocus: onRequestPanelFocus
                 )
@@ -267,7 +247,7 @@ struct PanelContentView: View {
     private var shouldInstallPaneDropTarget: Bool {
         guard isVisibleInUI else { return false }
         switch panel.panelType {
-        case .markdown, .filePreview, .rightSidebarTool, .customSidebar, .simulator, .agentSession, .project, .extensionBrowser, .workspaceTodo, .coderouterGuide, .notifications, .cloudVMLoading, .accountSignIn, .cloudVPNSetup, .chief:
+        case .markdown, .filePreview, .rightSidebarTool, .customSidebar, .simulator, .agentSession, .project, .extensionBrowser, .workspaceTodo, .notifications, .accountSignIn, .chief:
             return true
         case .terminal, .browser:
             return false

@@ -57,8 +57,6 @@ extension SocketClient {
                     v2Code: error["code"] as? String,
                     isStructuredProtocolResponse: true,
                     v2Retryable: data?["retryable"] as? Bool == true,
-                    vmBackendCode: data?["backend_code"] as? String,
-                    vmBackendHTTPStatus: (data?["http_status"] as? NSNumber)?.intValue,
                     v2Method: method
                 )
                 // Admission rejects these before dispatch: `rate_limited` for
@@ -128,28 +126,10 @@ extension SocketClient {
               }) else {
             throw CLIError(message: "Invalid v2 request id")
         }
-        var tracedParams = params
-        if method.hasPrefix("vm.") {
-            for (key, env) in [("cloud_operation_id", "CMUX_CLOUD_OPERATION_ID"),
-                               ("cloud_trace_id", "CMUX_CLOUD_TRACE_ID"),
-                               ("cloud_parent_span_id", "CMUX_CLOUD_PARENT_SPAN_ID")] {
-                if let value = ProcessInfo.processInfo.environment[env] { tracedParams[key] = value }
-            }
-            // Keep the cloud control-plane request inside the CLI's remaining
-            // budget, including when the caller retries an admission rejection.
-            let requestDeadline = min(
-                deadline ?? .distantFuture,
-                Date.now.addingTimeInterval(responseTimeout ?? Self.responseTimeoutSeconds)
-            )
-            let remaining = requestDeadline.timeIntervalSinceNow
-            if remaining.isFinite, remaining > 0, remaining < 86_400 {
-                tracedParams["cloud_client_timeout_ms"] = Int(remaining * 1_000)
-            }
-        }
         var request: [String: Any] = [
             "id": requestIdentifier,
             "method": method,
-            "params": tracedParams
+            "params": params
         ]
         if includeCapability,
            let ruleID = ProcessInfo.processInfo.environment["CMUX_AUTOMATION_RULE_ID"],

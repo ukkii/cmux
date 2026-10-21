@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxSurfaceCatalogModel
 import AppKit
 import Bonsplit
@@ -13,7 +12,7 @@ import Foundation
 protocol PaneDropContainer: AnyObject {
     var surfaceOwnershipPolicy: SurfaceOwnershipPolicy { get }
     /// Whether this container accepts pane-transfer payloads (surfaces, Vault
-    /// sessions, Cloud rows, sidebar tools). File drops are routed separately.
+    /// sessions, surface resources, sidebar tools). File drops are routed separately.
     var acceptsPaneTransfers: Bool { get }
     func surfaceDropRejection(
         _ transfer: PaneDragTransfer,
@@ -49,7 +48,7 @@ protocol PaneDropContainer: AnyObject {
         destination: BonsplitController.ExternalTabDropRequest.Destination
     ) -> Bool
 
-    /// Projects a Cloud tree row (one resource, or a workspace's collection) at this destination.
+    /// Projects a dragged surface resource group at this destination.
     func performPortalSurfaceResourceDrop(
         group: SurfaceResourceGroup,
         destination: BonsplitController.ExternalTabDropRequest.Destination
@@ -258,7 +257,7 @@ extension PaneDropContainer {
         nil
     }
 
-    /// Declines Cloud rows for containers that cannot host a projected surface (the Dock).
+    /// Declines surface resources for containers that cannot host a projected surface (the Dock).
     func performPortalSurfaceResourceDrop(
         group _: SurfaceResourceGroup,
         destination _: BonsplitController.ExternalTabDropRequest.Destination
@@ -311,8 +310,8 @@ extension PaneDropContainer {
             }
             return .editor
         case .browser, .markdown, .rightSidebarTool, .customSidebar, .simulator,
-             .agentSession, .project, .extensionBrowser, .workspaceTodo, .coderouterGuide,
-             .notifications, .cloudVMLoading, .accountSignIn, .cloudVPNSetup, .chief:
+             .agentSession, .project, .extensionBrowser, .workspaceTodo,
+             .notifications, .accountSignIn, .chief:
             return nil
         }
     }
@@ -425,7 +424,7 @@ extension Workspace: PaneDropContainer {
         handleSessionDrop(entry: entry, destination: destination)
     }
 
-    /// Projects a dragged Cloud row through the surface catalog.
+    /// Projects a dragged surface resource through the surface catalog.
     func performPortalSurfaceResourceDrop(
         group: SurfaceResourceGroup,
         destination: BonsplitController.ExternalTabDropRequest.Destination

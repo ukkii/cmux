@@ -68,27 +68,6 @@ extension GhosttyNSView {
         target: TerminalImageTransferTarget,
         onCancel: @escaping () -> Void
     ) -> Bool {
-        if mode == .paste, case .fileURLs(let urls) = preparedContent,
-           target == .cloud,
-           deferRuntimeInputDuringClipboardRead(
-               estimatedBytes: urls.reduce(0) { $0 + $1.path.utf8.count + 256 },
-               replay: { [weak self] in
-                   if let self {
-                       _ = self.executePreparedImageTransfer(
-                           preparedContent,
-                           mode: mode,
-                           target: target,
-                           onCancel: onCancel
-                       )
-                   } else {
-                       preparedContent.cleanupTransferredTemporaryFiles(
-                           using: GhosttyApp.terminalPasteboard
-                       )
-                   }
-               }
-           ) {
-            return true
-        }
         switch preparedContent {
         case .reject, .rejectOversizedImage:
             return false

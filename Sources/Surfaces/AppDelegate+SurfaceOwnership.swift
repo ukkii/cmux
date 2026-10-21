@@ -34,12 +34,6 @@ extension AppDelegate {
         if let resource = SurfaceCatalog.shared.projectionRecord(forPanel: panel.id)?.resource {
             return resource.kind
         }
-        if let deferred = panel as? DeferredBrowserPanel {
-            return deferred.sessionPanelSnapshot.browser?.cloudResource?.kind
-        }
-        if let browser = panel as? BrowserPanel, let resource = browser.cloudAccess.resourceID {
-            return resource.kind
-        }
         return panel.panelType == .terminal ? .terminal : nil
     }
 }

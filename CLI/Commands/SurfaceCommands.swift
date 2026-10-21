@@ -141,97 +141,21 @@ struct DragSurfaceToSplitCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(commandName: "drag-surface-to-split", helpNames: [])
 }
 
-/// `surface` is a namespace, not a leaf: `runSurfaceCommand` dispatches `ls`,
-/// `open`, `new-terminal` into the surface catalog and `resume` into the restart
-/// metadata commands, and rejects a bare `cmux surface`. Declaring it as a single
-/// unrecognized-argument sink meant `cmux surface <TAB>` offered nothing and the
-/// options below (which really belong to `resume set`) were offered everywhere.
+/// `surface` is a namespace, not a leaf: `runSurfaceCommand` dispatches `resume`
+/// into the restart metadata commands and rejects a bare `cmux surface`.
 ///
-/// See VMCommand's comment: no catch-all argument alongside `subcommands`, and
+/// No catch-all argument alongside `subcommands` (ArgumentParser rejects it), and
 /// `defaultSubcommand` absorbs anything that doesn't name a declared one, so an
 /// unknown verb still reaches the legacy parser's own diagnostic instead of
-/// ArgumentParser's "Unexpected argument". `ls` matches the read-only default
-/// `vm`, `auth`, and `remotes` already use.
+/// ArgumentParser's "Unexpected argument".
 struct SurfaceCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(
         commandName: "surface",
         subcommands: [
-            SurfaceListCommand.self,
-            SurfaceOpenCommand.self,
-            SurfaceNewTerminalCommand.self,
             SurfaceResumeGroupCommand.self,
         ],
-        defaultSubcommand: SurfaceListCommand.self,
+        defaultSubcommand: SurfaceResumeGroupCommand.self,
         helpNames: []
-    )
-}
-
-struct SurfaceListCommand: SharedLegacyFacadeCommand {
-    /// A machine id, or `local` for This Mac.
-    @Argument(completion: vmCompletion) var machine: String?
-    @Flag(name: .customLong("refresh")) var refresh = false
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(
-        commandName: "ls",
-        helpNames: [],
-        aliases: ["list", "tree", "catalog"]
-    )
-}
-
-struct SurfaceOpenCommand: SharedLegacyFacadeCommand {
-    /// `<machine>/<kind>/<key>`, e.g. `local/terminal/<uuid>`. Not completable
-    /// from a flat entity list: the catalog is the only source, and resolving it
-    /// on Tab would need a `surface.catalog` round trip per keystroke.
-    @Argument var resource: String?
-    @Option(name: .customLong("workspace"), completion: workspaceCompletion) var workspaceID: String?
-    @Option(name: .customLong("pane"), completion: paneCompletion) var paneID: String?
-    // The four sides are mutually exclusive with each other and with --tab, and
-    // the legacy runner enforces that (and that they need --pane) itself.
-    @Flag(name: .customLong("left")) var left = false
-    @Flag(name: .customLong("right")) var right = false
-    @Flag(name: .customLong("up")) var up = false
-    @Flag(name: .customLong("down")) var down = false
-    @Flag(name: .customLong("tab")) var tab = false
-    @Flag(name: .customLong("new")) var new = false
-    /// Bare `--focus`, `--focus true|false` and `--no-focus` all parse
-    /// (`openFocusFlag`), so a bare `--focus` must not expect a value.
-    @Option(
-        name: .customLong("focus"),
-        defaultAsFlag: "true",
-        parsing: .next,
-        completion: .list(["true", "false"])
-    ) var focus: String?
-    @Flag(name: .customLong("no-focus")) var noFocus = false
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(
-        commandName: "open",
-        helpNames: [],
-        aliases: ["project"]
-    )
-}
-
-struct SurfaceNewTerminalCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("machine"), completion: vmCompletion) var machine: String?
-    @Option(name: .customLong("cwd"), completion: .directory) var cwd: String?
-    @Option(name: .customLong("name")) var name: String?
-    @Option(name: .customLong("remote-workspace")) var remoteWorkspace: String?
-    @Option(name: .customLong("workspace"), completion: workspaceCompletion) var workspaceID: String?
-    /// Bare `--focus`, `--focus true|false` and `--no-focus` all parse
-    /// (`openFocusFlag`), so a bare `--focus` must not expect a value.
-    @Option(
-        name: .customLong("focus"),
-        defaultAsFlag: "true",
-        parsing: .next,
-        completion: .list(["true", "false"])
-    ) var focus: String?
-    @Flag(name: .customLong("no-focus")) var noFocus = false
-    @Flag(name: .customLong("no-open")) var noOpen = false
-    /// `-- <command...>` runs in the new terminal.
-    @Argument(parsing: .captureForPassthrough) var command: [String] = []
-    static let configuration = CommandConfiguration(
-        commandName: "new-terminal",
-        helpNames: [],
-        aliases: ["new"]
     )
 }
 

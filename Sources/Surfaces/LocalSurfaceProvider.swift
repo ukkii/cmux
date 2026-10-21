@@ -242,10 +242,10 @@ final class LocalSurfaceProvider: SurfaceProvider {
         let all = workspaces()
         let preferredManager = AppDelegate.shared?.activeTabManagerForCommands(preferredWindow: nil)
         let candidates = preferredManager?.tabs ?? all
-        // A local terminal must never be staged inside a Cloud or remote
-        // workspace. This matters when the destination setup workspace lives
-        // in another window: selecting it does not deselect the Cloud tab in
-        // the initiating window, and the old first-selected lookup could pick
+        // A local terminal must never be staged inside a remote workspace.
+        // This matters when the destination setup workspace lives in another
+        // window: selecting it does not deselect the remote tab in the
+        // initiating window, and the old first-selected lookup could pick
         // that remote workspace before projection moved the pane.
         let workspace: Workspace
         if let existing = candidates.first(where: {
@@ -254,8 +254,7 @@ final class LocalSurfaceProvider: SurfaceProvider {
             workspace = existing
         } else {
             // A remote-only window is a supported state: the user can close
-            // the starter local workspace after opening a Cloud or SSH
-            // workspace. Preserve the old destination-nil behavior by making
+            // the starter local workspace after opening an SSH workspace. Preserve the old destination-nil behavior by making
             // a local workspace before staging the requested terminal there.
             let created = preferredManager?.addWorkspaceIfActive(
                 inheritWorkingDirectory: false,

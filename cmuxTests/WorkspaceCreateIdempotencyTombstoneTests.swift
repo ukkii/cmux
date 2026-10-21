@@ -7,6 +7,8 @@ import Testing
 @testable import cmux
 #endif
 
+@MainActor
+@Suite(.serialized) struct WorkspaceCreateIdempotencyTombstoneTests {
     @Test func synchronousRestartRetryWithoutWorkspaceReturnsCompletedWithoutRerun() throws {
         let defaults = Self.makeDefaults()
         defer { defaults.removePersistentDomain(forName: Self.defaultsSuiteName(defaults)) }

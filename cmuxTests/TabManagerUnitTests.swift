@@ -277,12 +277,9 @@ private func runGit(
 
 @MainActor
 final class TabManagerChildExitCloseTests: XCTestCase {
-    private var previousCloudActivationMarker: Any?
 
     override func setUpWithError() throws {
         try super.setUpWithError()
-        previousCloudActivationMarker = UserDefaults.standard.object(forKey: RightSidebarBetaFeatureSettings.cloudMachinesEnabledKey)
-        UserDefaults.standard.set(true, forKey: RightSidebarBetaFeatureSettings.cloudMachinesEnabledKey)
         try XCTSkipIf(
             ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 26,
             "macOS 26 aborts while forming weak references during these AppKit window fixtures"
@@ -290,11 +287,6 @@ final class TabManagerChildExitCloseTests: XCTestCase {
     }
 
     override func tearDown() {
-        if let previousCloudActivationMarker {
-            UserDefaults.standard.set(previousCloudActivationMarker, forKey: RightSidebarBetaFeatureSettings.cloudMachinesEnabledKey)
-        } else {
-            UserDefaults.standard.removeObject(forKey: RightSidebarBetaFeatureSettings.cloudMachinesEnabledKey)
-        }
         super.tearDown()
     }
 
@@ -510,109 +502,6 @@ final class TabManagerChildExitCloseTests: XCTestCase {
                 .panels.first { $0.id == remotePanelId }?.terminal?.remotePTYSessionID,
             persistentSessionID
         )
-    }
-
-    func testDefaultFreestyleCloudSplitRoutesToCloudAndRepairsRawSSHStartupCommand() throws {
-        let manager = TabManager()
-        guard let workspace = manager.selectedWorkspace,
-              let remotePanelId = workspace.focusedPanelId else {
-            XCTFail("Expected selected workspace with focused panel")
-            return
-        }
-
-        workspace.configureRemoteConnection(
-            WorkspaceRemoteConfiguration(
-                destination: "71smiccrg35sw9pydt8k+cmux@vm-ssh.freestyle.sh",
-                port: 22,
-                identityFile: nil,
-                sshOptions: [],
-                localProxyPort: nil,
-                relayPort: nil,
-                relayID: nil,
-                relayToken: nil,
-                localSocketPath: nil,
-                managedCloudVMID: "71smiccrg35sw9pydt8k",
-                terminalStartupCommand: "ssh -p 22 -tt 71smiccrg35sw9pydt8k+cmux@vm-ssh.freestyle.sh",
-                preserveAfterTerminalExit: true,
-                persistentDaemonSlot: "cmux-default-freestyle-sshd-v1",
-                skipDaemonBootstrap: true
-            ),
-            autoConnect: false
-        )
-
-        // The workspace's startup command is repaired from the raw `ssh` form to the
-        // default-freestyle `vm-pty-attach` attach for every local terminal it spawns.
-        let repairedCommand = try XCTUnwrap(
-            workspace.effectiveRemoteTerminalStartupCommand(from: workspace.remoteConfiguration)
-        )
-        XCTAssertTrue(repairedCommand.contains("vm-pty-attach"), repairedCommand)
-        XCTAssertTrue(repairedCommand.contains("--default-freestyle-sshd"), repairedCommand)
-        XCTAssertFalse(repairedCommand.contains("ssh -p 22"), repairedCommand)
-
-        // A split from the managed-Cloud SSH pane is Cloud-owned (fa5dc4cc10): it routes
-        // to the machine's provider and fails closed without one, never spawning a local
-        // shell next to the remote pane.
-        XCTAssertEqual(workspace.machineOwningSurface(remotePanelId), .cloud("71smiccrg35sw9pydt8k"))
-        let panelIdsBeforeSplit = Set(workspace.panels.keys)
-        let outcome = workspace.newTerminalSplitOutcome(
-            from: remotePanelId, orientation: .horizontal, focus: false
-        )
-        XCTAssertFalse(outcome.isAccepted)
-        XCTAssertNil(outcome.panel)
-        XCTAssertEqual(Set(workspace.panels.keys), panelIdsBeforeSplit)
-        let failure = try XCTUnwrap(workspace.cloudPaneCreationFailureStore.failure)
-        XCTAssertEqual(failure.machine, .cloud("71smiccrg35sw9pydt8k"))
-        XCTAssertEqual(failure.sourcePanelID, remotePanelId)
-    }
-
-    func testDefaultFreestyleCloudReconnectRepairsRawSSHStartupCommand() throws {
-        TerminalController.shared.stop(cleanupDiscoveryState: true)
-        let reservedSocket = TerminalController.shared.reserveStartupSocketPath(
-            "/tmp/cmux-cloud-reconnect-\(UUID().uuidString).sock"
-        )
-        defer {
-            TerminalController.shared.stop(cleanupDiscoveryState: true)
-            try? FileManager.default.removeItem(atPath: reservedSocket)
-            try? FileManager.default.removeItem(atPath: reservedSocket + ".lock")
-        }
-        let manager = TabManager()
-        guard let workspace = manager.selectedWorkspace,
-              let remotePanelId = workspace.focusedPanelId else {
-            XCTFail("Expected selected workspace with focused panel")
-            return
-        }
-
-        workspace.configureRemoteConnection(
-            WorkspaceRemoteConfiguration(
-                destination: "71smiccrg35sw9pydt8k+cmux@vm-ssh.freestyle.sh",
-                port: 22,
-                identityFile: nil,
-                sshOptions: [],
-                localProxyPort: nil,
-                relayPort: nil,
-                relayID: nil,
-                relayToken: nil,
-                localSocketPath: nil,
-                managedCloudVMID: "71smiccrg35sw9pydt8k",
-                terminalStartupCommand: "ssh -p 22 -tt 71smiccrg35sw9pydt8k+cmux@vm-ssh.freestyle.sh",
-                // Exercise reconnect's respawn path, which repairs a legacy
-                // raw SSH command into the managed Freestyle attach wrapper.
-                preserveAfterTerminalExit: false,
-                persistentDaemonSlot: "cmux-default-freestyle-sshd-v1",
-                skipDaemonBootstrap: true
-            ),
-            autoConnect: false
-        )
-
-        // This fixture exercises the attach command after the management
-        // controller has connected; a disconnected controller defers respawn.
-        workspace.remoteControllerConnectionState = .connected
-        XCTAssertTrue(workspace.reconnectRemoteConnection(surfaceId: remotePanelId))
-        let replacement = try XCTUnwrap(workspace.terminalPanel(for: remotePanelId))
-        let reconnectCommand = try XCTUnwrap(replacement.surface.debugInitialCommand())
-        XCTAssertTrue(reconnectCommand.contains("vm-pty-attach"), reconnectCommand)
-        XCTAssertTrue(reconnectCommand.contains("--default-freestyle-sshd"), reconnectCommand)
-        XCTAssertFalse(reconnectCommand.contains("ssh -p 22"), reconnectCommand)
     }
 
     func testPaneCloseOnLastRemotePanelKeepsWorkspaceDisconnected() throws {

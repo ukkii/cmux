@@ -135,36 +135,3 @@ struct LogoutCommand: LegacyAuthCommand {
     @Argument(parsing: .allUnrecognized) var arguments: [String] = []
     static let configuration = CommandConfiguration(commandName: "logout", helpNames: [])
 }
-
-struct AIAccountsCommand: LegacyAuthCommand {
-    // See AuthCommand's comment: no catch-all argument alongside `subcommands`.
-    static let configuration = CommandConfiguration(
-        commandName: "ai-accounts",
-        subcommands: [AIAccountsListCommand.self, AIAccountsUploadCommand.self, AIAccountsRemoveCommand.self],
-        defaultSubcommand: AIAccountsListCommand.self,
-        helpNames: []
-    )
-}
-
-struct AIAccountsListCommand: LegacyAuthCommand {
-    @Option(name: .customLong("team")) var team: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "list", helpNames: [], aliases: ["ls"])
-}
-
-struct AIAccountsUploadCommand: LegacyAuthCommand {
-    @Argument(completion: .list(["claude", "codex", "anthropic-key", "openai-key"])) var provider: String?
-    @Option(name: .customLong("label")) var label: String?
-    @Option(name: .customLong("key")) var key: String?
-    @Option(name: .customLong("team")) var team: String?
-    @Flag(name: .customLong("validate")) var validate = false
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "upload", helpNames: [])
-}
-
-struct AIAccountsRemoveCommand: LegacyAuthCommand {
-    @Argument var accountID: String?
-    @Option(name: .customLong("team")) var team: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "remove", helpNames: [], aliases: ["rm", "delete"])
-}

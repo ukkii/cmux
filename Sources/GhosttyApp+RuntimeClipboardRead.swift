@@ -245,33 +245,6 @@ extension GhosttyApp {
                     fileURLs: fileURLs,
                     target: target
                 )
-                if case .pasteCloudImages = plan {
-                    // The daemon pastes on the authenticated lease. Complete the
-                    // Ghostty request empty so no Mac path enters manual I/O.
-                    requestTerminalSurface.hostedView.beginImageTransferIndicator(
-                        for: operation,
-                        onCancel: {}
-                    )
-                    let task = Task { @MainActor in
-                        defer {
-                            requestTerminalSurface.hostedView.endImageTransferIndicator(for: operation)
-                            completeClipboardRequest(with: "")
-                        }
-                        do {
-                            try await requestTerminalSurface.pasteCloudImages(
-                                fileURLs,
-                                operation: operation
-                            )
-                        } catch is CancellationError {
-                            _ = operation.cancel()
-                        } catch {
-                            _ = operation.finish()
-                        }
-                    }
-                    operation.installCancellationHandler { task.cancel() }
-                    return
-                }
-
                 let indicatorView = requestTerminalSurface.hostedView
                 indicatorView.beginImageTransferIndicator(
                     for: operation,

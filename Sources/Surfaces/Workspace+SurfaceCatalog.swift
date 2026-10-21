@@ -4,6 +4,11 @@ import Foundation
 /// The workspace's side of the surface catalog: the single seams through which a pane
 /// joins, leaves, moves between, or changes inside a workspace tell the local provider.
 extension Workspace {
+    /// The live workspace with `id` in any window, or nil once it was retired.
+    static func liveWorkspace(id: UUID) -> Workspace? {
+        AppDelegate.shared?.tabManagerFor(tabId: id)?.tabs.first { $0.id == id }
+    }
+
     /// Called from `panelsWillChange(to:)` with the old set still in `panels`.
     func surfaceCatalogPanelsWillChange(to newValue: [UUID: any Panel]) {
         let provider = LocalSurfaceProvider.shared
@@ -27,35 +32,5 @@ extension Workspace {
         for panelID in Set(old.keys).union(new.keys) where old[panelID] != new[panelID] {
             provider.panelDidChange(panelID: panelID, in: self)
         }
-    }
-
-    /// Persisted projections for this workspace: remote resources only. Local panes are
-    /// re-registered by the hooks when the restored pane is created.
-    var surfaceProjectionRecordsForSession: [SurfaceProjectionRecord]? {
-        var records = SurfaceCatalog.shared.projectionRecords(forWorkspace: id).filter { !$0.resource.machine.isLocal }
-        let recorded = Set(records.map(\.panelID))
-        for (panelID, panel) in panels where !recorded.contains(panelID) {
-            if let resource = (panel as? BrowserPanel)?.cloudAccess.resourceID, !resource.machine.isLocal {
-                records.append(SurfaceProjectionRecord(panelID: panelID, resource: resource))
-            }
-        }
-        return records.isEmpty ? nil : records
-    }
-
-    /// Re-links restored panes to the remote resources they projected, using the restore's
-    /// old→new panel id map. The pane stays a placeholder shell until the resource's
-    /// provider reports it and re-projects.
-    func restoreSurfaceProjections(_ records: [SurfaceProjectionRecord]?, oldToNewPanelIds: [UUID: UUID]) {
-        guard let records, !records.isEmpty else { return }
-        let remapped = records.compactMap { record -> SurfaceProjectionRecord? in
-            guard let newID = oldToNewPanelIds[record.panelID] ?? (panels[record.panelID] != nil ? record.panelID : nil) else { return nil }
-            return SurfaceProjectionRecord(
-                panelID: newID,
-                resource: record.resource,
-                remoteWorkspaceID: record.remoteWorkspaceID,
-                remoteTabID: record.remoteTabID
-            )
-        }
-        SurfaceCatalog.shared.restore(remapped, workspaceID: id, restoringWorkspace: self)
     }
 }

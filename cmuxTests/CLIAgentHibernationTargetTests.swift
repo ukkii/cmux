@@ -9,7 +9,7 @@ import Foundation
 #endif
 
 /// `cmux agent hibernate|wake <surface>` must reach the local hibernation
-/// methods, not the cloud `vm agent` alias that owns the rest of `cmux agent`.
+/// methods.
 extension CLINotifyProcessIntegrationRegressionTests {
     func testAgentHibernateSendsAgentHibernateForTheSurface() throws {
         let surfaceId = UUID().uuidString

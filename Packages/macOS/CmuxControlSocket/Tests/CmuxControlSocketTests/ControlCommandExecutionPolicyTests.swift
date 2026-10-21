@@ -3,40 +3,12 @@ import Testing
 
 @Suite("ControlCommandExecutionPolicy")
 struct ControlCommandExecutionPolicyTests {
-    @Test func vmPrefixedMethodsRunOnTheSocketWorker() {
-        #expect(ControlCommandExecutionPolicy(forMethod: "vm.create") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "vm.anything.else").runsOnSocketWorker)
-    }
-
-    @Test func remotesPrefixedMethodsRunOnTheSocketWorker() {
-        // `cmux remotes` verbs make blocking authenticated web API calls, so
-        // they must run on the worker; otherwise the dispatcher never reaches
-        // their handler and returns method_not_found.
-        #expect(ControlCommandExecutionPolicy(forMethod: "remotes.list") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "remotes.add") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "remotes.remove") == .socketWorker(mainThreadCallable: false))
-    }
-
-    @Test func aiAccountsPrefixedMethodsRunOnTheSocketWorker() {
-        // `cmux ai-accounts` verbs make blocking authenticated web API calls, so
-        // they must run on the worker; otherwise the dispatcher never reaches
-        // their handler and returns method_not_found.
-        #expect(ControlCommandExecutionPolicy(forMethod: "aiAccounts.list") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "aiAccounts.upload") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "aiAccounts.remove") == .socketWorker(mainThreadCallable: false))
-    }
-
-    @Test func coderouterPrefixedMethodsRunOnTheSocketWorker() {
-        // `cmux coderouter` verbs (team Claude upstream, per-machine usage) make
-        // blocking authenticated web API calls like `aiAccounts.*`; off the
-        // worker the dispatcher answers method_not_found.
-        #expect(ControlCommandExecutionPolicy(forMethod: "coderouter.claude_upstream.get") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "coderouter.claude_upstream.set") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "coderouter.claude_upstream.clear") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "coderouter.claude_upstream.add") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "coderouter.claude_upstream.remove") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "coderouter.claude_upstream.update") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "coderouter.machines") == .socketWorker(mainThreadCallable: false))
+    @Test func removedCloudNamespacesRunOnTheMainActor() {
+        // Cloud, device-registry, AI-account and CodeRouter verbs were removed;
+        // their former prefixes must no longer divert to the worker lane.
+        for method in ["vm.create", "remotes.list", "aiAccounts.list", "coderouter.handoff.complete"] {
+            #expect(ControlCommandExecutionPolicy(forMethod: method) == .mainActor, "\(method)")
+        }
     }
 
     @Test func fixedWorkerSetRunsOnTheSocketWorker() {
@@ -46,7 +18,6 @@ struct ControlCommandExecutionPolicyTests {
             "auth.team.members", "auth.team.invite", "auth.team.invite_link",
             "auth.team.revoke_invite", "auth.team.remove_member", "auth.team.open_members",
             "auth.team.invitations", "auth.team.accept_invite", "auth.team.decline_invite",
-            "coderouter.handoff.complete",
             "feed.jump", "feed.push", "agent.hook.enqueue", "agent.hook.barrier",
             "agent.restore.admit", "agent.restore.release",
             "agent.message.send", "agent.message.list", "agent.message.claim",
@@ -207,18 +178,6 @@ struct ControlCommandExecutionPolicyTests {
         #expect(ControlCommandExecutionPolicy(forMethod: "system.ping") == .socketWorker(mainThreadCallable: true))
         #expect(ControlCommandExecutionPolicy(forMethod: "system.capabilities") == .socketWorker(mainThreadCallable: true))
         #expect(ControlCommandExecutionPolicy(forMethod: "system.top") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "vm.create") == .socketWorker(mainThreadCallable: false))
-    }
-
-    @Test func coderouterHandoffRunsOffMainAndIsNotMainThreadCallable() {
-        #expect(
-            ControlCommandExecutionPolicy(forMethod: "coderouter.handoff.complete")
-                == .socketWorker(mainThreadCallable: false)
-        )
-        #expect(
-            ControlCommandExecutionPolicy(forMethod: "coderouter.handoff")
-                == .socketWorker(mainThreadCallable: false)
-        )
     }
 
     @Test func terminalReadsRunOnTheWorkerAndAreNotMainThreadCallable() {
@@ -346,9 +305,8 @@ struct ControlCommandExecutionPolicyTests {
             "sidebar_state", "reset_sidebar", "list_panes", "new_pane",
             "new_workspace", "select_workspace", "close_workspace",
             "help", "",
-            // The v2 namespace prefix rules (vm./remotes.) and v2 worker
-            // method names must not leak into v1 classification.
-            "vm.create", "remotes.list", "system.ping",
+            // v2 worker method names must not leak into v1 classification.
+            "system.ping",
             "surface.report_pwd", "notification.create",
         ] {
             let policy = ControlCommandExecutionPolicy(forV1Command: command)

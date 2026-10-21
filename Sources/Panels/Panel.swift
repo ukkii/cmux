@@ -16,12 +16,14 @@ public enum PanelType: String, Codable, CaseIterable, Sendable {
     case project
     case extensionBrowser
     case workspaceTodo
-    case coderouterGuide
     case notifications
-    case cloudVMLoading
     case accountSignIn
-    case cloudVPNSetup
     case chief
+
+    /// Lowercased raw values of panel kinds whose features were removed (the
+    /// cmux Cloud loading/VPN panes and the CodeRouter guide). Session decoding
+    /// drops panels of these kinds instead of failing the whole workspace.
+    static let retiredRawValues: Set<String> = ["coderouterguide", "cloudvmloading", "cloudvpnsetup"]
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
@@ -50,24 +52,12 @@ public enum PanelType: String, Codable, CaseIterable, Sendable {
             self = .workspaceTodo
             return
         }
-        if rawValue.lowercased() == Self.coderouterGuide.rawValue.lowercased() {
-            self = .coderouterGuide
-            return
-        }
         if rawValue.lowercased() == Self.notifications.rawValue.lowercased() {
             self = .notifications
             return
         }
-        if rawValue.lowercased() == Self.cloudVMLoading.rawValue.lowercased() {
-            self = .cloudVMLoading
-            return
-        }
         if rawValue.lowercased() == Self.accountSignIn.rawValue.lowercased() {
             self = .accountSignIn
-            return
-        }
-        if rawValue.lowercased() == Self.cloudVPNSetup.rawValue.lowercased() {
-            self = .cloudVPNSetup
             return
         }
         if rawValue.lowercased() == Self.chief.rawValue.lowercased() {

@@ -129,3 +129,40 @@ with a plain `ssh` command rather than reattaching to the old cmux-tui session.
   cmux.json is reported as unknown by schema validation.
 - MDM keys DisableRemoteControl, DisableDeviceDiscovery, DisableIncomingDeviceAccess
   and DisableIrohNetworking are removed.
+
+## cmux Cloud
+
+cmux no longer includes cmux Cloud. Cloud machines and VMs, Cloud workspaces, the
+Cloud sidebar, the private network and every client of the cmux Cloud backend are
+removed from the app, the `cmux` CLI and the Xcode project, including the packages
+`CmuxCloud`, `CmuxCloudBannerCore`, `CmuxCloudImagePaste`, `CmuxCloudMachines`,
+`CmuxCloudResizeCore`, `CmuxCloudTui` and `CmuxTerminalSizing`.
+
+What users see:
+
+- **No Cloud machines.** No creating, opening, attaching to, snapshotting, forking,
+  resizing or deleting Cloud VMs; no Cloud desktops, port forwarding, published
+  domains, or file push/pull / drag-and-drop to a VM.
+- **UI removed:** the right-sidebar Cloud/Machines tab, the sidebar Cloud button,
+  Cloud workspace badges, the Cloud team picker, "New Cloud Workspace" / "New Cloud
+  Machine", the Cloud welcome window, Cloud loading/failure panes, the Cloud
+  reconnect overlay, Settings → Cloud Machines and its beta toggle, Cloud palette
+  commands, and the shortcuts for the team picker, new Cloud workspace/machine, the
+  Machines sidebar and Cmd+Y.
+- **CLI commands removed:** `cmux vm`, `cmux cloud`, `cmux remotes`,
+  `cmux ai-accounts`, `cmux billing`, `cmux vpn`, `cmux surface ls/open/new-terminal`,
+  and the hidden `vm-pty-*`, `vm-tui-*`, `vm-ssh-attach` helpers. `cmux agent` only
+  handles local agents (message, inbox, messages, hibernate, wake).
+- **Socket API:** `vm.*`, `cloud.*`, `remotes.*`, `aiAccounts.*`, `coderouter.*`,
+  `workspace.cloud_vm_*`, `workspace.ssh.open` and Cloud catalog listings now answer
+  `method_not_found`.
+- **CodeRouter removed.** `cmux coderouter`, `cr`, the CodeRouter guide pane, the
+  socket handoff, and the bundled CodeRouter CLI and its `coderouter/` crate are gone
+  (CodeRouter required the hosted `coderouter.dev` account backend).
+- **SSH:** the bundled `cmux-tui` client (SSH-TUI) is no longer installed; `cmux ssh`
+  always uses cmuxd-remote.
+- **MDM policy keys:** `DisableCloud` and `DisableAICredentialUpload` are removed;
+  `DisableRemoteConnections` and `DisableFileTransfer` still work.
+- **Session restore:** Cloud workspaces and panes saved by older versions are dropped
+  on restore and from "Reopen Closed"; the rest of the session restores normally.
+- **Config:** a `cmux.json` action using `cmux.cloudvm` no longer resolves.

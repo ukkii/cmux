@@ -15,8 +15,6 @@ enum SettingsSearchAliasIndex {
             return localized("settings.search.alias.section.textBox", defaultValue: "textbox text box rich input prompt focus composer compose attachments")
         case .sleepyMode:
             return localized("settings.search.alias.section.sleepyMode", defaultValue: "sleepy mode screensaver caffeinate keep awake do not sleep lock touch id battery wifi clock mascot theme glow pixel night")
-        case .cloudMachines:
-            return localized("settings.search.alias.section.cloudMachines", defaultValue: "cloud machines vm virtual machine persistent computer sandbox plan upgrade fleet freestyle")
         case .sidebarAppearance:
             return localized("settings.search.alias.section.sidebarAppearance", defaultValue: "sidebar left rail navigation details branches badges material terminal background")
         case .customSidebars:

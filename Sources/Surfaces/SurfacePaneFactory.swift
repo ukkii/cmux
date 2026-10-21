@@ -70,33 +70,12 @@ enum SurfacePaneFactory {
         return created
     }
 
-    /// A browser pane an existing Cloud resource (a display or a port) is about
-    /// to bind. Restoration policy keeps it out of a Cloud workspace's new-browser
-    /// lane, which would start a daemon browser in the pane instead.
-    static func makeCloudResourceBrowserPane(at destination: SurfaceDestination, focus: Bool) throws -> (workspaceID: UUID, panelID: UUID) {
-        try makeBrowserPane(url: nil, at: destination, focus: focus, creationPolicy: .restoration)
-    }
-
-    /// The URL a browser pane opens with when its real URL is still being resolved; the
-    /// caller fills the pane with ``SurfaceBrowserPlaceholder`` content and navigates later.
+    /// The URL a browser pane opens with when its real URL is still being resolved.
     static let blankURL = URL(string: "about:blank")!
 
     /// The browser pane behind a projection, if it still exists and is a browser.
     static func browserPanel(panelID: UUID, in workspaceID: UUID) -> BrowserPanel? {
         workspace(id: workspaceID)?.browserPanelIncludingDock(for: panelID) ?? DockSplitStore.liveStore(containingPanel: panelID)?.browserPanel(for: panelID)
-    }
-
-    /// Sends an existing browser pane to `url` — the optimistic pane's second step, once
-    /// the provider has its endpoint. A pane the person already closed is a no-op.
-    static func navigate(panelID: UUID, in workspaceID: UUID, to url: URL) {
-        guard let browser = browserPanel(panelID: panelID, in: workspaceID) else { return }
-        _ = browser.navigate(to: url)
-    }
-
-    /// Fills an existing browser pane with local HTML (a connecting or failure screen).
-    static func showPlaceholder(_ html: String, panelID: UUID, in workspaceID: UUID) {
-        guard let browser = browserPanel(panelID: panelID, in: workspaceID) else { return }
-        browser.webView.loadHTMLString(html, baseURL: nil)
     }
 
     /// Selects the workspace and focuses the pane, the way `surface.focus` does — an explicit
@@ -121,39 +100,10 @@ enum SurfacePaneFactory {
     }
 
     /// Closes a pane the app is replacing or discarding itself (a restored placeholder a
-    /// provider replaced, the loser of an open race, the panes of a killed terminal). That
-    /// end is never a layout edit on the machine, unlike a pane the person closes.
+    /// provider replaced, the loser of an open race, the panes of a killed terminal).
     static func close(panelID: UUID, in workspaceID: UUID) {
         SurfaceCatalog.shared.withProjectionEndReason(for: [panelID], reason: .replaced) {
             _ = TerminalController.shared.controlSurfaceClose(routing: routing(workspaceID: workspaceID), surfaceID: panelID, hasSurfaceIDParam: true)
-        }
-    }
-
-    /// Closes a pane whose process has ended, the way a local terminal pane
-    /// disappears when its shell exits.
-    ///
-    /// This is not ``close(panelID:in:)``: the socket close refuses a
-    /// workspace's last surface, so an agent cannot empty a workspace by
-    /// accident. A shell that ended is not an accident, and a cloud workspace
-    /// opened by `cmux vm workspace new` holds exactly one pane, so the socket
-    /// rule would leave the dead pane on screen forever.
-    static func closeExited(panelID: UUID, in workspaceID: UUID) {
-        guard let appDelegate = AppDelegate.shared,
-              let workspace = appDelegate.workspace(containingSurfaceID: panelID) else { return }
-        SurfaceCatalog.shared.withProjectionEndReason(for: [panelID], reason: .replaced) {
-            // A workspace whose only pane is the dead terminal goes with it, which
-            // is what a local workspace does when its last shell exits. Closing
-            // only the pane there leaves the workspace to open a fresh local shell
-            // in the cloud pane's place.
-            if workspace.panels.count <= 1 {
-                let manager = workspace.owningTabManager ?? TerminalController.shared.tabManager
-                if manager?.closeWorkspaceNonInteractively(workspace) == true { return }
-                // The workspace refused to close (pinned, or the window's last one
-                // during teardown). Close the pane anyway: a replacement local
-                // shell is still better than a frozen pane that swallows input.
-            }
-            workspace.markCloseHistoryEligible(panelId: panelID)
-            _ = workspace.closePanel(panelID, force: true)
         }
     }
 
@@ -337,117 +287,5 @@ enum SurfacePaneFactory {
         // and socket callers still see the split refused.
         if case .noSpace = resolution { throw FactoryError.noSpace }
         throw FactoryError.creationFailed("\(resolution)")
-    }
-}
-
-/// The local pages an optimistic browser pane shows while its endpoint resolves (and if
-/// that fails). Pure: strings in, HTML out, every dynamic value escaped.
-enum SurfaceBrowserPlaceholder {
-    /// "Connecting to <label>…" on the desktop's dark background, so the pane reads as
-    /// the desktop's own loading state rather than a blank tab.
-    static func connecting(_ label: String) -> String {
-        let title = String(
-            format: String(localized: "cloudTree.pane.connecting", defaultValue: "Connecting to %@…"),
-            label
-        )
-        return page(title: title, detail: nil, spinner: true)
-    }
-
-    /// "Couldn't open <label>" with the typed error and an appropriate next step.
-    /// Unsupported providers deliberately omit the retry instruction: the pane is
-    /// truthful about a permanent capability gap instead of inviting a retry loop.
-    static func failed(_ label: String, error: String, retryable: Bool = true) -> String {
-        let title = String(
-            format: String(localized: "cloudTree.pane.failed", defaultValue: "Couldn’t open %@"),
-            label
-        )
-        let hint = retryable
-            ? String(
-                localized: "cloudTree.pane.retryHint",
-                defaultValue: "Close this pane and open it again from the sidebar."
-            )
-            : String(
-                localized: "cloudTree.pane.unsupportedHint",
-                defaultValue: "This provider cannot open port previews. Do not retry; use `cmux vm exec` inside the machine or choose another machine."
-            )
-        return page(title: title, detail: "\(error)\n\(hint)", spinner: false)
-    }
-
-    static func escape(_ text: String) -> String {
-        var out = ""
-        out.reserveCapacity(text.utf8.count)
-        for character in text {
-            switch character {
-            case "&": out += "&amp;"
-            case "<": out += "&lt;"
-            case ">": out += "&gt;"
-            case "\"": out += "&quot;"
-            case "'": out += "&#39;"
-            default: out.append(character)
-            }
-        }
-        return out
-    }
-
-    private static func page(title: String, detail: String?, spinner: Bool) -> String {
-        let detailHTML = detail.map { text in
-            text.split(separator: "\n", omittingEmptySubsequences: false)
-                .map { "<p>\(escape(String($0)))</p>" }
-                .joined()
-        } ?? ""
-        let spinnerHTML = spinner ? "<div class=\"spinner\" role=\"progressbar\"></div>" : ""
-        // The spinner's stylesheet ships only with a spinner: the failed page
-        // must carry no trace of one (the tests assert on the whole document).
-        let spinnerCSS = spinner ? """
-
-          .spinner { width: 22px; height: 22px; margin: 0 auto 14px; border-radius: 50%;
-                     border: 2px solid rgba(216,222,233,0.25); border-top-color: #d8dee9;
-                     animation: spin 0.9s linear infinite; }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        """ : ""
-        return """
-        <!doctype html>
-        <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>\(escape(title))</title>
-        <style>
-          html, body { margin: 0; height: 100%; background: #1f2430; color: #d8dee9; }
-          body { display: flex; align-items: center; justify-content: center;
-                 font: 14px -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
-          main { text-align: center; max-width: 36em; padding: 0 1.5em; }
-          h1 { font-size: 15px; font-weight: 500; margin: 0 0 0.6em; }
-          p { margin: 0.3em 0; opacity: 0.8; word-break: break-word; }\(spinnerCSS)
-        </style></head>
-        <body><main>\(spinnerHTML)<h1>\(escape(title))</h1>\(detailHTML)</main></body></html>
-        """
-    }
-}
-
-extension SurfaceDestination {
-    /// Where a sidebar gesture lands when its split is refused for lack of room:
-    /// a tab in the pane that would have been split (the focused pane for a
-    /// workspace-level split). Nil for destinations that are already tabs.
-    var tabFallbackForRefusedSplit: SurfaceDestination? {
-        switch self {
-        case .workspace(let id, .split): return .workspace(id: id, placement: .tab)
-        case .split(let workspaceID, let paneID, _): return .tab(workspaceID: workspaceID, paneID: paneID, index: nil)
-        default: return nil
-        }
-    }
-}
-
-extension SurfacePaneFactory {
-    /// Opens with a split when it fits, otherwise as a tab. Only user gestures
-    /// (sidebar opens and display creation) use this; layout replay and socket
-    /// callers keep the refused split so their realized layout stays truthful.
-    static func openPreferringSplit<Result>(
-        at destination: SurfaceDestination,
-        _ open: (SurfaceDestination) async throws -> Result
-    ) async throws -> Result {
-        do {
-            return try await open(destination)
-        } catch FactoryError.noSpace {
-            guard let fallback = destination.tabFallbackForRefusedSplit else { throw FactoryError.noSpace }
-            return try await open(fallback)
-        }
     }
 }

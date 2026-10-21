@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxSettings
 import CmuxTerminalCore
@@ -46,7 +45,7 @@ final class RemoteTerminalFilePreviewCoordinator {
             destination: configuration.destination,
             port: configuration.port,
             identityFile: configuration.identityFile,
-            sshOptions: configuration.fileOperationSSHOptions,
+            sshOptions: configuration.sshOptions,
             displayTarget: configuration.displayTarget,
             homePath: "",
             isAvailable: true,
@@ -66,7 +65,6 @@ final class RemoteTerminalFilePreviewCoordinator {
         let sourceSurface = panel.surface
         let lifecycleID = sourceSurface.terminalLifecycleId
         let attemptID = workspace.remoteTerminalAttemptIDsBySurfaceId[sourcePanelID]
-        let tuiAttemptID = workspace.sshTuiConnectionAttemptID
         let projectionResource = SurfaceCatalog.shared.projectionIncludingPendingRestore(forPanel: sourcePanelID)?.resource
         let task = Task { [weak self, weak workspace, weak panel, weak sourceSurface] in
             defer {
@@ -94,7 +92,6 @@ final class RemoteTerminalFilePreviewCoordinator {
                       panel.surface === sourceSurface,
                       sourceSurface.terminalLifecycleId == lifecycleID,
                       workspace.remoteTerminalAttemptIDsBySurfaceId[sourcePanelID] == attemptID,
-                      workspace.sshTuiConnectionAttemptID == tuiAttemptID,
                       SurfaceCatalog.shared.projectionIncludingPendingRestore(forPanel: sourcePanelID)?.resource == projectionResource,
                       sourceSurface.owningWorkspace() === workspace,
                       workspace.owningTabManager?.selectedTabId == workspace.id,
@@ -121,7 +118,6 @@ final class RemoteTerminalFilePreviewCoordinator {
                 #endif
                 guard let workspace, let panel,
                       workspace.remoteTerminalFilePreviewConfiguration(for: sourcePanelID) == configuration,
-                      workspace.sshTuiConnectionAttemptID == tuiAttemptID,
                       workspace.terminalPanel(for: sourcePanelID) === panel,
                       workspace.owningTabManager?.selectedTabId == workspace.id,
                       workspace.focusedPanelId == sourcePanelID,

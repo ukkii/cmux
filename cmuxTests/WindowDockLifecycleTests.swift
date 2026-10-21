@@ -303,8 +303,8 @@ struct WindowDockLifecycleTests {
     func retiredWorkspaceRejectsLatePanelCallbacks() throws {
         let manager = TabManager(autoWelcomeIfNeeded: false)
         let workspace = manager.addWorkspace(
-            title: "Cloud VM",
-            initialSurface: .cloudVMLoading,
+            title: "Placeholder",
+            initialSurface: .browser,
             inheritWorkingDirectory: false,
             autoWelcomeIfNeeded: false
         )
@@ -319,13 +319,6 @@ struct WindowDockLifecycleTests {
         let dockPaneId = try #require(dock.bonsplitController.allPaneIds.first)
         workspace.retireFromOwningTabManager()
 
-        #expect(
-            workspace.replaceCloudVMLoadingSurfaceWithTerminal(
-                workspaceId: workspace.id,
-                initialCommand: "cmux vm-pty-connect --id stale",
-                focus: false
-            ) == nil
-        )
         #expect(workspace.newNotificationsSurface(inPane: paneId) == nil)
         #expect(workspace.openOrFocusNotificationsSurface(inPane: paneId) == nil)
         #expect(

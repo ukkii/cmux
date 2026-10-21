@@ -16,16 +16,8 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
     /// from the main thread.
     case socketWorker(mainThreadCallable: Bool)
 
-    /// Classifies a method: every `vm.`-, `remotes.`-, `aiAccounts.`-, and
-    /// `coderouter.`-prefixed method and the fixed socket-worker set run on the
-    /// worker; everything else runs on the main actor.
-    ///
-    /// `remotes.*` (the `cmux remotes` device-registry verbs), `aiAccounts.*`
-    /// (the team's subrouter AI-account verbs), and `coderouter.*` (the team's
-    /// coderouter Claude upstream and per-machine usage) make blocking,
-    /// authenticated web API calls just like `vm.*`, so they must stay off the
-    /// main actor; prefix matches keep each verb family in lockstep without
-    /// listing each method.
+    /// Classifies a method: the fixed socket-worker set runs on the worker;
+    /// everything else runs on the main actor.
     ///
     /// - Parameter method: The trimmed method name.
     public init(forMethod method: String) {
@@ -37,8 +29,7 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
             return
         }
 #endif
-        if method.hasPrefix("vm.") || method.hasPrefix("remotes.") || method.hasPrefix("aiAccounts.")
-            || method.hasPrefix("coderouter.") || Self.socketWorkerMethods.contains(method) {
+        if Self.socketWorkerMethods.contains(method) {
             self = .socketWorker(
                 mainThreadCallable: Self.mainThreadCallableSocketWorkerMethods.contains(method)
             )
@@ -51,9 +42,9 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
     /// runs on the socket-worker thread; everything else runs on the main
     /// actor.
     ///
-    /// The v2 namespace prefix rules (`vm.`, `remotes.`) deliberately do not
-    /// apply here — they are v2 method namespaces, and a v1 token that happens
-    /// to contain a dot must not be routed off the main lane by accident.
+    /// The v2 method set deliberately does not apply here: a v1 token that
+    /// happens to match a v2 method name must not be routed off the main lane
+    /// by accident.
     ///
     /// - Parameter command: The v1 command token, lowercased by the dispatcher
     ///   (`processCommand` lowercases before dispatching, and this initializer
@@ -81,9 +72,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // hop to the main actor.
         "session.agent_recovery.list",
         "session.agent_recovery.restore",
-        // Minting a hosted CodeRouter lease performs an authenticated HTTP
-        // request and must never block the main actor.
-        "coderouter.handoff.complete",
         "auth.status",
         "auth.sign_in_url",
         "auth.begin_sign_in",
@@ -195,7 +183,7 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // env dictionary behind a `v2MainSync` hop, so it runs on the worker
         // lane like the other workspace reads below.
         "workspace.env",
-        "workspace.ssh.open", "workspace.remote.pty_sessions",
+        "workspace.remote.pty_sessions",
         "workspace.remote.pty_close",
         "workspace.remote.pty_detach",
         "workspace.remote.pty_bridge",
@@ -243,10 +231,8 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // v2MainSync). Running on .mainActor would deadlock the UI for the
         // entire simulation, defeating the profiling workload.
         "debug.sidebar.simulate_drag",
-        // Presents the Cloud tree style gallery window: one v2MainSync hop for
-        // the presentation, like debug.window.screenshot's capture wait.
-        "debug.cloudtree.gallery",
-        // Reads hint mode's labels: one v2MainSync hop, like the gallery.
+        // Reads hint mode's labels: one v2MainSync hop, like
+        // debug.window.screenshot's capture wait.
         "debug.window_hints",
         // Browser automation methods that wait on page JavaScript, WebKit
         // cookies, or capture callbacks run on the socket worker: on the main

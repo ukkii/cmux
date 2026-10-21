@@ -59,22 +59,6 @@ struct ManagedDevicePolicyTests {
         #expect(policy.isKeyForcedInAppDomain(ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue))
     }
 
-    @Test func forcedCloudDisableIsEnforcedAndLocksTheKey() throws {
-        let (defaults, cleanup) = try makeSuite("cloud")
-        defer { cleanup() }
-
-        defaults.set(false, forKey: ManagedDevicePolicyKey.disableCloud.rawValue)
-        defaults.set(true, forKey: Self.forcedMirrorPrefix + ManagedDevicePolicyKey.disableCloud.rawValue)
-        let policy = ManagedDevicePolicy(
-            defaults: defaults,
-            releaseDomainDefaults: nil,
-            forcedObject: Self.probe
-        )
-
-        #expect(policy.isEnforced(.disableCloud))
-        #expect(policy.isKeyForcedInAppDomain(ManagedDevicePolicyKey.disableCloud.rawValue))
-    }
-
     @Test func allowStyleKeysAreOnlyOffWhenForcedFalse() throws {
         let (defaults, cleanup) = try makeSuite("allowStyle")
         defer { cleanup() }
@@ -188,14 +172,12 @@ struct ManagedDevicePolicyTests {
         // docs/managed-device-policies.md; renaming them breaks deployed
         // configuration profiles.
         #expect(ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue == "DisableEmbeddedBrowser")
-        #expect(ManagedDevicePolicyKey.disableCloud.rawValue == "DisableCloud")
         #expect(ManagedDevicePolicyKey.disableRemoteConnections.rawValue == "DisableRemoteConnections")
         #expect(ManagedDevicePolicyKey.disableFileTransfer.rawValue == "DisableFileTransfer")
         #expect(ManagedDevicePolicyKey.disableAutomationWebhooks.rawValue == "DisableAutomationWebhooks")
         #expect(ManagedDevicePolicyKey.disableTLSTrustBypass.rawValue == "DisableTLSTrustBypass")
         #expect(ManagedDevicePolicyKey.disableComputerUse.rawValue == "DisableComputerUse")
         #expect(ManagedDevicePolicyKey.disableCustomSidebars.rawValue == "DisableCustomSidebars")
-        #expect(ManagedDevicePolicyKey.disableAICredentialUpload.rawValue == "DisableAICredentialUpload")
         #expect(ManagedDevicePolicyKey.browserURLAllowlist.rawValue == "BrowserURLAllowlist")
         #expect(ManagedDevicePolicyKey.browserAllowLocalhost.rawValue == "BrowserAllowLocalhost")
         #expect(ManagedDevicePolicyKey.browserAllowLocalFiles.rawValue == "BrowserAllowLocalFiles")

@@ -33,7 +33,6 @@ PROD_AUTH=0
 AUTH_CREDENTIALS_FILE=""
 AUTH_PROFILE=""
 AUTH_EXPECTED_ACCOUNT=""
-CMUX_TUI_CLIENT_MANIFEST_URL_VALUE=""
 CLI_PATH=""
 NO_GLOBAL_CLI_LINKS="${CMUX_RELOAD_NO_GLOBAL_CLI_LINKS:-0}"
 # Matches CmuxStateDirectory (non-TCC ~/.local/state/cmux) where the app/CLI now
@@ -923,8 +922,6 @@ Options:
   --expected-account <email>
                          Fail before building unless the selected profile/file
                          resolves to this normalized account.
-  --cmux-tui-manifest-url <url>
-                         Install the cmux-tui client from this immutable manifest.
   --name <app name>      Override app display/bundle name.
   --bundle-id <id>       Override bundle identifier.
   --derived-data <path>  Override derived data path.
@@ -1043,30 +1040,6 @@ reload_skips_app_module_emission() {
 tagged_derived_data_path() {
   local slug="$1"
   echo "$HOME/Library/Developer/Xcode/DerivedData/cmux-${slug}"
-}
-
-# Print the cmux-tui commit whose published client the bundle will carry. A branch
-# that changes cmux-tui has no published client for its own commits, so explain
-# the existing overrides next to the resolver's error.
-resolve_cmux_tui_client_commit() {
-  local commit
-  local -a resolver_args=()
-  if [[ -n "${CMUX_TUI_CLIENT_MAX_FALLBACK:-}" ]]; then
-    resolver_args+=(--max-fallback "$CMUX_TUI_CLIENT_MAX_FALLBACK")
-  fi
-  if ! commit="$("$PWD/scripts/ci/resolve-cmux-tui-client-commit.sh" ${resolver_args[@]+"${resolver_args[@]}"})"; then
-    cat >&2 <<'EOF'
-error: no published cmux-tui client for this checkout, so the app bundle cannot get one.
-       A branch that changes cmux-tui has no published client for its own commits
-       until they land on main. Point reload at a cmux-tui binary built off this Mac
-       (Blacksmith Testbox, or this branch's CI artifact):
-         CMUX_TUI_CLIENT_LOCAL=/path/to/cmux-tui ./scripts/reload.sh --tag <tag>
-       or install a published manifest with --cmux-tui-manifest-url <url>
-       (or CMUX_TUI_CLIENT_MANIFEST_URL=<url>).
-EOF
-    return 1
-  fi
-  printf '%s\n' "$commit"
 }
 
 # A tag only changes the bundle id, names, socket and state files. None of those
@@ -1300,14 +1273,6 @@ while [[ $# -gt 0 ]]; do
       [[ -n "$AUTH_EXPECTED_ACCOUNT" ]] || { echo "error: --expected-account requires an email" >&2; exit 1; }
       shift 2
       ;;
-    --cmux-tui-manifest-url)
-      CMUX_TUI_CLIENT_MANIFEST_URL_VALUE="${2:-}"
-      [[ -n "$CMUX_TUI_CLIENT_MANIFEST_URL_VALUE" ]] \
-        || { echo "error: --cmux-tui-manifest-url requires a URL" >&2; exit 1; }
-      [[ "$CMUX_TUI_CLIENT_MANIFEST_URL_VALUE" == https://* ]] \
-        || { echo "error: --cmux-tui-manifest-url requires HTTPS" >&2; exit 1; }
-      shift 2
-      ;;
     --derived-data)
       DERIVED_DATA="${2:-}"
       if [[ -z "$DERIVED_DATA" ]]; then
@@ -1356,12 +1321,10 @@ if [[ -z "$TAG" ]]; then
   exit 1
 fi
 
-# Release's product is cmux.app, which the tag step stages as the tagged app. It
-# bundles the pinned cmux-tui by default; dogfood the checkout's own instead. Its
+# Release's product is cmux.app, which the tag step stages as the tagged app. Its
 # entitlements need a signing team, and the tagged app is signed ad hoc.
 if [[ "$BUILD_CONFIGURATION" == Release ]]; then
   PRODUCT_APP_NAME="cmux"
-  export CMUX_NEXT_TUI_MODE=tree
 fi
 
 # Tagged builds normally compile the base product name and stage a distinct
@@ -1441,31 +1404,6 @@ if [[ -n "$TAG" ]]; then
   fi
 fi
 
-# Resolve the published cmux-tui client before the dev backend, GhosttyKit and
-# xcodebuild, so a checkout without one fails in seconds rather than after a full
-# build. The install step after the build reuses this commit. The same overrides
-# skip it: --cmux-tui-manifest-url, CMUX_TUI_CLIENT_MANIFEST_URL, and
-# CMUX_TUI_CLIENT_LOCAL. CMUX_SKIP_CMUX_TUI_CLIENT=1 defers to the install step,
-# which keeps an existing bundled copy and resolves only when there is none. The
-# resolver's progress lines go to the reload log; they print here only on failure.
-CMUX_TUI_CLIENT_COMMIT=""
-CMUX_TUI_CLIENT_RESOLVE_LOG=""
-if [[ "${CMUX_SKIP_CMUX_TUI_CLIENT:-}" != "1" \
-      && -z "$CMUX_TUI_CLIENT_MANIFEST_URL_VALUE" \
-      && -z "${CMUX_TUI_CLIENT_MANIFEST_URL:-}" \
-      && -z "${CMUX_TUI_CLIENT_LOCAL:-}" ]]; then
-  cmux_tui_resolve_stderr="$(mktemp "${TMPDIR:-/tmp}/cmux-reload-tui-resolve.XXXXXX")"
-  cmux_tui_resolve_rc=0
-  CMUX_TUI_CLIENT_COMMIT="$(resolve_cmux_tui_client_commit 2>"$cmux_tui_resolve_stderr")" \
-    || cmux_tui_resolve_rc=$?
-  CMUX_TUI_CLIENT_RESOLVE_LOG="$(cat "$cmux_tui_resolve_stderr")"
-  rm -f "$cmux_tui_resolve_stderr"
-  if [[ "$cmux_tui_resolve_rc" -ne 0 ]]; then
-    printf '%s\n' "$CMUX_TUI_CLIENT_RESOLVE_LOG" >&2
-    exit 1
-  fi
-fi
-
 CMUX_DEV_PORT="$(choose_cmux_dev_port)"
 CMUX_DEV_PORT_RANGE="$(choose_cmux_dev_port_range)"
 CMUX_DEV_PORT_END="$(choose_cmux_dev_port_end "$CMUX_DEV_PORT" "$CMUX_DEV_PORT_RANGE")"
@@ -1519,9 +1457,6 @@ fi
 # summary after the body redirect, then redirect bulk output into the log.
 exec 3>&1 4>&2
 exec >>"$RELOAD_LOG" 2>&1
-if [[ -n "$CMUX_TUI_CLIENT_RESOLVE_LOG" ]]; then
-  printf '%s\n' "$CMUX_TUI_CLIENT_RESOLVE_LOG"
-fi
 
 reload_finalize() {
   local rc=$?
@@ -1987,15 +1922,6 @@ if [[ -n "$TAG" && "$APP_NAME" != "$SEARCH_APP_NAME" ]]; then
       set_plist_env "$INFO_PLIST" CMUX_SOCKET_PATH "$CMUX_SOCKET_PATH_VALUE"
       set_plist_env "$INFO_PLIST" CMUX_DEBUG_LOG "$CMUX_DEBUG_LOG"
       set_plist_env "$INFO_PLIST" CMUX_TAG "$TAG_SLUG"
-      # Keep Cloud dogfood policy in the artifact so Finder and HQ cache
-      # restores enable both gates on the Mac that actually launches it.
-      # The app additionally requires a compiled Debug identity before using it.
-      case "${CMUX_DEV_CLOUD_ENABLED:-1}" in
-        0|1) ;;
-        *) echo "error: CMUX_DEV_CLOUD_ENABLED must be 0 or 1" >&2; exit 1 ;;
-      esac
-      /usr/libexec/PlistBuddy -c 'Delete :CMUXCloudDogfoodEnabled' "$INFO_PLIST" 2>/dev/null || true
-      /usr/libexec/PlistBuddy -c "Add :CMUXCloudDogfoodEnabled bool ${CMUX_DEV_CLOUD_ENABLED:-1}" "$INFO_PLIST"
       set_plist_env "$INFO_PLIST" CMUX_AUTH_CALLBACK_SCHEME "$CMUX_AUTH_CALLBACK_SCHEME_VALUE"
       set_plist_env "$INFO_PLIST" CMUX_SOCKET_ENABLE "1"
       set_plist_env "$INFO_PLIST" CMUX_SOCKET_MODE "allowAll"
@@ -2073,45 +1999,6 @@ if [[ -x "$CMUXD_SRC" ]]; then
   cp "$CMUXD_SRC" "$BIN_DIR/cmuxd"
   chmod +x "$BIN_DIR/cmuxd"
 fi
-# The cmux-tui client the Machines panel uses for cloud sessions ships inside the
-# bundle like the Ghostty helper. Resolve its published inputs from this source
-# history unless CMUX_TUI_CLIENT_MANIFEST_URL / CMUX_TUI_CLIENT_LOCAL overrides it.
-# CMUX_SKIP_CMUX_TUI_CLIENT=1 preserves an existing copy for offline reloads.
-if [[ "${CMUX_SKIP_CMUX_TUI_CLIENT:-}" == "1" && -x "$APP_PATH/Contents/Resources/bin/cmux-tui" ]]; then
-  echo "Preserving bundled cmux-tui client (CMUX_SKIP_CMUX_TUI_CLIENT=1)"
-else
-  # Local Debug builds run on this Mac; fetch only its client slice. The
-  # installer's universal default remains available to distribution workflows.
-  cmux_tui_install_args=(
-    "$APP_PATH"
-    --arch native
-    --require-capability wireguard-hub
-    --require-capability browser-proxy
-  )
-  if [[ -n "$CMUX_TUI_CLIENT_MANIFEST_URL_VALUE" ]]; then
-    cmux_tui_install_args+=(
-      --manifest-url "$CMUX_TUI_CLIENT_MANIFEST_URL_VALUE"
-    )
-  elif [[ -z "${CMUX_TUI_CLIENT_MANIFEST_URL:-}" && -z "${CMUX_TUI_CLIENT_LOCAL:-}" ]]; then
-    # Resolved before the build unless CMUX_SKIP_CMUX_TUI_CLIENT=1 deferred it.
-    if [[ -z "$CMUX_TUI_CLIENT_COMMIT" ]]; then
-      CMUX_TUI_CLIENT_COMMIT="$(resolve_cmux_tui_client_commit)" || exit 1
-    fi
-    cmux_tui_manifest_base="${CMUX_TUI_CLIENT_MANIFEST_BASE:-https://files.cmux.com/cmux-tui}"
-    cmux_tui_install_args+=(
-      --manifest-url "${cmux_tui_manifest_base%/}/$CMUX_TUI_CLIENT_COMMIT/manifest.json"
-      --expected-commit "$CMUX_TUI_CLIENT_COMMIT"
-    )
-  fi
-  # The installer verifies the published manifest's build-provenance attestation
-  # through gh. A dev Mac without an authenticated gh is the one explicit
-  # exception; the installer prints the unattested warning in that case.
-  if ! command -v gh >/dev/null 2>&1 || ! gh auth token >/dev/null 2>&1; then
-    cmux_tui_install_args+=(--allow-unattested)
-  fi
-  "$PWD/scripts/install-cmux-tui-client.sh" "${cmux_tui_install_args[@]}"
-fi
-"$PWD/scripts/install-coderouter-client.sh" "$APP_PATH"
 if command -v xattr >/dev/null 2>&1; then
   xattr -cr "$APP_PATH" || true
 fi

@@ -1,5 +1,4 @@
 import AppKit
-import CmuxCloud
 import CmuxAuthRuntime
 import CmuxSettingsUI
 import Foundation
@@ -82,11 +81,12 @@ extension HostAccountFlow {
         return try await TeamsClient.shared.changeMemberRole(teamID: id, userID: userID, role: role)
     }
 
-    /// Opens the Invite popover on the Cloud header. Shared by the picker
-    /// row, the palette and the socket.
+    /// Opens the team invite composer in Settings › Account. Shared by the
+    /// palette and the socket.
     func showTeamInvite(preferredWindow: NSWindow? = nil) {
         guard isAuthenticated, confirmedTeamID != nil else { return }
-        _ = AppDelegate.shared?.openCloudTeamInvite(preferredWindow: preferredWindow, debugSource: "accountFlow.showTeamInvite")
+        _ = preferredWindow
+        showTeamMembers(focusInvite: true)
     }
 
     /// Opens Settings › Account at the Team card (roster, roles, pending
@@ -151,7 +151,8 @@ extension HostAccountFlow {
 // MARK: - Settings Team card (AccountTeamManagement)
 
 extension HostAccountFlow {
-    var supportsTeamManagement: Bool { CloudMachinesFeature.isEnabled && isAuthenticated }
+    /// Team management shipped with cmux Cloud, which this build no longer includes.
+    var supportsTeamManagement: Bool { false }
 
     func loadTeamDetail() async throws -> AccountTeamDetail {
         Self.accountTeamDetail(try await cloudTeamDetail())
