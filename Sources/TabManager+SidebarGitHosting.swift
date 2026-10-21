@@ -184,12 +184,13 @@ extension TabManager: SidebarGitHosting {
         SidebarWorkspaceDetailDefaults.pullRequestActivity(defaults: .standard)
     }
 
+    // The mobile host was removed, so no phone request ever defers probes.
     func mobileHostHasRecentActivity(within interval: TimeInterval) -> Bool {
-        MobileHostRequestActivity.hasRecentActivity(within: interval)
+        false
     }
 
     func mobileHostQuietDelay(for interval: TimeInterval) -> TimeInterval {
-        MobileHostRequestActivity.quietDelay(for: interval)
+        0
     }
 
     /// Reports whether the app-wide terminal input admission window is active.

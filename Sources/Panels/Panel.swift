@@ -19,7 +19,6 @@ public enum PanelType: String, Codable, CaseIterable, Sendable {
     case coderouterGuide
     case notifications
     case cloudVMLoading
-    case mobilePairing
     case accountSignIn
     case cloudVPNSetup
     case chief
@@ -61,10 +60,6 @@ public enum PanelType: String, Codable, CaseIterable, Sendable {
         }
         if rawValue.lowercased() == Self.cloudVMLoading.rawValue.lowercased() {
             self = .cloudVMLoading
-            return
-        }
-        if rawValue.lowercased() == Self.mobilePairing.rawValue.lowercased() {
-            self = .mobilePairing
             return
         }
         if rawValue.lowercased() == Self.accountSignIn.rawValue.lowercased() {

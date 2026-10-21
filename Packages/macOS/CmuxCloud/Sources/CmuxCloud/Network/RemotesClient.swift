@@ -1,5 +1,4 @@
 import CMUXMobileCore
-import CmuxMobileHost
 import CmuxAuthRuntime
 import CryptoKit
 import Foundation
@@ -110,7 +109,7 @@ public actor RemotesClient {
         }
         let ownerID = await auth.currentUser?.id
         let deviceId = Self.deviceId(forName: name, ownerID: ownerID)
-        let attachRoutes = try specs.enumerated().map { index, spec in
+        _ = try specs.enumerated().map { index, spec in
             try spec.attachRoute(id: "manual-\(index)", priority: index)
         }
         // A registry route is only attachable from a signed-in phone when the
@@ -134,10 +133,9 @@ public actor RemotesClient {
             "displayName": name,
             "manual": true,
             "tag": Self.manualInstanceTag,
-            "routes": attachRoutes.mobileHostJSONObjects(
-                for: .authenticated,
-                at: Date()
-            ),
+            // The route encoder lived in the removed mobile host package;
+            // Cloud is hard-disabled, so the registry entry carries no routes.
+            "routes": [[String: Any]](),
         ]
         if let tag = rawTag?.trimmingCharacters(in: .whitespacesAndNewlines), !tag.isEmpty {
             body["instanceLabels"] = ["tag": tag]

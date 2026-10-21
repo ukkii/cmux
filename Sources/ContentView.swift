@@ -885,17 +885,14 @@ struct ContentView: View {
     let featureFlags: CmuxFeatureFlags
     let sidebarUnread: SidebarUnreadModel
     let titlebarControlsLayoutModel: TitlebarControlsLayoutModel
-    let devicesModel: DevicesPanelViewModel?
 
     @MainActor
     init(
         windowId: UUID,
         featureFlags: CmuxFeatureFlags? = nil,
         sidebarUnread: SidebarUnreadModel? = nil,
-        titlebarControlsLayoutModel: TitlebarControlsLayoutModel? = nil,
-        devicesModel: DevicesPanelViewModel? = nil
+        titlebarControlsLayoutModel: TitlebarControlsLayoutModel? = nil
     ) {
-        self.devicesModel = devicesModel
         self.windowId = windowId
         self.featureFlags = featureFlags ?? .shared
         self.sidebarUnread = sidebarUnread ?? TerminalNotificationStore.shared.sidebarUnread
@@ -1949,7 +1946,6 @@ struct ContentView: View {
 
     private func rightSidebarPanel(appearance: WindowAppearanceSnapshot) -> some View {
         return RightSidebarPanelView(
-            devicesModel: devicesModel,
             tabManager: tabManager,
             fileExplorerStore: fileExplorerStore,
             fileExplorerState: fileExplorerState,
@@ -7371,7 +7367,6 @@ struct ContentView: View {
         snapshot.setBool(CommandPaletteContextKeys.sidebarMatchTerminalBackground, sidebarMatchTerminalBackground)
         snapshot.setBool(CommandPaletteContextKeys.browserDisabled, BrowserAvailabilitySettings.isDisabled())
         snapshot.setBool(CommandPaletteContextKeys.browserManagedByPolicy, BrowserAvailabilitySettings.isManagedByPolicy)
-        snapshot.setBool(CommandPaletteContextKeys.mobileRemoteControlManagedByPolicy, MobileRemoteControlPolicy.isDisabled)
         snapshot.setBool(CommandPaletteContextKeys.computerUseUXEnabled, featureFlags.isComputerUseUXEnabled)
         if let auth = AppDelegate.shared?.auth {
             snapshot.setBool(CommandPaletteContextKeys.authSignedIn, auth.accountFlow.isAuthenticated)
@@ -7596,17 +7591,6 @@ struct ContentView: View {
 
         return snapshot
     }
-
-    /// Search keywords for the mobile pairing command palette entry.
-    ///
-    /// Kept as a single source of truth so the contribution and its behavioral
-    /// test agree on what queries (e.g. `ios`, `ipados`) must surface the
-    /// command. These are platform/technical terms that read the same across
-    /// locales, so they are not localized.
-    static let commandPaletteMobileConnectKeywords: [String] = [
-        "tailscale", "iroh", "mobile", "connect", "pair", "pairing", "device",
-        "ios", "ipados", "iphone", "ipad", "phone", "tablet", "qr",
-    ]
 
     /// Builds command-palette contributions from synchronous context and cached async availability.
     /// Builds the complete Cmd-Shift-P contribution list before filtering.
@@ -7955,17 +7939,6 @@ struct ContentView: View {
                     String(localized: "command.openGhosttySettings.subtitle", defaultValue: "Ghostty Config Files")
                 ),
                 keywords: ["open", "ghostty", "settings", "config", "configuration", "file", "textedit", "terminal"]
-            )
-        )
-        contributions.append(
-            CommandPaletteCommandContribution(
-                commandId: "palette.mobileConnect",
-                title: constant(
-                    String(localized: "command.mobileConnect.title", defaultValue: "Open Mobile Pairing")
-                ),
-                subtitle: constant(String(localized: "command.mobileConnect.subtitle", defaultValue: "Mobile")),
-                keywords: Self.commandPaletteMobileConnectKeywords,
-                when: { !$0.bool(CommandPaletteContextKeys.mobileRemoteControlManagedByPolicy) }
             )
         )
         contributions.append(contentsOf: Self.commandPaletteAuthCommandContributions() + Self.commandPaletteProCommandContributions())
@@ -8605,33 +8578,6 @@ struct ContentView: View {
         )
         contributions.append(
             CommandPaletteCommandContribution(
-                commandId: "palette.terminalSizeToMyWindow",
-                title: constant(String(localized: "command.terminalSizeToMyWindow.title", defaultValue: "Size Terminal to My Window")),
-                subtitle: terminalPanelSubtitle,
-                keywords: ["terminal", "size", "resize", "window", "grid", "shared", "phone", "iphone", "fit", "mine"],
-                when: { $0.bool(CommandPaletteContextKeys.panelIsTerminal) }
-            )
-        )
-        contributions.append(
-            CommandPaletteCommandContribution(
-                commandId: "palette.terminalShowSizePanel",
-                title: constant(String(localized: "command.terminalShowSizePanel.title", defaultValue: "Show Terminal Size Panel")),
-                subtitle: terminalPanelSubtitle,
-                keywords: ["terminal", "size", "participants", "shared", "clients", "policy", "latest", "smallest", "priority", "fixed"],
-                when: { $0.bool(CommandPaletteContextKeys.panelIsTerminal) }
-            )
-        )
-        contributions.append(
-            CommandPaletteCommandContribution(
-                commandId: "palette.terminalDisconnectOtherClients",
-                title: constant(String(localized: "command.terminalDisconnectOtherClients.title", defaultValue: "Disconnect Other Terminal Clients…")),
-                subtitle: terminalPanelSubtitle,
-                keywords: ["terminal", "disconnect", "detach", "clients", "phone", "iphone", "shared", "kick"],
-                when: { $0.bool(CommandPaletteContextKeys.panelIsTerminal) }
-            )
-        )
-        contributions.append(
-            CommandPaletteCommandContribution(
                 commandId: "palette.terminalPasteLastScreenshot",
                 title: constant(String(localized: "command.terminalPasteLastScreenshot.title", defaultValue: "Paste Last Screenshot")),
                 subtitle: terminalPanelSubtitle,
@@ -9222,17 +9168,6 @@ struct ContentView: View {
 #endif
             GhosttyApp.shared.openConfigurationInTextEdit()
         }
-        registry.register(commandId: "palette.mobileConnect") {
-#if DEBUG
-            cmuxDebugLog("palette.mobileConnect.invoke")
-#endif
-            _ = AppDelegate.shared?.performMobileConnectWorkspaceAction(
-                tabManager: tabManager,
-                preferredWindow: observedWindow,
-                enforceFeatureFlag: false,
-                debugSource: "palette.mobileConnect"
-            )
-        }
         registerAuthCommandHandlers(&registry)
         registerProCommandHandlers(&registry)
         registry.register(commandId: "palette.makeDefaultTerminal") {
@@ -9594,21 +9529,6 @@ struct ContentView: View {
         }
         registry.register(commandId: "palette.terminalSendCtrlF") {
             if !tabManager.sendCtrlFToFocusedTerminal() {
-                NSSound.beep()
-            }
-        }
-        registry.register(commandId: "palette.terminalSizeToMyWindow") {
-            if !tabManager.sizeFocusedTerminalToMyWindow() {
-                NSSound.beep()
-            }
-        }
-        registry.register(commandId: "palette.terminalShowSizePanel") {
-            if !tabManager.showFocusedTerminalSizePanel(confirmDisconnectOthers: false) {
-                NSSound.beep()
-            }
-        }
-        registry.register(commandId: "palette.terminalDisconnectOtherClients") {
-            if !tabManager.showFocusedTerminalSizePanel(confirmDisconnectOthers: true) {
                 NSSound.beep()
             }
         }
@@ -15724,13 +15644,10 @@ struct SidebarFooterButtons: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            if shows(.account) || shows(.mobileConnect) || shows(.help) || shows(.cloud) {
+            if shows(.account) || shows(.help) || shows(.cloud) {
                 HStack(spacing: 0) {
                     if shows(.account), CmuxFeatureFlags.shared.isSidebarAccountButtonEnabled {
                         SidebarAccountMenuButton()
-                    }
-                    if shows(.mobileConnect), CmuxFeatureFlags.shared.isMobileConnectButtonEnabled {
-                        SidebarMobileConnectButton()
                     }
                     if shows(.help) {
                         SidebarHelpMenuButton()

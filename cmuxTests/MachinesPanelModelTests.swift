@@ -1548,15 +1548,4 @@ final class MachinesPanelVMStreamTests: XCTestCase {
         XCTAssertEqual(model.machines.map(\.id), ["c", "b", "a"])
     }
 
-    func testRoutinePollIntervalFollowsTheStream() {
-        let clock = CloudReadManualClock()
-        let model = makeStreamingModel(pollingClock: clock)
-        XCTAssertEqual(model.routinePollInterval, MachinesPanelViewModel.pollInterval)
-        XCTAssertEqual(MachinesPanelViewModel.pollInterval, .seconds(45))
-        XCTAssertEqual(MachinesPanelViewModel.streamingPollInterval, .seconds(300))
-        XCTAssertFalse(model.isVMSyncConnected)
-        XCTAssertNil(model.vmSync, "no auth coordinator, no stream")
-        model.stopVMSync()
-        XCTAssertEqual(model.routinePollInterval, .seconds(45), "stopping an absent stream keeps the polling cadence")
-    }
 }

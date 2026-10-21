@@ -101,31 +101,6 @@ struct SettingsSearchIndexTests {
         #expect(result.contains(where: { $0.title == "Automation" }))
     }
 
-    /// Every name people use for the Cloud sidebar's My Devices feature ranks
-    /// a Devices result first, anchored on the Devices section (#14771).
-    @Test(arguments: ["computers", "Computers", "devices", "Devices", "my devices", "macs", "discovery", "discoverable"])
-    func devicesQueriesLandOnTheDevicesSection(query: String) throws {
-        let index = SettingsSearchIndex(catalog: SettingCatalog())
-        let first = try #require(index.match(query).first)
-
-        switch first.kind {
-        case .section:
-            #expect(first.id == "section:computers")
-            #expect(first.anchorID == "section:computers")
-        case .setting(let parent):
-            #expect(parent == .computers, "\(query) ranked \(first.id) first")
-        }
-    }
-
-    @Test(arguments: ["mac", "tailscale", "remote"])
-    func devicesSectionAliasesPreserveSearchRanking(query: String) throws {
-        let index = SettingsSearchIndex(catalog: SettingCatalog())
-        let result = try #require(index.match(query).first { $0.kind == .section })
-
-        #expect(result.id == "section:computers")
-        #expect(result.anchorID == "section:computers")
-    }
-
     /// Typing an exact section name navigates to that section first.
     /// Child settings' dotted-path synonyms (e.g. "automation.*") also
     /// match the query and carry a +20 bonus, so without an exact-title
@@ -147,16 +122,6 @@ struct SettingsSearchIndexTests {
     func localTmuxQueriesFindSessionPersistenceRow(query: String) {
         let result = SettingsSearchIndex(catalog: SettingCatalog()).match(query)
         #expect(result.contains { $0.id == "setting:terminal:session-persistence" })
-    }
-
-    @Test(arguments: ["push", "notifications", "iphone"])
-    func pushNotificationQueriesFindTheMobileForwardingRow(query: String) {
-        let result = SettingsSearchIndex(catalog: SettingCatalog()).match(
-            query
-        )
-        #expect(result.contains {
-            $0.id == "setting:mobile:phone-push-forwarding"
-        })
     }
 
     /// Every Browser Memory Saver row is searchable. A main merge once took

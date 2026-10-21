@@ -38,7 +38,6 @@ struct CloudTreeOutlineView: NSViewRepresentable {
     /// The Cloud Machines header's New Machine "+" and its plan count (nil until the plan loads).
     var canCreateCloudMachine: Bool = false
     var cloudMachinesUsage: CloudMachinesUsage? = nil, cloudMachinesRefresh: CloudTreeSectionRefresh? = nil
-    var reveal: CloudTreeRevealRequest? = nil
     var creationReveal: CloudWorkspaceCreationReveal? = nil
     var nodeBuilder: ((CloudTreeBuildInputs) -> [CloudTreeNode])? = nil
     @Environment(\.tabDragTransferRegistry) private var tabDragTransferRegistry
@@ -80,7 +79,6 @@ struct CloudTreeOutlineView: NSViewRepresentable {
             canCreateCloudMachine: canCreateCloudMachine,
             cloudMachinesUsage: cloudMachinesUsage, cloudMachinesRefresh: cloudMachinesRefresh
         ))
-        context.coordinator.reveal(reveal)
         context.coordinator.reveal(creation: creationReveal)
     }
     // MARK: - Coordinator
@@ -409,12 +407,6 @@ struct CloudTreeOutlineView: NSViewRepresentable {
         /// Creates or reuses a cell for one immutable Cloud tree node.
         func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
             guard let node = item as? CloudTreeNode else { return nil }
-            if case .devicesEmpty(let section) = node.kind {
-                let cell = (outlineView.makeView(withIdentifier: CloudTreeDevicesEmptyCell.identifier, owner: nil) as? CloudTreeDevicesEmptyCell)
-                    ?? CloudTreeDevicesEmptyCell(frame: .zero)
-                cell.configure(section: section, actions: nodeActions, style: style, level: outlineView.level(forItem: node))
-                return cell
-            }
             let cell = (outlineView.makeView(withIdentifier: CloudTreeCellView.identifier, owner: nil) as? CloudTreeCellView)
                 ?? CloudTreeCellView(frame: .zero)
             var rowActions = nodeActions
@@ -848,10 +840,9 @@ struct CloudTreeOutlineView: NSViewRepresentable {
             case .placeholder(let machineID, _):
                 guard let machine = machine(id: machineID) else { return [] }
                 return machineMenuItems(machine)
-            case .device(let row):
-                return deviceMenuItems(machine: row.machine, canCreate: row.canCreateWorkspacesAndTerminals)
-            case .devicesSection(let section), .devicesEmpty(let section):
-                return deviceDiscoveryMenuItems(section: section)
+            case .device, .devicesSection, .devicesEmpty:
+                // My Devices was removed; the builder never emits these rows.
+                return []
             case .cloudMachinesSection:
                 return [item(String(localized: "cloudTree.menu.refresh", defaultValue: "Refresh")) { [nodeActions] in nodeActions.refresh() }]
             case .coderouterSection:

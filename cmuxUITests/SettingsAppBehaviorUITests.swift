@@ -87,51 +87,6 @@ import XCTest
 ///     out-of-process effects (launch an editor, play a sound, run a shell
 ///     command); not in-app observable.
 final class SettingsAppBehaviorUITests: SettingsUITestCase {
-    func testMobilePairingSettingsLightAndDarkCaptures() throws {
-        for appearance in ["light", "dark"] {
-            let app = XCUIApplication.cmuxTestApplication()
-            app.launchArguments += settingsLaunchArguments + ["-appearanceMode", appearance]
-            app.launchEnvironment["CMUX_UI_TEST_MODE"] = "1"
-            launchAndActivate(app)
-            defer { app.terminate() }
-            let window = openSettings(app)
-            navigate(window, to: "Mobile")
-            let pairingToggle = window.checkBoxes["SettingsMobileIOSPairingHostToggle"].firstMatch
-            XCTAssertTrue(pairingToggle.waitForExistence(timeout: 5))
-            let detail = window.staticTexts["Lets iPhone and iPad pair with and connect to this Mac."].firstMatch
-            if !isOn(pairingToggle) {
-                pairingToggle.click()
-            }
-            XCTAssertTrue(poll(timeout: 5) { self.isOn(pairingToggle) })
-            let title = window.staticTexts["Enable iOS pairing"].firstMatch
-            XCTAssertTrue(title.waitForExistence(timeout: 5))
-            XCTAssertTrue(detail.waitForExistence(timeout: 5))
-            let header = try XCTUnwrap(window.staticTexts.matching(identifier: "Mobile").allElementsBoundByIndex.first {
-                $0.frame.minX > window.frame.minX + 150
-            })
-            XCTAssertLessThan(title.frame.minY, window.staticTexts["Forward Notifications to iPhone"].firstMatch.frame.minY)
-            let crop = header.frame.union(title.frame).union(detail.frame).insetBy(dx: -12, dy: -12)
-            let source = try XCTUnwrap(window.screenshot().image.cgImage(forProposedRect: nil, context: nil, hints: nil))
-            let scale = CGFloat(source.width) / window.frame.width
-            let pixels = CGRect(
-                x: (crop.minX - window.frame.minX) * scale,
-                y: (crop.minY - window.frame.minY) * scale,
-                width: crop.width * scale,
-                height: crop.height * scale
-            ).integral
-            let cropped = try XCTUnwrap(source.cropping(to: pixels))
-            let capture = XCTAttachment(image: NSImage(cgImage: cropped, size: crop.size))
-            capture.name = "MacSettingsMobilePairing-\(appearance)"
-            capture.lifetime = .keepAlways
-            add(capture)
-            let full = XCTAttachment(screenshot: window.screenshot())
-            full.name = "Mac Settings - \(appearance)"
-            full.lifetime = .keepAlways
-            add(full)
-            pairingToggle.click()
-            app.terminate()
-        }
-    }
 
     func testGermanSettingsNavigationAndSearchUseTranslations() {
         assertLocalizedNavigation(
@@ -237,33 +192,6 @@ final class SettingsAppBehaviorUITests: SettingsUITestCase {
     /// A static-text whose visible string equals `text`.
     private func subtitleText(_ window: XCUIElement, _ text: String) -> XCUIElement {
         window.staticTexts[text]
-    }
-
-    func testMobilePushForwardingIsVisibleAndDefaultsToAlways() {
-        // Open Settings after launch activation, like the other tests: a
-        // window opened at launch ends up behind the main window, and its
-        // controls have no hit point.
-        let app = makeLaunchedApp()
-        let window = openSettings(app)
-        navigate(window, to: "Mobile")
-
-        let forwarding = toggle(
-            window,
-            id: "SettingsMobilePhonePushForwardingToggle"
-        )
-        XCTAssertTrue(isOn(forwarding), "Forward Notifications to Phone should start on")
-
-        let mode = requireElement(
-            candidates: [
-                window.popUpButtons["SettingsMobilePhonePushModePicker"],
-                window.menuButtons["SettingsMobilePhonePushModePicker"],
-                window.descendants(matching: .any)["SettingsMobilePhonePushModePicker"],
-            ],
-            timeout: 4,
-            description: "phone push forwarding mode picker"
-        )
-        XCTAssertTrue(mode.label.contains("Always") || mode.value as? String == "Always")
-        _ = toggle(window, id: "SettingsMobilePhonePushHideContentToggle")
     }
 
     // MARK: - TIER 1: Minimal Mode toggle keeps its fixed subtitle

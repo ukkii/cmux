@@ -350,13 +350,6 @@ struct IOSCommand: SharedLegacyFacadeCommand {
     )
 }
 
-struct MobileCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("surface"), completion: surfaceCompletion) var surfaceID: String?
-    @Option(name: .customLong("workspace"), completion: workspaceCompletion) var workspaceID: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "mobile", helpNames: [])
-}
-
 struct SSHCommand: SharedLegacyFacadeCommand {
     @Argument var destination: String?
     @Option(name: .customLong("transport"), completion: .list(["ssh", "mosh"])) var transport: String?

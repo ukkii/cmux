@@ -559,7 +559,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     let cloudBannerDismissalStore: CloudBannerDismissalStore
     /// Composition-root owner for the persisted per-SSH-machine clipboard-write policy.
     let sshClipboardWriteTrustStore: SSHClipboardWriteTrustStore
-    private(set) var devicesRegistry: DeviceSurfaceProviderRegistry?
     /// Stateless control-socket syscall layer (CmuxControlSocket); composition-root owned.
     nonisolated let socketTransport = SocketTransport()
     nonisolated let processSnapshotService = CmuxTopProcessSnapshot.makeProcessSnapshotService()
@@ -616,8 +615,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         Self.cachedIsRunningUnderXCTest
     }
     private let cmuxThemePreviewReloadScheduler = MainActorDeferredActionScheduler()
-    private let connectivityInvalidationSubscriberCoordinator = ConnectivityInvalidationSubscriberCoordinator()
-    let workspacePresenceController = WorkspacePresenceController()
     private let sudoApprovalCoordinator: SudoApprovalCoordinator?
 
     @MainActor
@@ -847,11 +844,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private(set) lazy var cloudActivationCoordinator = CloudActivationCoordinator(prepare: { try await CmuxTuiSurfaceProviderRegistry.shared.prepareForActivation() }, cleanup: { await CmuxTuiSurfaceProviderRegistry.shared.cancelActivationPreparation() })
     var cloudWorkspaceCoordinator: CloudWorkspaceCoordinator?
     var cloudWorkspaceOperationController: CloudWorkspaceOperationController?
-    var deviceWorkspaceCreationCoordinator: DeviceWorkspaceCreationCoordinator?
     var newMachineSheetPresenter: (any NewMachineSheetPresenting)?
-    /// Strongly-held observers for every active TabManager. Each observer owns
-    /// Combine subscriptions that publish workspace.updated to mobile clients.
-    private var mobileWorkspaceListObservers: [ObjectIdentifier: MobileWorkspaceListObserver] = [:]
     private let agentChatTranscriptService = AgentChatTranscriptService()
     var settingsRuntime: SettingsRuntime?
     /// Injected before the coordinator is used; the managed-policy extension
@@ -872,7 +865,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var shortcutDefaultsObserver: NSObjectProtocol?
     private weak var agentInboxReplyFieldWindow: NSWindow?
     private var menuBarVisibilityObserver: NSObjectProtocol?
-    private var mobileHostSettingsObserver: NSObjectProtocol?
     /// Applies MDM managed-policy transitions (browser/remote-control) while
     /// the app runs. Installed once from `installManagedPolicyEnforcement()`.
     var managedPolicyEnforcementObserver: ManagedPolicyEnforcementObserver?
@@ -2028,11 +2020,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             windows: activationWindows,
             trigger: .applicationActivation
         )
-        // A Mac that slept through the reply nudge picks parked replies up here.
-        PhoneReplyInboxCoordinator.shared.sweepSoon(reason: "app-activation")
-        // Reconcile pairing on wake so an opted-in Mac resumes and an opted-out
-        // Mac tears down any work that was in flight before sleep.
-        MobileHostService.shared.syncToSettings()
 
         guard let notificationStore else { return }
         notificationStore.handleApplicationDidBecomeActive()
@@ -2436,10 +2423,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         terminationWatchdog.arm()
         // Plain quit detaches local ssh clients; explicit close already killed marked sessions.
         remoteTmuxController.detachAll()
-        // Best-effort presence goodbye; unclean exits are covered by the
-        // service's missed-heartbeat timeout.
-        PresenceHeartbeatClient.shared.appWillTerminate()
-        connectivityInvalidationSubscriberCoordinator.appWillTerminate()
         closeAllWebInspectorsBeforeAppTeardown()
         sessionAutosaveCoordinator.stop()
         CloudVMActionLauncher.shared.terminateAll()
@@ -2448,7 +2431,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         CmuxTuiSurfaceProviderRegistry.shared.terminateWireGuardHubForAppQuit()
         CmuxSSHURLProcessLauncher.shared.terminateAll()
         caffeineController.setEnabled(false)
-        MobileHostService.shared.stop()
         TerminalController.shared.stopAutomationEngine()
         TerminalController.shared.stop(cleanupDiscoveryState: true)
         GhosttyApp.terminalPasteboard.cleanupAllOwnedTemporaryImageFiles()
@@ -2492,9 +2474,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         newMachineSheetPresenter: any NewMachineSheetPresenting,
         automationEngine: AutomationEngine,
         browserDataImportCoordinator: BrowserDataImportCoordinator,
-        computerUseRuntimeService: ComputerUseRuntimeService,
-        devicesRegistry: DeviceSurfaceProviderRegistry? = nil,
-        computersService: HiveComputersService? = nil
+        computerUseRuntimeService: ComputerUseRuntimeService
     ) {
         captureSessionLaunchStateIfNeeded()
         self.tabManager = tabManager
@@ -2514,9 +2494,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         self.cloudMachinePinStore = cloudMachinePinStore
         self.cloudWorkspaceCoordinator = cloudWorkspaceCoordinator
         self.cloudWorkspaceOperationController = cloudWorkspaceOperationController
-        self.deviceWorkspaceCreationCoordinator = makeDeviceWorkspaceCreationCoordinator(
-            operations: cloudWorkspaceOperationController, catalog: .shared
-        )
         self.newMachineSheetPresenter = newMachineSheetPresenter
         self.browserDataImportCoordinator = browserDataImportCoordinator
         self.computerUseRuntimeService = computerUseRuntimeService
@@ -2548,7 +2525,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         caffeineController.onStateChange = { [weak self] _ in
             self?.menuBarExtraController?.refreshForDebugControls()
         }
-        self.devicesRegistry = devicesRegistry
         TerminalController.shared.attachAuth(coordinator: auth.coordinator, accountFlow: auth.accountFlow)
         TerminalController.shared.attachBrowserDataImportCoordinator(browserDataImportCoordinator)
         TerminalController.shared.attachCaffeineController(caffeineController)
@@ -5200,27 +5176,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         NotificationCenter.default.post(name: .mainWindowContextsDidChange, object: self)
     }
 
-    func ensureMobileWorkspaceListObserver(for tabManager: TabManager) {
-        let id = ObjectIdentifier(tabManager)
-        let configStore = mainWindowContext(for: tabManager)?.cmuxConfigStore
-        if let observer = mobileWorkspaceListObservers[id] {
-            observer.updateConfigStore(configStore)
-        } else {
-            mobileWorkspaceListObservers[id] = MobileWorkspaceListObserver(
-                tabManager: tabManager,
-                sidebarUnread: notificationStore?.sidebarUnread,
-                configStore: configStore
-            )
-        }
-    }
-
-    private func removeMobileWorkspaceListObserverIfUnused(for tabManager: TabManager) {
-        guard !mainWindowContexts.values.contains(where: { $0.tabManager === tabManager }) else {
-            return
-        }
-        mobileWorkspaceListObservers.removeValue(forKey: ObjectIdentifier(tabManager))
-    }
-
     private func finalizeRejectedMainWindowRegistrationIfUnowned(_ tabManager: TabManager) {
         guard !ownsMainWindowTabManager(tabManager) else { return }
         tabManager.finalizeAllWorkspacesForWindowClose()
@@ -6866,7 +6821,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // protection or frame-notification demand after its context is retired.
         removed.tabManager.workspaceSwitchCoordinator.cancel()
         removed.teardownWindowDock()
-        removeMobileWorkspaceListObserverIfUnused(for: removed.tabManager)
         notifyMainWindowContextsDidChange()
         return removed
     }
@@ -6875,7 +6829,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func discardOrphanedMainWindowContext(_ context: MainWindowContext, allowWindowlessFallback: Bool = false) {
         context.tabManager.workspaceSwitchCoordinator.cancel()
         guard transitionMainWindowContextToOrphaned(context) else { return }
-        removeMobileWorkspaceListObserverIfUnused(for: context.tabManager)
         notifyMainWindowContextsDidChange()
 
         if tabManager === context.tabManager {
@@ -7674,25 +7627,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return false
     }
 
-    /// Opens My Devices in the selected main window and scopes its reveal request
-    /// to that window so another mounted Machines panel cannot consume it first.
-    @MainActor
-    func openDevicesSidebarAndReveal(
-        instance: SurfaceDeviceInstanceID,
-        registry: DeviceSurfaceProviderRegistry
-    ) -> RightSidebarRemoteApplyResult? {
-        guard let context = preferredRegisteredMainWindowContext() else { return nil }
-        let target = RightSidebarRemoteTarget(windowId: context.windowId)
-        let result = applyRightSidebarRemoteCommand(.setMode(.machines, focus: true), target: target)
-        switch result {
-        case .ok, .state:
-            registry.reveal(instance: instance, windowID: context.windowId)
-        case .failure:
-            break
-        }
-        return result
-    }
-
     private func rightSidebarRemoteContext(target: RightSidebarRemoteTarget) -> MainWindowContext? {
         if let windowId = target.windowId {
             return mainWindowContexts.values.first(where: { $0.windowId == windowId })
@@ -8342,9 +8276,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let context = preferredTabManager.flatMap { mainWindowContext(for: $0) }
             ?? preferredMainWindowContextForWorkspaceCreation(event: event, debugSource: debugSource)
         let manager = context?.tabManager ?? preferredTabManager
-        if !staysLocal, let manager, let machine = manager.selectedWorkspace?.deviceMachineForNewWorkspace {
-            return deviceWorkspaceCreationCoordinator?.start(on: machine, in: manager) ?? false
-        }
         if !staysLocal, let manager,
            let vmID = manager.selectedWorkspace?.cloudVMID,
            !vmID.isEmpty {
@@ -8412,7 +8343,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private func isLocalWorkspaceForLocalCreation(_ workspace: Workspace) -> Bool {
         workspace.cloudVMBinding == nil
             && workspace.remoteConfiguration == nil
-            && workspace.deviceMachineForNewWorkspace == nil
     }
 
     /// Empty-area double-click in the sidebar. A configured
@@ -8448,7 +8378,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// remote Mac, whose new workspaces are placed by the remote side.
     private func sidebarEmptyAreaUsesRemoteNewWorkspaceRouting(tabManager: TabManager) -> Bool {
         remoteTmuxController.wouldNewWorkspaceSpawnRemote(in: tabManager)
-            || tabManager.selectedWorkspace?.deviceMachineForNewWorkspace != nil
     }
 
     /// Whether the window owning `tabManager` has a `ui.newWorkspace.action`.
@@ -8513,83 +8442,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         guard didCreate, let createdWorkspace else { return nil }
         focusInitialBrowserWebView(in: createdWorkspace)
         return createdWorkspace
-    }
-
-    /// Opens the mobile pairing flow as a dedicated workspace, reusing the
-    /// existing pairing workspace in the target window when one is open.
-    ///
-    /// - Parameters:
-    ///   - preferredTabManager: The target window's workspace manager.
-    ///   - preferredWindow: The target main window, when known.
-    ///   - focusWorkspace: Whether to select and focus the pairing workspace.
-    ///   - enforceFeatureFlag: Whether the Mobile Pairing button flag gates the action.
-    ///   - bringWindowForward: Whether to activate the resolved main window.
-    ///   - debugSource: The entrypoint name used in debug diagnostics.
-    /// - Returns: The reused or newly created pairing workspace, or `nil` when unavailable.
-    @discardableResult
-    func performMobileConnectWorkspaceAction(
-        tabManager preferredTabManager: TabManager? = nil,
-        preferredWindow: NSWindow? = nil,
-        focusWorkspace: Bool = true,
-        enforceFeatureFlag: Bool = true,
-        bringWindowForward: Bool = false,
-        debugSource: String = "mobileConnect"
-    ) -> Workspace? {
-        // Shared chokepoint for every pairing-window entry (Settings, palette,
-        // menu): pairing is unavailable under a managed remote-control disable.
-        guard MobileRemoteControlPolicy.isEnabled else {
-#if DEBUG
-            cmuxDebugLog("mobileConnect.blocked_managed_policy source=\(debugSource)")
-#endif
-            return nil
-        }
-        guard !enforceFeatureFlag || CmuxFeatureFlags.shared.isMobileConnectButtonEnabled else {
-#if DEBUG
-            cmuxDebugLog("mobileConnect.blocked_flag source=\(debugSource)")
-#endif
-            return nil
-        }
-        guard let manager = preferredTabManager
-            ?? synchronizeActiveMainWindowContext(preferredWindow: preferredWindow) else {
-            return nil
-        }
-        if bringWindowForward {
-            guard let context = mainWindowContext(for: manager),
-                  let window = resolvedWindow(for: context),
-                  focusWindowForAppActivation(window, reason: .workspaceCreation) else {
-                return nil
-            }
-        }
-
-        if let workspace = manager.tabs.first(where: { workspace in
-            workspace.panels.values.contains { $0 is MobilePairingPanel }
-        }), let panel = workspace.panels.values.first(where: { $0 is MobilePairingPanel }) {
-            if focusWorkspace {
-                manager.selectedTabId = workspace.id
-                workspace.focusPanel(panel.id)
-            }
-            return workspace
-        }
-
-        let title = String(localized: "mobile.pairing.window.title", defaultValue: "Mobile Pairing")
-        guard let workspace = manager.addWorkspaceIfActive(
-            title: title,
-            select: focusWorkspace,
-            eagerLoadTerminal: false,
-            autoWelcomeIfNeeded: false,
-            autoRefreshMetadata: false,
-            allowTextBoxFocusDefault: false
-        ) else {
-            return nil
-        }
-        guard let initialPanelID = workspace.focusedPanelId,
-              let paneID = workspace.paneId(forPanelId: initialPanelID),
-              workspace.newMobilePairingSurface(inPane: paneID, focus: focusWorkspace) != nil else {
-            manager.closeWorkspace(workspace, recordHistory: false)
-            return nil
-        }
-        _ = workspace.closePanel(initialPanelID, force: true)
-        return workspace
     }
 
     func proUpgradeWorkspaceExists(workspaceId: UUID) -> Bool {
@@ -10520,8 +10372,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
         let root = ContentView(
             windowId: windowId,
-            titlebarControlsLayoutModel: titlebarControlsLayoutModel,
-            devicesModel: devicesRegistry.map { DevicesPanelViewModel(registry: $0, windowID: windowId) }
+            titlebarControlsLayoutModel: titlebarControlsLayoutModel
         )
             .environmentObject(tabManager)
             .environmentObject(notificationStore)
@@ -10991,19 +10842,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
     }
 
-    private func installMobileHostSettingsObserver() {
-        guard mobileHostSettingsObserver == nil else { return }
-        mobileHostSettingsObserver = NotificationCenter.default.addUserDefaultsObserver(object: nil) { [weak self] in
-            Task { @MainActor [weak self] in
-                self?.syncMobileHostService()
-            }
-        }
-    }
-
-    private func syncMobileHostService() {
-        MobileHostService.shared.syncToSettings()
-    }
-
     private func syncActivationPolicy(defaults: UserDefaults = .standard) {
         MenuBarOnlySettings.applyActivationPolicy(defaults: defaults)
     }
@@ -11227,10 +11065,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
               !text.isEmpty
         else { return }
 
-        // Share the phone composer's literal paste and provider-aware submit
+        // Share `terminal.paste`'s literal paste and provider-aware submit
         // key. Appending CR to paste text inserts a newline in agent editors.
         Task { @MainActor in
-            _ = await TerminalController.shared.v2MobileTerminalPaste(params: [
+            _ = await TerminalController.shared.v2TerminalPaste(params: [
                 "workspace_id": workspaceId,
                 "surface_id": surfaceId,
                 "text": text,
@@ -15675,14 +15513,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return handled
         }
 
-        if matchConfiguredShortcut(event: event, action: .sizeTerminalToMyWindow) {
-            let routedManager = preferredMainWindowContextForShortcutRouting(event: event)?.tabManager ?? tabManager
-            if routedManager?.sizeFocusedTerminalToMyWindow() != true {
-                NSSound.beep()
-            }
-            return true
-        }
-
         if matchConfiguredShortcut(event: event, action: .pasteLastScreenshot) {
             if performFocusedDockShortcut(
                 .pasteLastScreenshot,
@@ -18026,14 +17856,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
                 if didStart { onExecuted?() }
                 return didStart
-            case .mobileConnect:
-                let workspace = performMobileConnectWorkspaceAction(
-                    tabManager: context.tabManager,
-                    preferredWindow: resolvedWindow(for: context),
-                    debugSource: "configured.cmux.mobileConnect"
-                )
-                if workspace != nil { onExecuted?() }
-                return workspace != nil
             case .newSimulator: return performConfiguredNewSimulatorAction(context: context, onExecuted: onExecuted)
             case .newTerminal:
                 context.tabManager.newSurface()

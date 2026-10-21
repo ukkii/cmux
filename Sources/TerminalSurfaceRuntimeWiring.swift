@@ -140,9 +140,8 @@ final class TerminalSurfaceSpawnPolicyBridge: TerminalSurfaceSpawnPolicyProvidin
 
 // MARK: Terminal output tee
 
-/// Installs the libghostty PTY tee for `MobileTerminalByteTee` and keys
-/// drop/replay state by surface id (the legacy inline
-/// `ghostty_surface_set_pty_tee_cb` + `MobileTerminalByteTee.shared` calls).
+/// Installs the libghostty PTY tee for `TerminalOutputUpdateTee` and keys
+/// drop state by surface id.
 /// It also installs the surface's link filter, whose userdata shares the
 /// tee's lifetime: both are released only after the surface is freed.
 final class TerminalOutputByteTeeBridge: TerminalByteTeeBinding {
@@ -212,7 +211,7 @@ final class TerminalOutputByteTeeBridge: TerminalByteTeeBinding {
 
     @MainActor
     func dropSurface(surfaceID: UUID) {
-        MobileTerminalByteTee.shared.dropSurface(surfaceID: surfaceID)
+        TerminalOutputUpdateTee.shared.dropSurface(surfaceID: surfaceID)
         TerminalPredictionCenter.shared.unregister(surfaceID: surfaceID)
     }
 }

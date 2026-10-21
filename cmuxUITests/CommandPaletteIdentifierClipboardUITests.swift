@@ -110,109 +110,6 @@ final class CommandPaletteIdentifierClipboardUITests: XCTestCase {
         XCTAssertEqual(openedPath, expectedPath)
     }
 
-    func testConnectIPhoneCommandRemainsAvailableWhenMobileButtonFlagIsOff() throws {
-        let usageHistoryKey = "commandPalette.commandUsage.v1"
-        let usageDefaults = try XCTUnwrap(UserDefaults(suiteName: debugDefaultsDomain))
-        let previousUsageHistory = usageDefaults.object(forKey: usageHistoryKey)
-        let seededUsageHistory = try JSONSerialization.data(withJSONObject: [
-            "palette.mobileConnect": [
-                "useCount": 100,
-                "lastUsedAt": Date().timeIntervalSince1970,
-            ],
-        ])
-        usageDefaults.set(seededUsageHistory, forKey: usageHistoryKey)
-        usageDefaults.synchronize()
-        addTeardownBlock {
-            if let previousUsageHistory {
-                usageDefaults.set(previousUsageHistory, forKey: usageHistoryKey)
-            } else {
-                usageDefaults.removeObject(forKey: usageHistoryKey)
-            }
-            usageDefaults.synchronize()
-        }
-
-        let token = String(UUID().uuidString.prefix(8)).lowercased()
-        let temporaryDirectory = FileManager.default.temporaryDirectory
-        let socketPath = temporaryDirectory
-            .appendingPathComponent("cmux-mcp-\(token).sock")
-            .path
-        let logPath = temporaryDirectory
-            .appendingPathComponent("cmux-mcp-\(token).log")
-            .path
-        try? FileManager.default.removeItem(atPath: socketPath)
-        try? FileManager.default.removeItem(atPath: logPath)
-
-        let process = try launchSocketDrivenCommandPaletteApp(
-            socketPath: socketPath,
-            logPath: logPath
-        )
-        addTeardownBlock {
-            self.terminateAppProcess(process)
-            try? FileManager.default.removeItem(atPath: socketPath)
-            try? FileManager.default.removeItem(atPath: logPath)
-        }
-        let socket = ControlSocketClient(path: socketPath, responseTimeout: 2.0)
-
-        let socketReady = pollUntil(timeout: 15.0) {
-            socket.sendLine("ping") == "PONG"
-        }
-        XCTAssertTrue(
-            socketReady,
-            "Expected control socket at \(socketPath). app=\(appProcessDiagnostics(process)) log=\(tailOfFile(at: logPath))"
-        )
-        guard socketReady else { return }
-
-        var windowId: String?
-        XCTAssertTrue(
-            pollUntil(timeout: 8.0) {
-                guard let response = socket.sendLine("current_window"),
-                      UUID(uuidString: response) != nil else { return false }
-                windowId = response
-                return true
-            },
-            "Expected the socket to resolve a main window. log=\(tailOfFile(at: logPath))"
-        )
-        let resolvedWindowId = try XCTUnwrap(windowId)
-
-        let toggleResponse = try XCTUnwrap(
-            socket.sendJSON([
-                "id": UUID().uuidString,
-                "method": "debug.command_palette.toggle",
-                "params": ["window_id": resolvedWindowId],
-            ])
-        )
-        XCTAssertEqual(toggleResponse["ok"] as? Bool, true, "toggle failed: \(toggleResponse)")
-
-        XCTAssertTrue(
-            pollUntil(timeout: 5.0) {
-                guard let result = self.commandPaletteSnapshot(
-                    socket: socket,
-                    windowId: resolvedWindowId
-                ) else { return false }
-                return result["visible"] as? Bool == true
-            },
-            "Expected the command palette to become visible"
-        )
-
-        var matchingSnapshot: [String: Any]?
-        XCTAssertTrue(
-            pollUntil(timeout: 5.0) {
-                guard let result = self.commandPaletteSnapshot(
-                    socket: socket,
-                    windowId: resolvedWindowId
-                ) else { return false }
-                matchingSnapshot = result
-                guard result["query"] as? String == "",
-                let rows = result["results"] as? [[String: Any]],
-                rows.first?["command_id"] as? String == "palette.mobileConnect" else {
-                    return false
-                }
-                return true
-            },
-            "Expected Connect iPhone/iPad in the unfiltered palette while its sidebar flag is off. snapshot=\(matchingSnapshot ?? [:])"
-        )
-    }
-
     private func loginHomeDirectoryPath() -> String {
         if let passwd = getpwuid(getuid()), let home = passwd.pointee.pw_dir {
             return String(cString: home)
@@ -275,7 +172,6 @@ final class CommandPaletteIdentifierClipboardUITests: XCTestCase {
             "-AppleLocale", "en_US",
             "-menuBarOnly", "<false/>",
             "-socketControlMode", "allowAll",
-            "-cmux.flags.override.mobile-connect-button-enabled-release", "<false/>",
         ]
 
         var environment = ProcessInfo.processInfo.environment

@@ -98,3 +98,34 @@ to cmux services. (Their code is deleted in the following steps.)
 interactive sessions included, instead of the cmux-tui SSH carrier, which was built
 on Cloud code. Workspaces saved by the cmux-tui carrier still restore, but reconnect
 with a plain `ssh` command rather than reattaching to the old cmux-tui session.
+
+## Mobile app pairing, devices and peer networking
+
+- The Mac can no longer pair with or be controlled from the cmux iPhone/iPad app.
+  The Mobile Pairing workspace, the sidebar iPhone button, the "Open Mobile Pairing"
+  palette and menu actions and the `cmux.mobileconnect` tab-bar action are gone;
+  configs that still name that action ignore it.
+- Agent notifications are no longer forwarded to the phone, and phone replies to
+  notifications are no longer received. The "Forward notifications to my iPhone"
+  controls are gone.
+- My Devices is gone: no discovery of or connection to your other Macs, no Devices
+  section in the sidebar, no Settings › Devices pane.
+- Iroh/relay peer networking is gone, including Settings › Networking, the
+  Debug › Iroh Transport menu and `cmux iroh-diag`. The app no longer bundles
+  iroh-ffi or embeds Iroh relay-policy keys.
+- Shared terminal sizing is gone: the size panel and bounds overlay, "Size Terminal
+  to My Window" (Ctrl+Opt+Cmd+=), "Show Terminal Size Panel", "Disconnect Other
+  Terminal Clients", and `cmux surface size|participants|size-policy|size-to-me|size-counts|disconnect-participant|disconnect-others`.
+- Workspace presence avatars are gone.
+- Removed CLI commands: `cmux mobile …`. `cmux settings open` no longer accepts
+  `networking`, `computers` or `devices`.
+- Removed socket methods: every `mobile.*` method, the `terminal.create/input/replay/viewport/scroll/mouse/paste_image`
+  aliases, `terminal.size_*`, `terminal.participant(s).disconnect*`,
+  `debug.mobile.transport.*`, the `mobile_connect` workspace action and v1
+  `iroh_diag`. `terminal.paste` is kept (used by `cmux paste`).
+- Removed settings: the cmux.json `mobile` section and the feature flags
+  `mobile-connect-button`, `mobile-workspace-changes`, `ios-artifact-chip`,
+  `mobile-task-composer`, `mac-account-directory`. A leftover `mobile` key in
+  cmux.json is reported as unknown by schema validation.
+- MDM keys DisableRemoteControl, DisableDeviceDiscovery, DisableIncomingDeviceAccess
+  and DisableIrohNetworking are removed.

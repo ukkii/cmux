@@ -222,13 +222,6 @@ struct PanelContentView: View {
                 CloudVMLoadingPanelView(panel: loadingPanel)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        case .mobilePairing:
-            if panel is MobilePairingPanel {
-                MobilePairingPanelView(
-                    appearance: appearance,
-                    onRequestPanelFocus: onRequestPanelFocus
-                )
-            }
         case .accountSignIn:
             if let accountSignInPanel = panel as? AccountSignInPanel {
                 AccountSignInPanelView(
@@ -274,7 +267,7 @@ struct PanelContentView: View {
     private var shouldInstallPaneDropTarget: Bool {
         guard isVisibleInUI else { return false }
         switch panel.panelType {
-        case .markdown, .filePreview, .rightSidebarTool, .customSidebar, .simulator, .agentSession, .project, .extensionBrowser, .workspaceTodo, .coderouterGuide, .notifications, .cloudVMLoading, .mobilePairing, .accountSignIn, .cloudVPNSetup, .chief:
+        case .markdown, .filePreview, .rightSidebarTool, .customSidebar, .simulator, .agentSession, .project, .extensionBrowser, .workspaceTodo, .coderouterGuide, .notifications, .cloudVMLoading, .accountSignIn, .cloudVPNSetup, .chief:
             return true
         case .terminal, .browser:
             return false

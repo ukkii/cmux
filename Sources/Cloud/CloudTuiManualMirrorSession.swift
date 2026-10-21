@@ -2,7 +2,6 @@ import CmuxCloud
 import CmuxCloudTui
 import CmuxSurfaceCatalogModel
 import CmuxTerminal
-import CmuxTerminalSharing
 import CmuxTerminalSizing
 import CmuxCore
 import CmuxCloudImagePaste
@@ -24,10 +23,10 @@ final class CloudTuiManualMirrorSession {
     let terminalID: String
     private(set) var remoteSurfaceID: UInt64
     /// Shared-sizing relay bookkeeping (`shared-sizing-v1` daemons only).
-    var sizingRelay = CloudTerminalSizingRelay()
+    var sizingRelay = CloudMirrorInertSizingRelay()
     /// Set when someone disconnected this Mac; the pane shows it with Reattach
     /// and the session does not reconnect by itself.
-    var sharingDetachment: TerminalSharingDetachment?
+    var sharingDetachment: CloudMirrorSharingDetachment?
     /// Set while only this Mac's own view is detached (`scope:"view"`): the
     /// connection stays and keeps relaying phones; this pane stops sending
     /// its own activity until `reattach-view`.

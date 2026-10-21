@@ -55,18 +55,13 @@ struct ControlCommandExecutionPolicyTests {
             "browser.download.list", "browser.download.wait", "system.top", "system.memory",
             "workspace.remote.pty_bridge", "workspace.env", "sidebar.custom.reload",
             "sidebar.custom.open",
-            "debug.sidebar.simulate_drag", "debug.mobile.transport.disconnect", "debug.mobile.transport.reconnect_loop",
-            "debug.window.screenshot", "debug.window_hints", "debug.global_search.query", "mobile.attach_ticket.create",
-            "mobile.terminal.set_font", "mobile.task.models.list",
-            "terminal.size_state", "terminal.size_policy.set", "terminal.size_to_me",
-            "terminal.size_counts.set", "terminal.participant.disconnect",
-            "terminal.participants.disconnect_others",
+            "debug.sidebar.simulate_drag",
+            "debug.window.screenshot", "debug.window_hints", "debug.global_search.query",
+            "terminal.paste",
             // Vault session-index verbs scan transcript stores on disk and
             // must never hold the main actor (see socketWorkerMethods).
             "vault.sessions", "vault.search", "vault.checkpoints",
             "vault.checkpoint", "vault.fork",
-            "mobile.compatible_tags.get", "mobile.compatible_tags.set",
-            "mobile.panel.artifact.stat", "mobile.panel.artifact.thumbnail",
             // JavaScript-evaluating browser methods block on page JS and must
             // not hold the main actor (see socketWorkerMethods rationale).
             "browser.eval", "browser.wait", "browser.snapshot", "browser.click",
@@ -107,10 +102,6 @@ struct ControlCommandExecutionPolicyTests {
         for method in [
             "workspace.create", "browser.url.get",
             "browser.open_split", "browser.get.title", "browser.frame.main",
-            "mobile.terminal.create", "mobile.task.attachment.upload",
-            // Artifact fetch needs the authenticated mobile execution context;
-            // the local socket must answer method_not_found, not serve bytes.
-            "mobile.panel.artifact.fetch",
             "vmx.create", "",
             // Focus-intent verbs stay on the main lane until the mutations
             // tranche decides them deliberately.
@@ -216,10 +207,6 @@ struct ControlCommandExecutionPolicyTests {
         #expect(ControlCommandExecutionPolicy(forMethod: "system.ping") == .socketWorker(mainThreadCallable: true))
         #expect(ControlCommandExecutionPolicy(forMethod: "system.capabilities") == .socketWorker(mainThreadCallable: true))
         #expect(ControlCommandExecutionPolicy(forMethod: "system.top") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "mobile.task.models.list") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "mobile.panel.artifact.stat") == .socketWorker(mainThreadCallable: false))
-        #expect(ControlCommandExecutionPolicy(forMethod: "mobile.panel.artifact.fetch") == .mainActor)
-        #expect(ControlCommandExecutionPolicy(forMethod: "mobile.panel.artifact.thumbnail") == .socketWorker(mainThreadCallable: false))
         #expect(ControlCommandExecutionPolicy(forMethod: "vm.create") == .socketWorker(mainThreadCallable: false))
     }
 
@@ -269,10 +256,6 @@ struct ControlCommandExecutionPolicyTests {
                 forMethod: "workspace.remote.terminal_session_connected"
             ) == .socketWorker(mainThreadCallable: false)
         )
-    }
-
-    @Test func diagnosticReadsRunOnTheWorkerAndAreNotMainThreadCallable() {
-        #expect(ControlCommandExecutionPolicy(forV1Command: "iroh_diag") == .socketWorker(mainThreadCallable: false))
     }
 
     @Test func v1PingRunsOnTheWorkerAndIsMainThreadCallable() {
@@ -420,8 +403,6 @@ struct ControlCommandExecutionPolicyTests {
         #expect(ControlCommandExecutionPolicy.agentJournalV1Commands == agentJournal)
         let terminalRead: Set<String> = ["read_screen"]
         #expect(ControlCommandExecutionPolicy.terminalReadV1Commands == terminalRead)
-        let diagnosticRead: Set<String> = ["iroh_diag"]
-        #expect(ControlCommandExecutionPolicy.diagnosticReadV1Commands == diagnosticRead)
         let resolutionReads: Set<String> = [
             "list_windows", "current_window", "list_workspaces",
             "list_surfaces", "current_workspace",
@@ -442,10 +423,10 @@ struct ControlCommandExecutionPolicyTests {
         )
         let expectedWorker = telemetry.union(notification).union(agentJournal)
             .union(terminalRead)
-            .union(diagnosticRead).union(resolutionReads).union(sends)
+            .union(resolutionReads).union(sends)
             .union(configurationMutations).union(windowCapture).union(["ping"])
         #expect(ControlCommandExecutionPolicy.socketWorkerV1Commands == expectedWorker)
-        // Every member except terminal and diagnostic reads, the journal
+        // Every member except terminal reads, the journal
         // append (durability fsync must never run inline on main), blocking
         // configuration mutations, and async window capture is deliberately
         // main-thread callable (deadlock-free inline: bus enqueues plus
@@ -454,7 +435,6 @@ struct ControlCommandExecutionPolicyTests {
             ControlCommandExecutionPolicy.mainThreadCallableSocketWorkerV1Commands
                 == expectedWorker
                     .subtracting(terminalRead)
-                    .subtracting(diagnosticRead)
                     .subtracting(agentJournal)
                     .subtracting(configurationMutations)
                     .subtracting(windowCapture)

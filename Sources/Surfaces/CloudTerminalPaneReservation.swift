@@ -163,11 +163,6 @@ final class CloudOptimisticInputRelay: @unchecked Sendable {
         }
     }
 
-    /// Device mirrors adopt the same pane with their own byte router.
-    func attach(_ router: DeviceTerminalInputRouter) {
-        attachSender { router.enqueue($0) }
-    }
-
     /// Drops queued input and stops forwarding. A later `attach` resumes forwarding.
     func discard() {
         state.withLock { state in

@@ -19,8 +19,6 @@ let package = Package(
         .package(path: "../CmuxControlSocket"),
         .package(path: "../CmuxCore"),
         .package(path: "../CmuxFoundation"),
-        .package(path: "../CmuxMobileHost"),
-        .package(path: "../CmuxPhonePush"),
         .package(path: "../CmuxSettings"),
         .package(path: "../CmuxSurfaceCatalogModel"),
         .package(path: "../CmuxCloudResizeCore"),
@@ -42,8 +40,6 @@ let package = Package(
                 "CmuxControlSocket",
                 "CmuxCore",
                 "CmuxFoundation",
-                "CmuxMobileHost",
-                "CmuxPhonePush",
                 "CmuxSettings",
                 "CmuxSurfaceCatalogModel"
             ],
@@ -57,7 +53,6 @@ let package = Package(
                 "CmuxAuthRuntime",
                 "CmuxCloudTui",
                 "CMUXMobileCore",
-                "CmuxPhonePush",
                 "CmuxSurfaceCatalogModel",
                 .product(name: "CmuxCloudResizeCore", package: "CmuxCloudResizeCore"),
                 // CmuxTerminal binds libghostty, which SwiftPM cannot link here.

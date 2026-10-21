@@ -78,7 +78,6 @@ struct SidebarAccountButtonPresentation: Equatable {
 
 enum SidebarFooterControl: CaseIterable, Equatable {
     case account
-    case mobileConnect
     case help
     case cloud
     case shortcutDiscovery
@@ -280,51 +279,6 @@ struct SidebarAccountAvatar: View {
         }
     }
 
-}
-
-struct SidebarMobileConnectButton: View {
-    @EnvironmentObject private var tabManager: TabManager
-    private let title = String(localized: "command.mobileConnect.title", defaultValue: "Open Mobile Pairing")
-#if DEBUG
-    @AppStorage(SidebarFooterMobileIconDebugSettings.sizeKey)
-    private var debugIconSize = SidebarFooterMobileIconDebugSettings.defaultSize
-#endif
-
-    private var iconSize: CGFloat {
-#if DEBUG
-        CGFloat(debugIconSize)
-#else
-        SidebarFooterButtonMetrics.mobileIconSize
-#endif
-    }
-
-    var body: some View {
-        // Hidden under a managed remote-control disable: pairing cannot open
-        // (chokepoint in performMobileConnectWorkspaceAction), so showing the
-        // button would be a dead affordance.
-        if MobileRemoteControlPolicy.isEnabled {
-            Button {
-                _ = AppDelegate.shared?.performMobileConnectWorkspaceAction(
-                    tabManager: tabManager,
-                    debugSource: "sidebar.mobileConnect"
-                )
-            } label: {
-                CmuxSystemSymbolImage(systemName: "iphone", pointSize: iconSize, weight: .medium, tint: .secondary)
-                    .frame(
-                        width: SidebarFooterButtonMetrics.buttonSize,
-                        height: SidebarFooterButtonMetrics.buttonSize
-                    )
-            }
-            .buttonStyle(SidebarFooterIconButtonStyle())
-            .frame(
-                width: SidebarFooterButtonMetrics.buttonSize,
-                height: SidebarFooterButtonMetrics.buttonSize
-            )
-            .safeHelp(title)
-            .hintableAccessibilityLabel(title)
-            .accessibilityIdentifier("SidebarMobileConnectButton")
-        }
-    }
 }
 
 /// Opens Cloud Machines in the right sidebar, introducing Cloud first while

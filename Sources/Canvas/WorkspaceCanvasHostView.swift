@@ -119,7 +119,6 @@ struct WorkspaceCanvasHostView: View {
         case .coderouterGuide: return "questionmark.circle"
         case .notifications: return "bell"
         case .cloudVMLoading: return "cloud.fill"
-        case .mobilePairing: return "iphone"
         case .accountSignIn: return "person.crop.circle"
         case .cloudVPNSetup: return "network"
         case .chief: return ChiefPanel.iconSystemName

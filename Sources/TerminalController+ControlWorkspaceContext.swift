@@ -56,8 +56,8 @@ extension TerminalController: ControlWorkspaceContext {
 
     // MARK: - Create
 
-    /// `workspace.create` forwards to the single shared `v2WorkspaceCreate` body
-    /// (also driven by `v2MobileWorkspaceCreate`), bridging its Foundation result
+    /// `workspace.create` forwards to the single shared `v2WorkspaceCreate` body,
+    /// bridging its Foundation result
     /// — one source of truth for the create logic, byte-identical wire output.
     func controlWorkspaceCreate(params: [String: JSONValue]) -> ControlCallResult {
         switch v2WorkspaceCreate(params: params.mapValues(\.foundationObject)) {

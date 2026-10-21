@@ -1,4 +1,4 @@
-@testable import CmuxMobileHost
+@testable import CmuxAgentSessionStore
 import Foundation
 import Testing
 import Darwin

@@ -490,7 +490,7 @@ extension CMUXCLI {
     /// Completion candidates for `cmux settings <target>` and `cmux settings open
     /// <target>`. Canonical spellings only, matching `settingsTargetRawValue`.
     static let settingsTargetNames: [String] = [
-        "account", "app", "themes", "terminal", "networking", "computers", "sidebar-appearance",
+        "account", "app", "themes", "terminal", "sidebar-appearance",
         "custom-sidebars", "automation", "browser", "browser-import",
         "global-hotkey", "keyboard-shortcuts", "workspace-colors",
         "cmux-json", "reset",
@@ -811,7 +811,7 @@ extension CMUXCLI {
           docs                Print the same output as `cmux docs settings`.
 
         Targets:
-          account, app, themes, terminal, networking, computers, devices, sidebar-appearance,
+          account, app, themes, terminal, sidebar-appearance,
           custom-sidebars, automation, browser, browser-import,
           global-hotkey, keyboard-shortcuts, shortcuts, workspace-colors,
           cmux-json, json, reset
@@ -855,10 +855,6 @@ extension CMUXCLI {
             return "automation"
         case "browser":
             return "browser"
-        case "networking", "network", "iroh":
-            return "networking"
-        case "computers", "devices":
-            return "computers"
         case "browser-import", "browserimport", "import-browser-data":
             return "browserImport"
         case "global-hotkey", "globalhotkey", "hotkey":

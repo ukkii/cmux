@@ -139,39 +139,9 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         "browser.profiles.clear",
         "browser.profiles.delete",
         "browser.import.cookies",
-        "mobile.attach_ticket.create",
-        // Provider discovery reads config or runs `opencode models`; chat
-        // send/interrupt await terminal input. Neither may hold the main actor.
-        "mobile.task.models.list", "mobile.chat.send", "mobile.chat.interrupt",
         // Prompt submission suspends between paste and Enter while agent
         // editors commit the paste. The socket worker awaits the final result.
-        "mobile.terminal.paste",
         "terminal.paste",
-        // `mobile.terminal.set_font` only validates params and emits a push
-        // event via thread-safe MobileHostService statics, so it runs on the worker
-        // like the other mobile data-plane verbs. Without this entry the policy
-        // routes it to the main-actor processV2Command switch, which lacks the
-        // case, and the control socket returns method_not_found.
-        "mobile.terminal.set_font",
-        // Shared terminal sizing verbs are dispatched by the worker switch and
-        // hop to MainActor for the one store mutation (TerminalSharingStore).
-        "terminal.size_state", "terminal.size_policy.set", "terminal.size_to_me",
-        "terminal.size_counts.set", "terminal.participant.disconnect",
-        "terminal.participants.disconnect_others",
-        // Same profile as set_font: UserDefaults reads/writes plus a push
-        // event through thread-safe MobileHostService statics.
-        "mobile.compatible_tags.get",
-        "mobile.compatible_tags.set",
-        // Panel artifact reads are mobile data-plane file IO for non-terminal
-        // surfaces. Keep them on the worker lane so markdown/file-preview panes
-        // reach TerminalController's mobile.panel.artifact.* dispatcher instead
-        // of the main-actor switch returning method_not_found.
-        // `mobile.panel.artifact.fetch` is deliberately absent: it needs the
-        // authenticated mobile RPC execution context, so the local control
-        // socket answers method_not_found instead of bypassing
-        // artifact-transfer authorization (the worker switch has no case for it).
-        "mobile.panel.artifact.stat",
-        "mobile.panel.artifact.thumbnail",
         "system.top",
         "system.memory",
         // vault.* scans agent transcript stores on disk (~/.claude/projects,
@@ -273,11 +243,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // v2MainSync). Running on .mainActor would deadlock the UI for the
         // entire simulation, defeating the profiling workload.
         "debug.sidebar.simulate_drag",
-        // DEBUG builds close the selected mobile transport through its normal
-        // connection-owned shutdown path, which awaits asynchronous writers.
-        // Keep that wait off the main actor.
-        "debug.mobile.transport.disconnect",
-        "debug.mobile.transport.reconnect_loop",
         // Presents the Cloud tree style gallery window: one v2MainSync hop for
         // the presentation, like debug.window.screenshot's capture wait.
         "debug.cloudtree.gallery",
@@ -549,13 +514,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         "read_screen",
     ]
 
-    /// The v1 diagnostic-read family. These commands await actor-owned
-    /// diagnostic snapshots, so they run on the socket worker and are not
-    /// callable from the main thread.
-    static let diagnosticReadV1Commands: Set<String> = [
-        "iroh_diag",
-    ]
-
     /// The v1 resolution-read family (tranche D): the v1 twins of the v2
     /// resolution reads. Nonisolated `TerminalController` bodies take one
     /// `v2MainSync` snapshot hop and format their reply lines on the worker.
@@ -602,7 +560,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
             .union(notificationV1Commands)
             .union(agentJournalV1Commands)
             .union(terminalReadV1Commands)
-            .union(diagnosticReadV1Commands)
             .union(resolutionReadV1Commands)
             .union(terminalSendV1Commands)
             .union(configurationMutationV1Commands)

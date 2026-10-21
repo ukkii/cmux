@@ -106,9 +106,6 @@ public struct CommandPaletteContextKeys: Hashable, Sendable {
     /// Whether an MDM configuration profile disables the browser (locked:
     /// the enable/disable commands are hidden because they cannot take effect).
     public static let browserManagedByPolicy = CommandPaletteContextKeys(rawValue: "browser.managedByPolicy")
-    /// Whether an MDM configuration profile disables iOS remote control
-    /// (hides pairing commands that cannot take effect).
-    public static let mobileRemoteControlManagedByPolicy = CommandPaletteContextKeys(rawValue: "mobile.remoteControlManagedByPolicy")
     /// Whether the user is signed in.
     public static let authSignedIn = CommandPaletteContextKeys(rawValue: "auth.signedIn")
     /// Whether an auth operation is in flight.

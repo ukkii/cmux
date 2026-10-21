@@ -19,8 +19,8 @@ extension SettingsWindowRoot {
     @ViewBuilder
     func sectionStack(proxy: ScrollViewProxy) -> some View {
         // Top to bottom in ``SettingsSectionMountModel/displayOrder``, the
-        // order sections mount in: Account, App, Themes, Terminal, TextBox, Sleepy Mode, then Mobile,
-        // Cloud, Devices, Networking, the sidebar sections, Beta Features,
+        // order sections mount in: Account, App, Themes, Terminal, TextBox, Sleepy Mode, then
+        // Cloud, the sidebar sections, Beta Features,
         // Automation, Computer Use, Browser (with embedded Import), Global
         // Hotkey, Keyboard Shortcuts, Workspace Colors, cmux.json, Reset.
         slot(.account, proxy: proxy) {
@@ -67,10 +67,6 @@ extension SettingsWindowRoot {
             SleepyModeSection(hostActions: hostActions, store: hostActions.sleepyModeStore())
         }
 
-        slot(.mobile, proxy: proxy) {
-            MobileSection(defaultsStore: defaultsStore, catalog: catalog, hostActions: hostActions)
-        }
-
         slot(.cloudMachines, proxy: proxy) {
             // `DisableCloud` (MDM) controls administrator availability; the
             // local first-use marker controls whether Cloud work may run.
@@ -78,14 +74,6 @@ extension SettingsWindowRoot {
                 CloudMachinesSection(hostActions: hostActions)
                     .id(cloudSectionIdentity)
             }
-        }
-
-        slot(.computers, proxy: proxy) {
-            ComputersSection(hostActions: hostActions, defaultsStore: defaultsStore, catalog: catalog)
-        }
-
-        slot(.networking, proxy: proxy) {
-            IrohNetworkingSection(hostActions: hostActions)
         }
 
         slot(.sidebarAppearance, proxy: proxy) {

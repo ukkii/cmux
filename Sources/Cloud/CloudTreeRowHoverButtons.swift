@@ -16,8 +16,6 @@ struct CloudTreeRowHoverButtons: View {
         switch kind {
         // The section headers' refresh icons sit after their counts
         // (`CloudTreeSectionRefreshHeader`), not with these buttons.
-        case .devicesSection(let section):
-            CloudTreeDevicesMenuButton(section: section, nodeActions: nodeActions)
         case .coderouterSection:
             MachinesChromeIconButton(
                 symbolName: "questionmark.circle",
@@ -213,55 +211,5 @@ struct CloudTreeRowHoverButtons: View {
 
     private func xmark(_ label: String, action: @escaping () -> Void) -> some View {
         MachinesChromeIconButton(symbolName: "xmark", accessibilityLabel: label, isBusy: false, action: action)
-    }
-}
-
-/// The My Devices header's "..." menu. Same size, tint and hover fill as the
-/// Cloud Machines "+" (`MachinesChromeIconButton`), so both headers hover alike.
-private struct CloudTreeDevicesMenuButton: View {
-    let section: CloudTreeDevicesSection
-    let nodeActions: CloudTreeNodeActions
-    @State private var isHovered = false
-
-    var body: some View {
-        Menu {
-            DevicesSidebarControls(
-                discoveryEnabled: section.discoveryEnabled,
-                incomingAccessEnabled: section.incomingAccessEnabled,
-                discoveryManaged: section.discoveryManaged,
-                incomingAccessManaged: section.incomingAccessManaged,
-                unavailable: !section.available,
-                setDiscovery: { nodeActions.setDeviceDiscovery($0) },
-                setIncomingAccess: { nodeActions.setDeviceIncomingAccess($0) }
-            )
-        } label: {
-            CmuxResolvedIconImage(request: CmuxResolvedIconRequest(
-                source: .systemSymbol(name: "ellipsis", accessibilityDescription: nil),
-                size: NSSize(width: 22, height: 20),
-                tintColor: isHovered ? .labelColor : .secondaryLabelColor,
-                symbolWeight: .medium,
-                fallbackSource: .systemSymbol(name: "ellipsis", accessibilityDescription: nil),
-                symbolPointSize: 11,
-                centersVisibleContent: true
-            ))
-                .frame(width: 22, height: 20)
-                .background(
-                    RoundedRectangle(cornerRadius: RightSidebarChromeMetrics.buttonCornerRadius, style: .continuous)
-                        .fill(isHovered ? Color.primary.opacity(0.06) : Color.clear)
-                )
-                .contentShape(Rectangle())
-        }
-        // A plain button menu keeps the label's 22×20 frame as the control,
-        // matching the Cloud Machines "+" in size and hit area; the
-        // borderless style shrinks it to the symbol.
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .onHover { isHovered = $0 }
-        .help(String(localized: "devices.manage", defaultValue: "Manage My Devices"))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(String(localized: "devices.manage", defaultValue: "Manage My Devices"))
-        .accessibilityIdentifier("DevicesOptionsMenu")
     }
 }

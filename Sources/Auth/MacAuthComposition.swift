@@ -190,22 +190,16 @@ struct MacAuthComposition {
             beginSignOut: {
                 // Tear down local Cloud VM workspaces before the coordinator
                 // clears auth. This closes live WebSockets, removes persisted
-                // reconnect configuration, and prevents a signed-out Mac (or
-                // a paired phone still connected to it) from retaining a
-                // usable remote surface.
+                // reconnect configuration, and prevents a signed-out Mac from
+                // retaining a usable remote surface.
                 signOutTunnelRoles.roles = VMTunnelManager.storedRoles()
                 AppDelegate.shared?.prepareCloudVMAccessForSignOut()
                 browserAppSession.beginAuthTransition()
-                DeviceRegistryClient.shared.beginSignOut()
-                MobileHostIrxRuntime.shared.beginSignOutPreparation()
             },
             localSignOut: {
                 await browserAppSession.clearCmuxWebSession()
             },
             onSignedOut: { accessToken, refreshToken in
-                await DeviceRegistryClient.shared.withdrawForSignOut(
-                    accessToken: accessToken, refreshToken: refreshToken
-                )
                 let roles = await MainActor.run { signOutTunnelRoles.take() }
                 await VMClient.revokeTunnelRoles(
                     roles,

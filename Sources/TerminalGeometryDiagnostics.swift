@@ -7,7 +7,14 @@ import CmuxTerminal
 struct TerminalGeometryDiagnostics {
     let log: DiagnosticLog
 
-    init(log: DiagnosticLog = MobileHostDiagnostics.log) { self.log = log }
+    /// App-owned bounded ring for terminal geometry work. Remains readable off
+    /// the main actor when a stalled UI needs diagnostics.
+    nonisolated static let sharedLog = DiagnosticLog(
+        buildStamp: DiagnosticReport.buildStamp(infoDictionary: Bundle.main.infoDictionary),
+        role: .macHost
+    )
+
+    init(log: DiagnosticLog = TerminalGeometryDiagnostics.sharedLog) { self.log = log }
 
     func context(
         workspaceID: UUID?,

@@ -34,8 +34,8 @@ extension CloudTreeNodeBuilder {
         }
         var nodes: [CloudTreeNode] = []
         guard source.includesCloudMachines else {
-            // The Devices tab: other Macs only, no fleet, no This Mac.
-            return deviceNodes(snapshot: snapshot, projectionIndex: projectionIndex, grouped: false, section: devicesSection)
+            // My Devices was removed; a devices-only tree is empty.
+            return []
         }
         if includeLocalMachine, let local = snapshot.machines.first(where: { $0.id.isLocal }) {
             nodes.append(localMachineNode(
@@ -130,14 +130,6 @@ extension CloudTreeNodeBuilder {
                 ),
                 children: cloudChildren
             )]
-        }
-        if source.includesDevices {
-            nodes.append(contentsOf: deviceNodes(
-                snapshot: snapshot,
-                projectionIndex: projectionIndex,
-                grouped: source.groupsDevicesUnderSection,
-                section: devicesSection
-            ))
         }
         // Keep CodeRouter immediately below My Devices so account management
         // stays alongside the two account-scoped machine sections.

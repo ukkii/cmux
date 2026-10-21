@@ -1,6 +1,5 @@
 import CmuxCloudTui
 import CmuxAuthRuntime
-import CmuxMobileHost
 import CryptoKit
 import CmuxSettings
 import Darwin
@@ -362,8 +361,8 @@ public struct VMTunnelManager: Sendable {
             modelIdentifier: Self.modelIdentifier(),
             osVersion: Self.osVersion(),
             architecture: Self.architecture,
-            cmuxVersion: MobileHostBuildIdentity.current().appVersion,
-            cmuxBuild: MobileHostBuildIdentity.current().appBuild,
+            cmuxVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+            cmuxBuild: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
             cmuxChannel: Self.cmuxChannel(), allowWhenCloudDisabled: allowWhenCloudDisabled, expectedTeamScope: expectedTeamScope
         )
         // The provider may return broad 10/8 and fd00::/8 routes. Narrow them

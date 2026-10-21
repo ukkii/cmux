@@ -2364,33 +2364,6 @@ enum CmuxEmbeddedConfigSchema {
         }
       }
     },
-    "mobile": {
-      "x-cmux-scopes": ["global"],
-      "title": "mobile",
-      "description": "Mac-side settings for cmux on iOS.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "artifactFolderAccess": {
-          "type": "string",
-          "enum": ["subtree", "oneLevel"],
-          "default": "subtree",
-          "description": "Controls whether a referenced or terminal-visible directory authorizes its full canonical subtree or only immediate children."
-        },
-        "browserTunnel": {
-          "type": "object",
-          "additionalProperties": false,
-          "description": "The iOS \"On iPhone\" browser for this Mac's workspaces, which loads pages on the phone through this Mac.",
-          "properties": {
-            "allowOtherHosts": {
-              "type": "boolean",
-              "default": false,
-              "description": "Allow the iOS browser to reach hosts other than this Mac's own localhost through this Mac (LAN, VPN, and internet hosts, resolved on this Mac). When off, only this Mac's localhost is reachable and the phone loads other sites over its own network. Link-local and cloud metadata addresses are always refused."
-            }
-          }
-        }
-      }
-    },
     "markdown": {
       "x-cmux-scopes": ["global"],
       "title": "markdown",
@@ -2649,7 +2622,6 @@ enum CmuxEmbeddedConfigSchema {
               "attachTextBoxFile",
               "sendCtrlFToTerminal",
               "pasteLastScreenshot",
-              "sizeTerminalToMyWindow",
               "clearScreenKeepScrollback",
               "simulatorHome",
               "simulatorRotateLeft",

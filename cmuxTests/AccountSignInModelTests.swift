@@ -150,33 +150,6 @@ struct AccountSignInModelTests {
         #expect(model.phase == .loading(.finishing))
     }
 
-    @Test
-    func transientAccountAndPairingWorkspacesAreNotRestorable() throws {
-        let manager = TabManager()
-        let accountWorkspace = try #require(manager.selectedWorkspace)
-        let accountInitialPanelID = try #require(accountWorkspace.focusedPanelId)
-        let accountPaneID = try #require(accountWorkspace.paneId(forPanelId: accountInitialPanelID))
-        _ = try #require(
-            accountWorkspace.newAccountSignInSurface(
-                inPane: accountPaneID,
-                flow: FakeAccountSignInFlow(),
-                focus: false
-            )
-        )
-        _ = accountWorkspace.closePanel(accountInitialPanelID, force: true)
-
-        let pairingWorkspace = manager.addWorkspace(select: false, autoWelcomeIfNeeded: false)
-        let pairingInitialPanelID = try #require(pairingWorkspace.focusedPanelId)
-        let pairingPaneID = try #require(pairingWorkspace.paneId(forPanelId: pairingInitialPanelID))
-        _ = try #require(
-            pairingWorkspace.newMobilePairingSurface(inPane: pairingPaneID, focus: false)
-        )
-        _ = pairingWorkspace.closePanel(pairingInitialPanelID, force: true)
-
-        #expect(!accountWorkspace.isRestorableInSessionSnapshot)
-        #expect(!pairingWorkspace.isRestorableInSessionSnapshot)
-    }
-
     /// An embedded gate that never asked to sign in still mirrors Switch
     /// Account, so its idle Sign In cannot replace the private attempt.
     @Test

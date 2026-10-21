@@ -55,23 +55,3 @@ public enum ManagedAICredentialUploadPolicy: Sendable {
         ManagedPolicyRefusal(message: disabledMessage)
     }
 }
-
-/// MDM master switch for cmux-managed Iroh networking.
-/// lint:allow namespace-type: moved unchanged from the app target, where it was an internal static namespace; reshaping it is a separate change from this package move.
-public enum ManagedIrohNetworkingPolicy: Sendable {
-    private static let policy = ManagedDevicePolicy()
-
-    /// Whether a profile forces `DisableIrohNetworking`.
-    public static var isDisabled: Bool {
-        return policy.isEnforced(.disableIrohNetworking)
-    }
-
-    public static var isEnabled: Bool { !isDisabled }
-
-    public static var disabledMessage: String {
-        String(
-            localized: "managedPolicy.irohNetworking.disabled",
-            defaultValue: "cmux relay networking is disabled by your organization."
-        )
-    }
-}

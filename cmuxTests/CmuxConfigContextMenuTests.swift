@@ -59,20 +59,6 @@ final class CmuxConfigContextMenuTests: XCTestCase {
         return store
     }
 
-    func testMobilePairingActionMetadataNamesMobilePairing() {
-        let metadata = CmuxSurfaceTabBarBuiltInAction.mobileConnect.resolvedConfigMetadata
-
-        XCTAssertEqual(
-            metadata.title,
-            String(localized: "command.mobileConnect.title", defaultValue: "Open Mobile Pairing"),
-            "The configurable action title should identify the mobile pairing flow"
-        )
-        XCTAssertTrue(
-            metadata.keywords.contains("tailscale"),
-            "The configurable action should be discoverable by searching for Tailscale"
-        )
-    }
-
     func testDecodeNewWorkspaceContextMenuPreservesOrder() throws {
         let json = """
         {

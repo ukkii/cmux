@@ -8,7 +8,7 @@ extension TerminalController {
         var capabilities = v2Capabilities()
         if params[WorkspaceRemoteRelayCommandRewriter.remoteWorkspaceIDKey] != nil {
             // A capability name is discovery, never a grant. Do not return the
-            // local socket, access mode, or unrelated mobile capabilities.
+            // local socket, access mode, or unrelated capabilities.
             return [
                 "protocol": "cmux-socket", "version": 2, "scope": "remote_workspace",
                 "methods": RemoteRelayCommandPolicy().permittedMethods(
@@ -53,53 +53,7 @@ extension TerminalController {
             "caffeine.status",
             "caffeine.set",
             "comments.list",
-            "mobile.host.status",
-            "mobile.attach_ticket.create",
-            "mobile.terminal.set_font",
-            "mobile.compatible_tags.get",
-            "mobile.compatible_tags.set",
-            "mobile.task.attachment.upload",
-            "mobile.task.models.list",
-            "mobile.chat.send",
-            "mobile.chat.interrupt",
-            // Socket-reachable panel artifact reads (worker lane); fetch stays
-            // behind the authenticated mobile execution context.
-            "mobile.panel.artifact.stat",
-            "mobile.panel.artifact.thumbnail",
-            "mobile.workspace.list",
-            "mobile.workspace.changes.files",
-            "mobile.workspace.changes.file_diff",
-            "mobile.workspace.changes.file_stat",
-            "mobile.workspace.changes.file_fetch",
-            "mobile.terminal.create",
-            "mobile.terminal.input",
-            "mobile.terminal.paste",
-            "mobile.terminal.paste_image",
-            "mobile.terminal.replay",
-            "mobile.browser.list",
-            "mobile.browser.create",
-            "mobile.browser.stream.start",
-            "mobile.browser.stream.stop",
-            "mobile.browser.viewport",
-            "mobile.browser.frame.ack",
-            "mobile.browser.dialog.respond",
-            "mobile.browser.input.pointer",
-            "mobile.browser.input.scroll",
-            "mobile.browser.input.key",
-            "mobile.browser.input.text",
-            "mobile.browser.navigate",
-            "mobile.browser.back",
-            "mobile.browser.forward",
-            "mobile.browser.reload",
-            "mobile.terminal.viewport", "mobile.terminal.scroll", "mobile.terminal.mouse",
-            "mobile.events.subscribe", "mobile.events.unsubscribe",
-            "mobile.status.cycle",
-            "terminal.create",
-            "terminal.input",
             "terminal.paste",
-            "terminal.paste_image",
-            "terminal.replay",
-            "terminal.viewport", "terminal.scroll", "terminal.mouse",
             "auth.login",
             "auth.status",
             "auth.sign_in_url",
@@ -304,12 +258,6 @@ extension TerminalController {
             "tab.action",
             "surface.refresh",
             "surface.health",
-            "terminal.size_state",
-            "terminal.size_policy.set",
-            "terminal.size_to_me",
-            "terminal.size_counts.set",
-            "terminal.participant.disconnect",
-            "terminal.participants.disconnect_others",
             "surface.resume.set",
             "surface.resume.get",
             "surface.resume.clear",
@@ -475,24 +423,6 @@ extension TerminalController {
             "browser.input_keyboard",
             "browser.input_touch",
         ]
-        if !Self.mobileTaskComposerFeatureEnabled {
-            let taskComposerMethods: Set<String> = [
-                "mobile.task.attachment.upload",
-                "mobile.task.models.list",
-            ]
-            methods.removeAll { taskComposerMethods.contains($0) }
-        }
-        // Discovery runs off-main; read the same flag snapshot as mobile host
-        // capabilities rather than crossing to the main-actor flag store.
-        if !CmuxFeatureFlags.offMainEffectiveValue(for: CmuxFeatureFlags.mobileWorkspaceChangesFlag) {
-            let workspaceChangesMethods: Set<String> = [
-                "mobile.workspace.changes.files",
-                "mobile.workspace.changes.file_diff",
-                "mobile.workspace.changes.file_stat",
-                "mobile.workspace.changes.file_fetch",
-            ]
-            methods.removeAll { workspaceChangesMethods.contains($0) }
-        }
         methods.append(contentsOf: ControlCommandExecutionPolicy.simulatorMethods)
 #if DEBUG
         methods.append("chief.approve")
@@ -509,7 +439,7 @@ extension TerminalController {
             "version": 2,
             "socket_path": socketServer.currentSocketPath,
             "access_mode": socketServer.accessMode.rawValue,
-            "capabilities": MobileHostService.mobileHostCapabilities,
+            "capabilities": [String](),
             "methods": methods.sorted()
         ]
     }

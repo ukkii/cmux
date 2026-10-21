@@ -186,14 +186,11 @@ struct cmuxApp: App {
         // Reconcile saved language preference before any UI loads
         LanguageSettingsStore(defaults: .standard, domainName: ProcessDefaultsDomain.name).reconcileLanguageOverrideAtLaunch()
         StartupBreadcrumbLog.append("app.init.language.applied")
-        let devices = MacDevicesComposition(defaults: .standard, catalog: settingsCatalog)
-        let devicesRegistry = devices.registry
-        let computersService = devices.computers
+        let userDefaultsStore = UserDefaultsSettingsStore(defaults: .standard, migrating: settingsCatalog.all)
         let hostSettingsActions = HostSettingsActions(
             configFileURL: configFileURL,
             computerUseRuntimeService: computerUseRuntimeService,
             browserDataImportCoordinator: browserDataImportCoordinator,
-            computersActions: devices.settingsActions,
             runComputerUseOnboardingAction: { startingPoint in
                 AppDelegate.shared?.computerUseUXCoordinator.presentOnboardingFromSettings(
                     startingAt: startingPoint
@@ -202,7 +199,7 @@ struct cmuxApp: App {
         )
         self.settingsRuntime = SettingsRuntime(
             catalog: settingsCatalog,
-            userDefaultsStore: devices.defaultsStore,
+            userDefaultsStore: userDefaultsStore,
             jsonStore: JSONConfigStore(fileURL: configFileURL),
             secretStore: secretStore,
             errorLog: SettingsErrorLog(),
@@ -322,9 +319,7 @@ struct cmuxApp: App {
             newMachineSheetPresenter: NewMachineSheetPresenter.shared,
             automationEngine: automationEngine,
             browserDataImportCoordinator: browserDataImportCoordinator,
-            computerUseRuntimeService: computerUseRuntimeService,
-            devicesRegistry: devicesRegistry,
-            computersService: computersService
+            computerUseRuntimeService: computerUseRuntimeService
         )
         hostSettingsActions.cloudActivationCoordinator = appDelegate.cloudActivationCoordinator
         historyMenuCoordinator.refreshIfNeeded()
@@ -622,10 +617,11 @@ struct cmuxApp: App {
                     appDelegate.openDebugScrollbackTab(nil)
                 }
 
-                IrohAndAgentSessionDebugMenuButtons(
+                AgentSessionDebugMenuButtons(
                     openReact: { appDelegate.openDebugAgentSessionReact(nil) },
                     openSolid: { appDelegate.openDebugAgentSessionSolid(nil) }
                 )
+                NotificationDebugMenuButtons()
 
                 Button("Open Workspaces for All Workspace Colors") {
                     appDelegate.openDebugColorComparisonWorkspaces(nil)
@@ -1732,7 +1728,6 @@ private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
     "cmux.bonsplitTabBarDebug",
     "cmux.titlebarLayoutDebug",
     "cmux.devWindowDisplay",
-    "cmux.mobilePairingWindow",
     "cmux.sidebarFooterIconBalanceDebug",
     "cmux.cloudPaneCreationFailure.card",
     "cmux.cloudCreateTeam",

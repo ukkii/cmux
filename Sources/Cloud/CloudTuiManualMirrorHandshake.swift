@@ -1,5 +1,4 @@
 import CmuxCloudTui
-import CmuxTerminalSharing
 import CmuxTerminalSizing
 import Foundation
 import os
@@ -132,7 +131,8 @@ final class CloudTuiManualMirrorHandshake {
             to: identifyRequestID, from: &frames
         ) else { return nil }
         let negotiated = identified ? capabilities : []
-        let supportsSizing = Set(negotiated).contains(CloudTerminalSizingRelay.capability)
+        // Shared sizing is never negotiated, so no sizing identity is sent.
+        let supportsSizing = false
         connection.send(commandBuilder.setClientInfo(
             name: "cmux cloud terminal",
             kind: "native-mirror",

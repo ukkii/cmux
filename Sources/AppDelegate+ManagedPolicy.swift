@@ -4,7 +4,7 @@ import CmuxSettings
 import Foundation
 
 /// Runtime enforcement for MDM managed policies (`DisableEmbeddedBrowser`,
-/// `DisableRemoteControl`, `DisableCloud`, and `DisableRemoteConnections`):
+/// `DisableCloud`, and `DisableRemoteConnections`):
 /// installs the transition observer and tears down live resources when a
 /// policy activates mid-session.
 extension AppDelegate {
@@ -20,15 +20,6 @@ extension AppDelegate {
             },
             enforceBrowserURLAllowlistPolicy: { [weak self] in
                 self?.enforceBrowserURLAllowlistPolicy()
-            },
-            enforceRemoteControlPolicy: {
-                // syncToSettings() tears the mobile host down under the
-                // policy (including live connections) and re-arms it when
-                // the policy lifts.
-                MobileHostService.shared.syncToSettings()
-            },
-            enforceIncomingAccessPolicy: {
-                MobileHostService.shared.syncToSettings()
             },
             enforceCloudPolicy: { [weak self] in
                 self?.applyManagedCloudPolicy()
@@ -53,8 +44,6 @@ extension AppDelegate {
     /// boundary. Existing workspace configurations and catalog identities stay
     /// persisted; only controllers, retries, and transport tasks are stopped.
     func applyCloudFeatureFlag(enabled: Bool) {
-        devicesRegistry?.evaluate()
-        MobileHostService.shared.syncToSettings()
         if !enabled {
             MachineCreateCoordinator.shared.cancelAllForAuthTransition(cleanupCreatedMachines: false)
             CloudVMActionLauncher.shared.cancelAllForAuthTransition()

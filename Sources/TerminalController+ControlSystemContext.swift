@@ -599,7 +599,9 @@ extension TerminalController: ControlSystemContext {
     // MARK: - mobile.dev_stack_auth.configure (DEBUG)
 
     func controlMobileDevStackAuthSetToken(_ token: String?) {
-        MobileHostService.shared.debugConfigureAcceptedStackAuthTokenForTesting(token)
+        // The mobile host that consumed this token was removed; the auth
+        // removal step deletes the socket verb.
+        _ = token
     }
 #endif
 }

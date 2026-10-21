@@ -118,7 +118,6 @@ final class SurfaceCatalog {
         // and gone the moment it fails; local pane and workspace titles keep
         // their own provenance rules and follow the accepted graph.
         cloudRenameCoordinator.onPendingNamesChanged = { [weak self] machine in
-            self?.reconcileDeviceNames(on: machine)
             self?.notifyChange(for: machine)
         }
     }
@@ -290,7 +289,6 @@ final class SurfaceCatalog {
         let restoredProjectionIDs = resolvePendingRestoredProjections(on: machine)
         syncCloudTerminalTabIcons(on: machine)
         updateCloudDirectoryMetadata(on: machine)
-        reconcileDeviceNames(on: machine)
         if let state = cloudStates[machine] {
             cloudWorkspaceRenameService.reconcileRemoteState(
                 machine: machine,

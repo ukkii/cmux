@@ -842,8 +842,6 @@ extension Workspace {
             return nil
         case .cloudVMLoading:
             return nil
-        case .mobilePairing:
-            return nil
         case .accountSignIn:
             return nil
         case .cloudVPNSetup:
@@ -2396,8 +2394,6 @@ extension Workspace {
         case .extensionBrowser:
             return nil
         case .cloudVMLoading:
-            return nil
-        case .mobilePairing:
             return nil
         case .accountSignIn:
             return nil
@@ -4719,7 +4715,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         _ action: CmuxSurfaceTabBarBuiltInAction
     ) -> Bool {
         switch action {
-        case .mobileConnect: return CmuxFeatureFlags.shared.isMobileConnectButtonEnabled
         case .newAgentChat: return CmuxFeatureFlags.shared.isAgentChatUIEnabled
         case .newSimulator: return CmuxFeatureFlags.shared.isSimulatorEnabled
         case .newBrowser:
@@ -7164,7 +7159,7 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
         if isRemoteTmuxAuthLogin { return false }
         if panels.values.contains(where: {
             switch $0.panelType {
-            case .cloudVMLoading, .mobilePairing, .accountSignIn, .cloudVPNSetup:
+            case .cloudVMLoading, .accountSignIn, .cloudVPNSetup:
                 true
             default:
                 false
@@ -8053,7 +8048,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     }
 
     func cloudTerminalReconnectOverlayPresentation(forSurfaceId surfaceId: UUID) -> CloudTerminalReconnectOverlayPolicy.Presentation? {
-        if let status = terminalPanel(for: surfaceId)?.deviceAttachment { return status.presentation }
         if let failure = cloudMaterializationFailures[surfaceId] {
             return Self.cloudMaterializationFailurePresentation(
                 detail: failure.detail,
@@ -12371,7 +12365,6 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
             (.close, .closeTab),
             (.toggleZoom, .toggleSplitZoom),
             (.newTerminalToRight, .newSurface),
-            (.sizeToMyWindow, .sizeTerminalToMyWindow),
         ]
         for (contextAction, settingsAction) in mappings {
             let stored = KeyboardShortcutSettings.shortcut(for: settingsAction)
@@ -15401,18 +15394,6 @@ extension Workspace: BonsplitDelegate {
                 _ = AppDelegate.shared?.performNewCloudWorkspaceOnResolvedMachineAction(tabManager: owningTabManager, preferredWindow: presentingWindow, debugSource: "surfaceTabBar.newCloudWorkspace")
             case .newCloudMachine:
                 _ = AppDelegate.shared?.performNewCloudMachineAction(tabManager: owningTabManager, preferredWindow: presentingWindow, debugSource: "surfaceTabBar.newCloudMachine")
-            case .mobileConnect:
-                // Audible feedback instead of a silent no-op when the managed
-                // policy suppresses the pairing chokepoint.
-                if MobileRemoteControlPolicy.isDisabled {
-                    NSSound.beep()
-                } else {
-                    _ = AppDelegate.shared?.performMobileConnectWorkspaceAction(
-                        tabManager: owningTabManager,
-                        preferredWindow: presentingWindow,
-                        debugSource: "surfaceTabBar.mobileConnect"
-                    )
-                }
             case .newSimulator:
                 _ = newSimulatorSurface(inPane: pane, focus: true)
             case .copyWorkingDirectory, .copyProjectRoot, .copyScreen:
@@ -15663,7 +15644,8 @@ extension Workspace: BonsplitDelegate {
              .sizeModeFixed,
              .toggleSizePanel,
              .disconnectOtherClients:
-            handleTerminalSharingContextAction(action, for: tab)
+            // Shared terminal sizing was removed; no tab offers these items.
+            break
         @unknown default:
             break
         }
@@ -15694,11 +15676,6 @@ extension Workspace: BonsplitDelegate {
         let deviceLayoutExternal = remoteTmuxMirrorMutations.suppressesFocusActivation
         // Before deferral: a graph event queued behind this edit must not re-apply the old tree.
         if !deviceLayoutExternal { cloudLayoutDidChange() }
-        // Capture the user's arrangement before deferred delivery: an incoming
-        // remote snapshot must not replace the intent while this event waits.
-        let deviceLayoutSnapshot = !deviceLayoutExternal
-            && cloudBindingState.projectedResources.values.contains(where: { $0.machine.isDevice })
-            ? deviceWorkspaceLayoutSnapshot() : nil
         geometryNotificationScheduler.schedule(zeroDelayPolicy: .yieldOnce) { [weak self] in
             guard let self else { return }
             self.tmuxLayoutSnapshot = snapshot
@@ -15711,8 +15688,6 @@ extension Workspace: BonsplitDelegate {
                 userInfo: [
                     GhosttyNotificationKey.tabId: self.id,
                     GhosttyNotificationKey.topologyChanged: topologyChanged,
-                    DeviceWorkspaceLayoutHost.externalGeometryKey: deviceLayoutExternal,
-                    DeviceWorkspaceLayoutHost.layoutGeometryKey: deviceLayoutSnapshot as Any,
                 ]
             )
             self.scheduleTerminalGeometryReconcile()

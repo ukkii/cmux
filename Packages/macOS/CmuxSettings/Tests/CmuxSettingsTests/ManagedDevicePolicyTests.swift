@@ -43,10 +43,10 @@ struct ManagedDevicePolicyTests {
         defer { cleanup() }
 
         // The user "disagrees" with the profile; the forced value must win.
-        defaults.set(false, forKey: ManagedDevicePolicyKey.disableRemoteControl.rawValue)
+        defaults.set(false, forKey: ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue)
         defaults.set(
             true,
-            forKey: Self.forcedMirrorPrefix + ManagedDevicePolicyKey.disableRemoteControl.rawValue
+            forKey: Self.forcedMirrorPrefix + ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue
         )
         let policy = ManagedDevicePolicy(
             defaults: defaults,
@@ -54,9 +54,9 @@ struct ManagedDevicePolicyTests {
             forcedObject: Self.probe
         )
 
-        #expect(policy.isEnforced(.disableRemoteControl))
-        #expect(policy.forcedBool(for: .disableRemoteControl) == true)
-        #expect(policy.isKeyForcedInAppDomain(ManagedDevicePolicyKey.disableRemoteControl.rawValue))
+        #expect(policy.isEnforced(.disableEmbeddedBrowser))
+        #expect(policy.forcedBool(for: .disableEmbeddedBrowser) == true)
+        #expect(policy.isKeyForcedInAppDomain(ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue))
     }
 
     @Test func forcedCloudDisableIsEnforcedAndLocksTheKey() throws {
@@ -161,7 +161,7 @@ struct ManagedDevicePolicyTests {
         let (releaseDefaults, releaseCleanup) = try makeSuite("precedenceRelease")
         defer { releaseCleanup() }
 
-        let key = ManagedDevicePolicyKey.disableRemoteControl.rawValue
+        let key = ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue
         appDefaults.set(false, forKey: Self.forcedMirrorPrefix + key)
         releaseDefaults.set(true, forKey: Self.forcedMirrorPrefix + key)
         let policy = ManagedDevicePolicy(
@@ -170,8 +170,8 @@ struct ManagedDevicePolicyTests {
             forcedObject: Self.probe
         )
 
-        #expect(policy.forcedBool(for: .disableRemoteControl) == false)
-        #expect(!policy.isEnforced(.disableRemoteControl))
+        #expect(policy.forcedBool(for: .disableEmbeddedBrowser) == false)
+        #expect(!policy.isEnforced(.disableEmbeddedBrowser))
     }
 
     @Test func releaseBuildHasNoFallbackDomain() {
@@ -188,13 +188,9 @@ struct ManagedDevicePolicyTests {
         // docs/managed-device-policies.md; renaming them breaks deployed
         // configuration profiles.
         #expect(ManagedDevicePolicyKey.disableEmbeddedBrowser.rawValue == "DisableEmbeddedBrowser")
-        #expect(ManagedDevicePolicyKey.disableRemoteControl.rawValue == "DisableRemoteControl")
-        #expect(ManagedDevicePolicyKey.disableDeviceDiscovery.rawValue == "DisableDeviceDiscovery")
-        #expect(ManagedDevicePolicyKey.disableIncomingDeviceAccess.rawValue == "DisableIncomingDeviceAccess")
         #expect(ManagedDevicePolicyKey.disableCloud.rawValue == "DisableCloud")
         #expect(ManagedDevicePolicyKey.disableRemoteConnections.rawValue == "DisableRemoteConnections")
         #expect(ManagedDevicePolicyKey.disableFileTransfer.rawValue == "DisableFileTransfer")
-        #expect(ManagedDevicePolicyKey.disableIrohNetworking.rawValue == "DisableIrohNetworking")
         #expect(ManagedDevicePolicyKey.disableAutomationWebhooks.rawValue == "DisableAutomationWebhooks")
         #expect(ManagedDevicePolicyKey.disableTLSTrustBypass.rawValue == "DisableTLSTrustBypass")
         #expect(ManagedDevicePolicyKey.disableComputerUse.rawValue == "DisableComputerUse")
@@ -206,22 +202,6 @@ struct ManagedDevicePolicyTests {
         #expect(ManagedDevicePolicyKey.socketControlMode.rawValue == "SocketControlMode")
         #expect(ManagedDevicePolicyKey.allowStyleKeys == [.browserAllowLocalhost, .browserAllowLocalFiles])
         #expect(ManagedDevicePolicy.releasePayloadDomain == "com.cmuxterm.app")
-    }
-
-    @Test func independentDevicePoliciesAreForcedOverUserValues() throws {
-        let (defaults, cleanup) = try makeSuite("devicePolicies")
-        defer { cleanup() }
-        defaults.set(false, forKey: ManagedDevicePolicyKey.disableDeviceDiscovery.rawValue)
-        defaults.set(false, forKey: ManagedDevicePolicyKey.disableIncomingDeviceAccess.rawValue)
-        defaults.set(true, forKey: Self.forcedMirrorPrefix + ManagedDevicePolicyKey.disableDeviceDiscovery.rawValue)
-        defaults.set(true, forKey: Self.forcedMirrorPrefix + ManagedDevicePolicyKey.disableIncomingDeviceAccess.rawValue)
-        let policy = ManagedDevicePolicy(defaults: defaults, releaseDomainDefaults: nil, forcedObject: Self.probe)
-        #expect(policy.isEnforced(.disableDeviceDiscovery))
-        #expect(policy.isEnforced(.disableIncomingDeviceAccess))
-        #expect(policy.isDeviceDiscoveryDisabled)
-        #expect(policy.isIncomingDeviceAccessDisabled)
-        #expect(policy.isKeyForcedInAppDomain(ManagedDevicePolicyKey.disableDeviceDiscovery.rawValue))
-        #expect(policy.isKeyForcedInAppDomain(ManagedDevicePolicyKey.disableIncomingDeviceAccess.rawValue))
     }
 
     @Test func forcedValueSourceDistinguishesAppAndReleaseDomains() throws {

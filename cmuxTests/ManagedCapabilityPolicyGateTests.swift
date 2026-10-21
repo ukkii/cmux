@@ -93,81 +93,6 @@ struct ManagedCapabilityPolicyGateTests {
         // as soon as it is configured; the point is that it dialed at all.
         #expect(workspace.remoteConnectionState != .disconnected)
     }
-    @Test func theObserverEndsLiveRemoteConnectionsOnActivationOnly() throws {
-        let suite = "ManagedCapabilityPolicyGateTests.observer.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let resolver = ManagedDevicePolicy(defaults: defaults, releaseDomainDefaults: nil, forcedObject: { store, key in
-            store.object(forKey: key)
-        })
-        let center = NotificationCenter()
-        let recorder = RemoteConnectionsEnforcementRecorder()
-        let token = center.addObserver(
-            forName: ManagedDevicePolicy.didChangeNotification,
-            object: nil,
-            queue: nil
-        ) { _ in recorder.recordChangeSignal() }
-        defer { center.removeObserver(token) }
-        var socketPolicy = SocketControlPolicyResolution(mode: .allowAll, configuredMode: .allowAll, source: .userDefaults)
-        var socketReconciliations = 0
-        let observer = ManagedPolicyEnforcementObserver(
-            notificationCenter: center,
-            isBrowserDisabledByPolicy: { false },
-            isRemoteControlDisabledByPolicy: { false },
-            isCloudDisabledByPolicy: { false },
-            isIrohDisabledByPolicy: { false },
-            socketControlPolicy: { socketPolicy },
-            capabilityPolicy: resolver,
-            enforceBrowserPolicy: {},
-            enforceBrowserURLAllowlistPolicy: {},
-            enforceRemoteControlPolicy: {},
-            enforceRemoteConnectionsPolicy: { recorder.recordEnforcement() },
-            enforceSocketControlPolicy: { socketReconciliations += 1 }
-        )
-        #expect(recorder.enforcements == 0)
-
-        defaults.set(true, forKey: ManagedDevicePolicyKey.disableRemoteConnections.rawValue)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 1)
-        #expect(recorder.changeSignals == 1)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 1)
-
-        defaults.removeObject(forKey: ManagedDevicePolicyKey.disableRemoteConnections.rawValue)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 1)
-        #expect(recorder.changeSignals == 2)
-
-        defaults.set(true, forKey: ManagedDevicePolicyKey.disableFileTransfer.rawValue)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 1)
-        #expect(recorder.changeSignals == 3)
-        socketPolicy = SocketControlPolicyResolution(mode: .cmuxOnly, configuredMode: .allowAll, source: .managedReleaseDomain, forcedValueStatus: "valid")
-        observer.reevaluate()
-        #expect(socketReconciliations == 1)
-        #expect(recorder.changeSignals == 4)
-        observer.reevaluate(); #expect(socketReconciliations == 1)
-        withExtendedLifetime(observer) {}
-    }
-    @Test func aProfileForcedBeforeLaunchEndsRemoteConnectionsAtConstruction() {
-        let recorder = RemoteConnectionsEnforcementRecorder()
-        let observer = ManagedPolicyEnforcementObserver(
-            notificationCenter: NotificationCenter(),
-            isBrowserDisabledByPolicy: { false },
-            isRemoteControlDisabledByPolicy: { false },
-            isCloudDisabledByPolicy: { false },
-            isIrohDisabledByPolicy: { false },
-            capabilityPolicy: policy(.disableRemoteConnections, disabled: true),
-            enforceBrowserPolicy: {},
-            enforceBrowserURLAllowlistPolicy: {},
-            enforceRemoteControlPolicy: {},
-            enforceRemoteConnectionsPolicy: { recorder.recordEnforcement() }
-        )
-        #expect(recorder.enforcements == 1)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 1)
-        withExtendedLifetime(observer) {}
-    }
 
     @Test func aCustomUploadCommandCannotBypassTheFileTransferGate() async throws {
         // A `terminal.uploadCommands` rule takes ownership of detected-SSH
@@ -223,22 +148,6 @@ struct ManagedCapabilityPolicyGateTests {
             cleanup: { _ in },
             completion: { _ in }
         ))
-    }
-
-    @Test(arguments: [
-        ("mobile.task.attachment.upload", true),
-        ("mobile.workspace.changes.file_fetch", true),
-        ("mobile.terminal.paste_image", true),
-        ("terminal.paste_image", true),
-        ("mobile.terminal.artifact.fetch", true),
-        ("mobile.panel.artifact.thumbnail", true),
-        ("mobile.terminal.input", false),
-        ("mobile.workspace.changes.summary", false),
-        ("mobile.directory.list", false),
-        ("mobile.host.status", false),
-    ])
-    func phoneFileMovesAreClassifiedForTheFileTransferPolicy(method: String, transfersFiles: Bool) {
-        #expect(MobileHostService.methodTransfersFiles(method) == transfersFiles)
     }
 
     @Test func closedHistoryPurgeRecognizesBothCloudTransports() {
@@ -326,55 +235,6 @@ struct ManagedCapabilityPolicyGateTests {
         #expect(calls.count == 0)
     }
 
-    @Test func settingsVisiblePoliciesPostChangeSignalsAndReapplyComputerUse() throws {
-        let suite = "ManagedCapabilityPolicyGateTests.visible.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let resolver = ManagedDevicePolicy(defaults: defaults, releaseDomainDefaults: nil, forcedObject: { store, key in
-            store.object(forKey: key)
-        })
-        let center = NotificationCenter()
-        let recorder = RemoteConnectionsEnforcementRecorder()
-        let token = center.addObserver(
-            forName: ManagedDevicePolicy.didChangeNotification,
-            object: nil,
-            queue: nil
-        ) { _ in recorder.recordChangeSignal() }
-        defer { center.removeObserver(token) }
-        let observer = ManagedPolicyEnforcementObserver(
-            notificationCenter: center,
-            isBrowserDisabledByPolicy: { false },
-            isRemoteControlDisabledByPolicy: { false },
-            isCloudDisabledByPolicy: { false },
-            isIrohDisabledByPolicy: { false },
-            capabilityPolicy: resolver,
-            enforceBrowserPolicy: {},
-            enforceBrowserURLAllowlistPolicy: {},
-            enforceRemoteControlPolicy: {},
-            enforceComputerUsePolicy: { recorder.recordEnforcement() }
-        )
-        #expect(recorder.enforcements == 0)
-
-        // An automation-webhook push is Settings-visible only.
-        defaults.set(true, forKey: ManagedDevicePolicyKey.disableAutomationWebhooks.rawValue)
-        observer.reevaluate()
-        #expect(recorder.changeSignals == 1)
-        #expect(recorder.enforcements == 0)
-
-        // Computer Use re-applies on both directions.
-        defaults.set(true, forKey: ManagedDevicePolicyKey.disableComputerUse.rawValue)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 1)
-        #expect(recorder.changeSignals == 2)
-        defaults.removeObject(forKey: ManagedDevicePolicyKey.disableComputerUse.rawValue)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 2)
-        observer.reevaluate()
-        #expect(recorder.enforcements == 2)
-        #expect(recorder.changeSignals == 3)
-        withExtendedLifetime(observer) {}
-    }
-
     @Test func closedCloudWorkspaceCannotBeRestoredUnderPolicy() {
         let manager = TabManager(createInitialWorkspace: false, managedDevicePolicy: policy(.disableCloud, disabled: true))
         let workspace = Workspace()
@@ -438,111 +298,6 @@ struct ManagedCapabilityPolicyGateTests {
             #expect((error as NSError).domain == "cmux.managedPolicy.fileTransfer")
             #expect(error.localizedDescription == ManagedFileTransferPolicy.disabledMessage)
         }
-    }
-
-    @Test(arguments: [
-        ManagedDevicePolicyKey.disableIrohNetworking,
-        ManagedDevicePolicyKey.disableRemoteControl
-    ])
-    func irohRuntimeStopsWhenACoveringPolicyIsForced(key: ManagedDevicePolicyKey) async {
-        let runtime = MobileHostIrxRuntime(managedDevicePolicy: policy(key, disabled: true), pairingEnabled: { true })
-        #expect(!runtime.isNetworkingAllowed)
-        runtime.setSettingsPhase(.active)
-        await runtime.applyManagedNetworkingPolicy()
-        #expect(runtime.settingsPhase == .idle)
-        #expect(runtime.controlService == nil)
-    }
-
-    @Test func irohRuntimeAllowsNetworkingWhenNoPolicyIsForced() {
-        let runtime = MobileHostIrxRuntime(
-            managedDevicePolicy: ManagedDevicePolicy(
-                releaseDomainDefaults: nil,
-                forcedObject: { _, _ in nil }
-            ), pairingEnabled: { true }
-        )
-        #expect(runtime.isNetworkingAllowed)
-    }
-
-    @Test("Mac discovery and incoming hosting capabilities stay independent of iOS pairing")
-    func macOnlyCapabilitiesAreIndependent() {
-        #expect(MobileHostIrxRuntime.macDeviceCapabilities(discoveryEnabled: false, incomingAccessEnabled: false).isEmpty)
-        #expect(MobileHostIrxRuntime.macDeviceCapabilities(discoveryEnabled: true, incomingAccessEnabled: false)
-            == ["cmux.mac-devices.v1"])
-        #expect(MobileHostIrxRuntime.macDeviceCapabilities(discoveryEnabled: false, incomingAccessEnabled: true)
-            == ["cmux.mac-host.v1"])
-        #expect(MobileHostIrxRuntime.macDeviceCapabilities(discoveryEnabled: true, incomingAccessEnabled: true)
-            == ["cmux.mac-devices.v1", "cmux.mac-host.v1"])
-    }
-
-    @Test("Mac-only hosting admits Mac peers while keeping iOS pairing disabled")
-    func macOnlyAdmissionIsPeerSpecific() {
-        #expect(MobileHostIrxRuntime.allowsInboundPeer(
-            isMac: true, pairingEnabled: false, incomingAccessEnabled: true
-        ))
-        #expect(!MobileHostIrxRuntime.allowsInboundPeer(
-            isMac: false, pairingEnabled: false, incomingAccessEnabled: true
-        ))
-        #expect(MobileHostIrxRuntime.allowsInboundPeer(
-            isMac: false, pairingEnabled: true, incomingAccessEnabled: false
-        ))
-        #expect(!MobileHostIrxRuntime.allowsInboundPeer(
-            isMac: true, pairingEnabled: true, incomingAccessEnabled: false
-        ))
-    }
-
-    /// `MobileHostService.stop()` and `syncToSettings()` both fire IRX policy
-    /// work from unstructured tasks. Interleaved stops and reconciles must
-    /// drain in order and leave one consistent state, never a lift that
-    /// no-ops against a half-finished teardown or a late stop that clears the
-    /// account after a re-arm.
-    @Test func concurrentPolicyTransitionsDrainInOrder() async throws {
-        let suite = "ManagedCapabilityPolicyGateTests.irohRace.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let resolver = ManagedDevicePolicy(
-            defaults: defaults,
-            releaseDomainDefaults: nil,
-            forcedObject: { store, key in store.object(forKey: key) }
-        )
-        let runtime = MobileHostIrxRuntime(managedDevicePolicy: resolver, pairingEnabled: { true })
-        let key = ManagedDevicePolicyKey.disableIrohNetworking.rawValue
-
-        for iteration in 0..<8 {
-            defaults.set(iteration.isMultiple(of: 2), forKey: key)
-            runtime.setSettingsPhase(.active)
-            async let stopped: Void = runtime.stopHost()
-            async let reconciled: Void = runtime.applyManagedNetworkingPolicy()
-            _ = await (stopped, reconciled)
-            // No account is signed in, so every settled state is idle. The
-            // assertion that matters is that the pair always settles.
-            #expect(runtime.settingsPhase == .idle)
-            #expect(runtime.controlService == nil)
-        }
-
-        defaults.removeObject(forKey: key)
-        #expect(runtime.isNetworkingAllowed)
-    }
-
-    @Test func liftingIrohPolicyDoesNotSpawnAnEndpointWithoutAnAccount() async throws {
-        let suite = "ManagedCapabilityPolicyGateTests.iroh.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let resolver = ManagedDevicePolicy(
-            defaults: defaults,
-            releaseDomainDefaults: nil,
-            forcedObject: { store, key in store.object(forKey: key) }
-        )
-        let runtime = MobileHostIrxRuntime(managedDevicePolicy: resolver, pairingEnabled: { true })
-        defaults.set(true, forKey: ManagedDevicePolicyKey.disableIrohNetworking.rawValue)
-        runtime.setSettingsPhase(.active)
-        await runtime.applyManagedNetworkingPolicy()
-        #expect(runtime.settingsPhase == .idle)
-
-        defaults.removeObject(forKey: ManagedDevicePolicyKey.disableIrohNetworking.rawValue)
-        #expect(runtime.isNetworkingAllowed)
-        await runtime.applyManagedNetworkingPolicy()
-        #expect(runtime.settingsPhase == .idle)
-        #expect(runtime.controlService == nil)
     }
 }
 

@@ -425,7 +425,6 @@ extension CMUXCLI {
     private var diagnosticsCommandsHelp: String {
         return """
         ping
-        iroh-diag
         version
         \(String(localized: "sudo.cli.global_usage.run", defaultValue: "sudo run [-r reason] [-t timeout] (-c 'command' | script.sh | -)"))
         \(String(localized: "sudo.cli.global_usage.pending", defaultValue: "sudo pending"))

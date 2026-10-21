@@ -178,18 +178,10 @@ public enum MobileHostIdentity: Sendable {
         defaults: UserDefaults,
         hostName: String?
     ) -> String? {
-        let key = SettingCatalog().mobile.iOSPairingDisplayName.userDefaultsKey
-        let baseName: String?
-        if let override = defaults.string(forKey: key) {
-            let trimmed = override.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty {
-                baseName = trimmed
-            } else {
-                baseName = hostName
-            }
-        } else {
-            baseName = hostName
-        }
+        // The pairing display-name override was removed with mobile pairing;
+        // ignore any value an older build left in defaults.
+        _ = defaults
+        let baseName = hostName
 
         guard let baseName else { return nil }
         let trimmedName = baseName.trimmingCharacters(in: .whitespacesAndNewlines)

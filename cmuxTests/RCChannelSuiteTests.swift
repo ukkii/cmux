@@ -23,19 +23,6 @@ extension AuthEnvironmentTests {
     }
 }
 
-extension MobileHostIdentityTests {
-    @Test func instanceTagUsesRCChannelAndSlug() {
-        #expect(MobileHostIdentity.instanceTag(
-            environment: [:],
-            bundleIdentifier: "com.cmuxterm.app.rc"
-        ) == "rc")
-        #expect(MobileHostIdentity.instanceTag(
-            environment: [:],
-            bundleIdentifier: "com.cmuxterm.app.rc.candidate1"
-        ) == "candidate1")
-    }
-}
-
 extension CMUXCLIErrorOutputRegressionTests {
     @Test func testThemesSetRCOverridePathIsReadableByRCAppConfigResolution() throws {
         try assertThemesSetOverridePathIsReadableByChannelApp(channel: "rc")

@@ -68,29 +68,6 @@ struct ManagedPolicyCloudGateTests {
         withExtendedLifetime(observer) {}
     }
 
-    @Test func irohPolicyEnforcesBothTransitionsAndPublishesSettingsChanges() {
-        let policy = ManagedPolicyFlag()
-        let recorder = EnforcementRecorder()
-        let observer = ManagedPolicyEnforcementObserver(
-            notificationCenter: NotificationCenter(),
-            isBrowserDisabledByPolicy: { false },
-            isRemoteControlDisabledByPolicy: { false },
-            isCloudDisabledByPolicy: { false },
-            isIrohDisabledByPolicy: { policy.isEnforced },
-            enforceBrowserPolicy: {},
-            enforceBrowserURLAllowlistPolicy: {},
-            enforceRemoteControlPolicy: { recorder.recordRemoteControl() }
-        )
-        policy.isEnforced = true
-        observer.reevaluate()
-        #expect(recorder.remoteControl == 1)
-        observer.reevaluate()
-        #expect(recorder.remoteControl == 1)
-        policy.isEnforced = false
-        observer.reevaluate()
-        #expect(recorder.remoteControl == 2)
-    }
-
     // MARK: - Service boundary
 
     @Test func theCloudServiceRefusesEveryCallBeforeTheNetworkAndKeepsRevocationOpen() async throws {
@@ -254,11 +231,9 @@ struct ManagedPolicyCloudGateTests {
         ManagedPolicyEnforcementObserver(
             notificationCenter: center,
             isBrowserDisabledByPolicy: { false },
-            isRemoteControlDisabledByPolicy: { false },
             isCloudDisabledByPolicy: { policy.isEnforced },
             enforceBrowserPolicy: { recorder.recordBrowser() },
             enforceBrowserURLAllowlistPolicy: {},
-            enforceRemoteControlPolicy: { recorder.recordRemoteControl() },
             enforceCloudPolicy: { recorder.recordCloud() }
         )
     }

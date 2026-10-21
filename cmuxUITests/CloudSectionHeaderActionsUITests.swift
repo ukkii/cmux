@@ -46,12 +46,6 @@ final class CloudSectionHeaderActionsUITests: XCTestCase {
         XCTAssertTrue(plus.waitForExistence(timeout: 5), "Expected the Cloud Machines header + in the tree")
         XCTAssertEqual(plus.label, "New Machine")
 
-        // The My Devices controls keep their rows and lose the ⋯ hint.
-        XCTAssertTrue(app.buttons["DevicesOptionsMenu"].exists || app.menuButtons["DevicesOptionsMenu"].exists)
-        XCTAssertFalse(
-            app.staticTexts["Change these options in the ⋯ menu next to My Devices."].exists,
-            "The redundant ⋯ hint must be gone"
-        )
         capture(app, "cloud-headers-at-rest")
 
         // Pointing at the + hovers its header row, which fades the + in.

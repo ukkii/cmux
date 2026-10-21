@@ -18,8 +18,8 @@ struct SettingsDetailScrollPlacement: Equatable {
 
     /// - Parameters:
     ///   - target: The section the request navigates to, after
-    ///     `navigationDestination` has mapped legacy Devices anchors.
-    ///   - anchorID: The anchor that mapping produced.
+    ///     `navigationDestination` has resolved it.
+    ///   - anchorID: The anchor that resolution produced.
     static func resolve(target: SettingsSectionID, anchorID: String) -> Self {
         let pane = SettingsSectionMountModel.hostSection(for: target)
         if anchorID == "section:\(pane.rawValue)" {

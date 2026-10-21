@@ -115,8 +115,6 @@ extension AppDelegate {
             return BrowserAvailabilitySettings.isEnabled()
         case .newSimulator:
             return CmuxFeatureFlags.shared.isSimulatorEnabled
-        case .mobileConnect:
-            return !MobileRemoteControlPolicy.isDisabled
         case .newWorkspace, .newTerminal, .splitRight, .splitDown,
              .copyWorkingDirectory, .copyProjectRoot, .copyScreen:
             return true

@@ -92,24 +92,16 @@ final class CloudTerminalOverlayCoordinator {
         }
 
         let destination: NSView = presented ? hostedView : ((anchor as NSView?) ?? hostedView)
-        let deviceStatus = hostedView.surfaceView.terminalSurface.flatMap { surface in
-            surface.owningWorkspace()?.terminalPanel(for: surface.id)?.deviceAttachment
-        }
-        let dismissalID = deviceStatus == nil ? hostedView.surfaceView.terminalSurface.map {
+        let dismissalID = hostedView.surfaceView.terminalSurface.map {
             "cloud.remote-reconnect.\($0.id.uuidString)"
-        } : nil
+        }
         let effectiveCancel = { [weak self] in
-            if let deviceStatus {
-                deviceStatus.dismiss()
-            } else if let onCancel {
+            if let onCancel {
                 onCancel()
             } else if let session = self?.session {
                 session.cancelConnectionAttempt()
             }
         }
-        let dismissDevice: (() -> Void)?
-        if let deviceStatus { dismissDevice = { deviceStatus.dismiss() } }
-        else { dismissDevice = nil }
         apply(
             visible ? presentation : nil,
             in: destination,
@@ -117,7 +109,7 @@ final class CloudTerminalOverlayCoordinator {
             dismissalID: dismissalID,
             onReconnect: onReconnect,
             onCancel: effectiveCancel,
-            onDismiss: dismissDevice
+            onDismiss: nil
         )
         let next: Destination = overlay == nil ? .hidden : (presented ? .terminal : .anchor)
         if next != lastDestination, let session {

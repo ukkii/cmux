@@ -239,44 +239,6 @@ struct BrowserDiscardedWebViewRestoreRetryTests {
         #expect(panel.restoreDiscardedWebViewIfNeeded(reason: "test.restore2"))
     }
 
-    @Test func mobileStreamStartRestoresDiscardedWebView() throws {
-        // RED: streaming a discarded background tab (a restored session's
-        // never-revealed pane) mirrors a blank web shell, so the phone shows
-        // white until a manual reload. Starting a mobile stream must kick the
-        // discard-restore navigation exactly like revealing the tab does.
-        let endpoint = try BrowserDiscardRestoreRefusedEndpoint(path: "cmux-mobile-stream-discard")
-        defer { withExtendedLifetime(endpoint) {} }
-        let url = endpoint.url
-        let panel = BrowserPanel(
-            workspaceId: UUID(),
-            renderInitialNavigation: false,
-            isRemoteWorkspace: false
-        )
-        defer { panel.close() }
-
-        // Session restore is the never-revealed discarded state the stream
-        // must recover; no prior network failure is part of this lifecycle.
-        panel.restoreSessionSnapshot(SessionBrowserPanelSnapshot(
-            urlString: url.absoluteString,
-            profileID: nil,
-            shouldRenderWebView: true,
-            pageZoom: 1.0,
-            developerToolsVisible: false,
-            backHistoryURLStrings: [],
-            forwardHistoryURLStrings: []
-        ))
-        #expect(panel.webViewLifecycleTopPayload()["state"] as? String == "discarded")
-
-        let handlerID = UUID()
-        panel.addMobileBrowserStreamSignalHandler(id: handlerID) { _ in }
-        defer { panel.removeMobileBrowserStreamSignalHandler(id: handlerID) }
-
-        #expect(
-            panel.webViewLifecycleTopPayload()["restore_pending"] as? Bool == true,
-            "Mobile stream start must begin the discard-restore navigation"
-        )
-    }
-
     @Test func remoteSessionRestoreQueuedForProxyEndpointDoesNotMarkNavigationPending() throws {
         let url = try #require(URL(string: "http://localhost:3000/cmux-issue-7504"))
         let workspaceId = UUID()

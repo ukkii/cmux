@@ -297,46 +297,6 @@ struct CloudWorkspaceCreationRevealTests {
         )
     }
 
-    @Test("Device ⌘N reveals the workspace it selects, unless the user navigated first",
-          arguments: ["stay", "away", "awayAndBack"])
-    func deviceShortcutReveals(navigation: String) async throws {
-        try await AppContextSerialGate.withExclusiveAppContext {
-            let machine = SurfaceMachineID.device(.init(deviceID: UUID().uuidString, tag: "creation-reveal"))
-            let fixture = try CloudWorkspaceCreationSidebarFixture(machine: machine)
-            defer { fixture.close() }
-            fixture.provider.usesReceipt = true
-            let other = try #require(fixture.manager.addWorkspaceIfActive(initialSurface: .cloudVMLoading, select: false))
-            let reveals = fixture.catalog.cloudWorkspaceCreationCoordinator.reveals
-            var inFlight: CloudWorkspaceCreationReveal?
-            fixture.provider.beforeCreate = {
-                inFlight = reveals.reveal(for: fixture.manager)
-                guard navigation != "stay" else { return }
-                fixture.manager.selectWorkspace(other)
-                if navigation == "awayAndBack" {
-                    fixture.manager.selectWorkspace(try #require(fixture.manager.workspacesById[fixture.originalWorkspaceID]))
-                }
-            }
-            let operations = CloudWorkspaceOperationController(isAvailable: { true })
-            let devices = fixture.app.makeDeviceWorkspaceCreationCoordinator(operations: operations, catalog: fixture.catalog)
-
-            #expect(devices.start(on: machine, in: fixture.manager))
-            await operations.waitForPendingOperations()
-            let started = try #require(inFlight, "The reveal starts with the shortcut")
-            #expect(started.nodeID == nil && !started.isWithdrawn)
-            let reveal = try #require(reveals.reveal(for: fixture.manager))
-            #expect(reveal.token == started.token)
-            if navigation == "stay" {
-                let workspace = try #require(fixture.provider.createdWorkspaces.first)
-                #expect(fixture.manager.selectedTabId != fixture.originalWorkspaceID)
-                #expect(reveal.nodeID == CloudTreeNodeBuilder.nodeID(workspace: workspace.id, machine: machine))
-                #expect(!reveal.isWithdrawn)
-            } else {
-                #expect(fixture.manager.selectedTabId == (navigation == "away" ? other.id : fixture.originalWorkspaceID))
-                #expect(reveal.isWithdrawn, "A newer selection wins over the finished create, even one back to the origin")
-            }
-        }
-    }
-
     /// The Cloud tree reads its reveal inside SwiftUI's `updateNSView`, so each
     /// step of a create must invalidate that read.
     @Test("Beginning, completing and withdrawing a reveal each invalidate the tree's read")

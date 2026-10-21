@@ -122,8 +122,6 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case sendCtrlFToTerminal
     /// Pastes the path of the newest screenshot into the focused terminal.
     case pasteLastScreenshot
-    /// Makes the focused shared terminal's grid follow this Mac's window.
-    case sizeTerminalToMyWindow
     /// Clears the focused terminal's visible screen while preserving scrollback.
     case clearScreenKeepScrollback
 
@@ -328,7 +326,7 @@ extension ShortcutAction {
             return .key(ShortcutContextKnownKey.commandPaletteVisible.rawValue)
         case .renameTab, .renameWorkspace:
             return .and(.not(.atom(.browserFocus)), .not(.atom(.sidebarFocus)))
-        case .sendCtrlFToTerminal, .pasteLastScreenshot, .sizeTerminalToMyWindow, .clearScreenKeepScrollback:
+        case .sendCtrlFToTerminal, .pasteLastScreenshot, .clearScreenKeepScrollback:
             return .and(.not(.atom(.browserFocus)), .not(.atom(.sidebarFocus)))
         case .focusHistoryBack, .focusHistoryForward:
             return .not(.atom(.browserFocus))

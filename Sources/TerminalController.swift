@@ -1,5 +1,4 @@
 import CmuxCloud
-import CmuxMobileHost
 import CmuxSettingsUI
 import AppKit
 import CmuxRemoteSession
@@ -13,8 +12,6 @@ import CmuxRemoteDaemon
 import CmuxRemoteWorkspace
 import CmuxSurfaceCatalogModel
 import CmuxTerminal
-import CmuxTerminalSharing
-import CmuxTerminalSizing
 import CmuxSettings
 import CmuxSwiftRenderUI
 import Carbon.HIToolbox
@@ -29,7 +26,6 @@ import CmuxSidebar
 import CmuxWorkspaces
 import CmuxNotifications
 import CmuxSimulator
-private let mobileReconnectDebugLog = Logger(subsystem: "dev.cmux", category: "mobile-reconnect-debug")
 extension Notification.Name {
     static let socketListenerDidStart = Notification.Name("cmux.socketListenerDidStart")
     static let terminalSurfaceHostedViewDidMoveToWindow = Notification.Name("cmux.terminalSurfaceHostedViewDidMoveToWindow")
@@ -147,10 +143,6 @@ class TerminalController {
         4
     private nonisolated let remotePTYControllerAvailabilityCondition = NSCondition()
     private nonisolated(unsafe) var remotePTYControllerAvailabilityGeneration: UInt64 = 0
-    /// One process-wide admission budget shared by every mobile connection.
-    nonisolated let mobileTaskFilesystemJobQuota: MobileTaskFilesystemJobQuota
-    /// Actor-isolated ten-minute cache for mobile task model discovery.
-    nonisolated let mobileTaskModelDiscovery: MobileTaskModelDiscovery
     var tabManager: TabManager?
     private let externalNavigationHandler = BrowserExternalNavigationHandler()
     let workspaceCreateIdempotencyCache = WorkspaceCreateIdempotencyCache(capacity: 256)
@@ -169,11 +161,6 @@ class TerminalController {
     /// the initial TabManager and notification store are ready.
     @MainActor var automationEngine: AutomationEngine?
     @MainActor private(set) var browserDataImportCoordinator: BrowserDataImportCoordinator?
-    nonisolated let terminalArtifactAuthorizationStore: TerminalArtifactAuthorizationStore
-    /// Main-actor grants for the file currently displayed by each mobile panel.
-    /// The live panel inventory and artifact reads share this owner so a closed
-    /// or replaced panel cannot retain an old file authorization.
-    let panelArtifactAuthorizationStore: PanelArtifactAuthorizationStore
     // Sendable value type; injected at construction so socket auth never reaches a global.
     nonisolated let passwordStore: SocketControlPasswordStore
     private nonisolated let socketPasswordFileWatcher: FileWatcher?
@@ -272,47 +259,7 @@ class TerminalController {
         socketMainHopSignposter.isEnabled
     }
     private nonisolated static let v2ConsumedBrowserDownloadIDLimit = 128
-    struct MobileViewportReport {
-        var columns: Int; var rows: Int; var updatedAt: Date; var generation: UInt64? = nil
-        /// Device identity the phone reported with its viewport (shared sizing).
-        var deviceKind: TerminalDeviceKind = .iphone; var deviceName: String? = nil
-        /// The viewer's stable per-install `device_id`, when it sent one.
-        var deviceID: String? = nil
-        /// Sticky reports come from the dedicated `mobile.terminal.viewport`
-        /// RPC and live for the client's connection lifetime (cleared on
-        /// disconnect or surface detach), so an idle paired device keeps its
-        /// viewport border. Non-sticky reports piggyback on `terminal.input`
-        /// and expire on the TTL so a client that only ever typed once does
-        /// not pin the grid forever.
-        var sticky: Bool = false
-    }
-    private static let mobileViewportReportTTL: TimeInterval = 5
-    /// Stability window for a governed cap-to-cap grid change: long enough to
-    /// coalesce the pre/post keyboard-inset double report, short enough that a
-    /// legitimate keyboard resize is not felt as lag.
-    private static let mobileViewportCapApplyStabilityWindow: Duration = .milliseconds(400)
-    /// Stability window for a governed uncap. Deliberately long: an uncap only
-    /// restores the Mac pane after the last phone leaves, so nobody is hurt by
-    /// waiting, and a remount's re-apply of the same grid must arrive inside
-    /// this window (relay round trips inflate that gap to seconds) to cancel
-    /// the clear+re-apply resize flap (issue 13474).
-    private static let mobileViewportUncapApplyStabilityWindow: Duration = .seconds(3)
-    var mobileViewportReportsBySurfaceID: [UUID: [String: MobileViewportReport]] = [:]; private var mobileViewportGenerationsBySurfaceID: [UUID: [String: UInt64]] = [:]
-    private var mobileTerminalPasteInFlightSurfaceIDs: Set<UUID> = []
-    private var mobileViewportReportCleanupTimersBySurfaceID: [UUID: DispatchSourceTimer] = [:]
-    var mobileViewportApplyGovernorsBySurfaceID: [UUID: MobileViewportApplyGovernor] = [:]
-    /// Shared-sizing hosts of local terminals (docs/shared-terminal-sizing.md).
-    var localSizingHostsBySurfaceID: [UUID: LocalTerminalSizingHost] = [:]
-    var localSizingControllersBySurfaceID: [UUID: LocalTerminalSharingController] = [:]
-    /// Phones someone disconnected from a Cloud terminal, by surface then client id.
-    var cloudDetachedPhonesBySurfaceID: [UUID: [String: TerminalSharingDetachment]] = [:]
-    /// Cloud mirrors that relay phones to a cmux-tui host, by surface id.
-    var cloudSizingRelaysBySurfaceID: [UUID: CloudSizingRelayReference] = [:]
-    /// The single owner of shared-terminal size state and actions.
-    let terminalSharing = TerminalSharingStore()
-    /// The one size panel popover, anchored at a terminal's tab.
-    let terminalSizePanelPresenter = TerminalSizePanelPresenter()
-    private var mobileViewportGovernorFlushTasksBySurfaceID: [UUID: Task<Void, Never>] = [:]
+    private var terminalPasteInFlightSurfaceIDs: Set<UUID> = []
 #if DEBUG
     private nonisolated static let socketCommandDebugLogEnvironmentKey = "CMUX_DEBUG_SOCKET_COMMAND_LOG"
     private nonisolated static let socketCommandSlowThresholdMs: Double = 500
@@ -503,16 +450,7 @@ class TerminalController {
     ) {
         let uniqueSurfaceIds = Set(surfaceIds)
         socketFastPathState.removeShellActivity(panelIds: uniqueSurfaceIds)
-        if let workspaceID {
-            for surfaceId in uniqueSurfaceIds {
-                panelArtifactAuthorizationStore.invalidate(
-                    workspaceID: workspaceID.uuidString,
-                    surfaceID: surfaceId.uuidString
-                )
-            }
-        }
         for surfaceId in uniqueSurfaceIds {
-            removeLocalSizingHost(surfaceID: surfaceId)
             v2BrowserDocumentState.removeSurface(surfaceId)
             v2BrowserDownloadEventsBySurface.removeValue(forKey: surfaceId)
             v2ConsumedBrowserDownloadKeysBySurface.removeValue(forKey: surfaceId)
@@ -562,13 +500,6 @@ class TerminalController {
         socketClientPreauthorizationLimiter: SocketClientPreauthorizationLimiter = .init(
             maximumConcurrentClaims: TerminalController.socketClientPreauthorizationMaximumClaims
         ),
-        mobileTaskFilesystemJobQuota: MobileTaskFilesystemJobQuota = .init(),
-        mobileTaskModelDiscovery: MobileTaskModelDiscovery = .live(
-            homeDirectory: FileManager.default.homeDirectoryForCurrentUser,
-            shellPath: ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        ),
-        terminalArtifactAuthorizationStore: TerminalArtifactAuthorizationStore = .init(),
-        panelArtifactAuthorizationStore: PanelArtifactAuthorizationStore? = nil,
         agentHookDeliveryQueue: AgentHookDeliveryQueue = AgentHookDeliveryQueue(),
         remoteProxyBroker: any RemoteProxyBrokering = RemoteProxyBroker(
             tunnelProvider: RemoteDaemonProxyTunnelProvider(strings: .appLocalized, ptyBridgeStrings: AppRemotePTYBridgeStrings())
@@ -583,11 +514,6 @@ class TerminalController {
         self.socketClientCapabilityAuthority = Self.makeSocketClientCapabilityAuthority()
         self.socketClientPreauthorizationLimiter = socketClientPreauthorizationLimiter
         self.agentHookDeliveryQueue = agentHookDeliveryQueue
-        self.mobileTaskFilesystemJobQuota = mobileTaskFilesystemJobQuota
-        self.mobileTaskModelDiscovery = mobileTaskModelDiscovery
-        self.terminalArtifactAuthorizationStore = terminalArtifactAuthorizationStore
-        self.panelArtifactAuthorizationStore =
-            panelArtifactAuthorizationStore ?? PanelArtifactAuthorizationStore()
         self.transport = transport
         let socketMarkerFileManager = FileManager.default
         let socketMarkerBundleIdentifier = Bundle.main.bundleIdentifier
@@ -1087,9 +1013,6 @@ class TerminalController {
     /// Update which window's TabManager receives socket commands.
     /// This is used when the user switches between multiple terminal windows.
     func setActiveTabManager(_ tabManager: TabManager?) {
-        if let tabManager {
-            AppDelegate.shared?.ensureMobileWorkspaceListObserver(for: tabManager)
-        }
         self.tabManager = tabManager
     }
 
@@ -1404,35 +1327,12 @@ class TerminalController {
                     await self.v2SurfaceReadSelection(params: parsedRequest.params)
                 }
             }
-            if ["mobile.task.models.list", "mobile.chat.send", "mobile.chat.interrupt", "mobile.terminal.paste", "terminal.paste"].contains(request.method) {
+            if request.method == "terminal.paste" {
                 return v2AsyncResultCall(
                     id: request.id,
                     timeoutSeconds: 7
                 ) {
-                    guard let result = await self.controlCommandCoordinator
-                        .handleMobileHostAsync(
-                            parsedRequest,
-                            context: self
-                        ) else {
-                        return .err(
-                            code: "method_not_found",
-                            message: String(
-                                localized: "socket.error.unknownMethod",
-                                defaultValue: "Unknown method"
-                            ),
-                            data: nil
-                        )
-                    }
-                    switch result {
-                    case .ok(let payload):
-                        return .ok(payload.foundationObject)
-                    case let .err(code, message, data):
-                        return .err(
-                            code: code,
-                            message: message,
-                            data: data?.foundationObject
-                        )
-                    }
+                    await self.v2TerminalPaste(params: request.params)
                 }
             }
             if let feedResult = controlCommandCoordinator.handleSocketWorkerFeed(
@@ -1526,12 +1426,6 @@ class TerminalController {
             // the formatting can never run inline on the main thread.
             case "read_screen":
                 return (true, readScreenText(args))
-            // The v1 diagnostic-read family: the host's iroh DiagnosticLog is
-            // actor-owned, so the snapshot await bridges to this worker via
-            // the established semaphore pattern. NOT mainThreadCallable — the
-            // wait must never block the main thread.
-            case "iroh_diag":
-                return (true, irohDiagText())
             // The v1 resolution reads (tranche D): one v2MainSync snapshot
             // hop each, reply lines formatted here on this worker thread.
             // All mainThreadCallable (the hop collapses inline); the bodies
@@ -1981,36 +1875,6 @@ class TerminalController {
                 )
                 return outcome.socketPayload
             }
-        case "mobile.attach_ticket.create":
-            return v2AsyncResultCall(id: request.id, timeoutSeconds: 30) {
-                await self.v2MobileAttachTicketCreate(params: request.params)
-            }
-        case "mobile.panel.artifact.stat", "mobile.panel.artifact.thumbnail":
-            return v2AsyncResultCall(id: request.id, timeoutSeconds: 30) {
-                await self.v2MobilePanelArtifactDispatch(
-                    method: request.method,
-                    params: request.params,
-                    executionContext: nil
-                )
-            }
-        case "mobile.terminal.set_font":
-            return v2Result(id: request.id, v2MobileTerminalSetFont(params: request.params))
-        case "terminal.size_state":
-            return v2Result(id: request.id, v2MainSync { self.v2TerminalSizeState(params: request.params) })
-        case "terminal.size_policy.set":
-            return v2Result(id: request.id, v2MainSync { self.v2TerminalSizePolicySet(params: request.params) })
-        case "terminal.size_to_me":
-            return v2Result(id: request.id, v2MainSync { self.v2TerminalSizeToMe(params: request.params) })
-        case "terminal.size_counts.set":
-            return v2Result(id: request.id, v2MainSync { self.v2TerminalSizeCountsSet(params: request.params) })
-        case "terminal.participant.disconnect":
-            return v2Result(id: request.id, v2MainSync { self.v2TerminalParticipantDisconnect(params: request.params) })
-        case "terminal.participants.disconnect_others":
-            return v2Result(id: request.id, v2MainSync { self.v2TerminalParticipantsDisconnectOthers(params: request.params) })
-        case "mobile.compatible_tags.get":
-            return v2Result(id: request.id, v2MobileCompatibleTagsGet())
-        case "mobile.compatible_tags.set":
-            return v2Result(id: request.id, v2MobileCompatibleTagsSet(params: request.params))
         case "system.ping":
             return v2Ok(id: request.id, result: ["pong": true])
         case "system.capabilities":
@@ -2204,93 +2068,6 @@ class TerminalController {
                 code: "invalid_dispatch",
                 message: "debug.global_search.query requires asynchronous socket dispatch"
             )
-        case "debug.mobile.transport.disconnect":
-            let selectedConnectionID: UUID?
-            if let rawConnectionID = request.params["connection_id"] {
-                guard let value = rawConnectionID as? String,
-                      let parsed = UUID(uuidString: value) else {
-                    return v2Error(
-                        id: request.id,
-                        code: "invalid_params",
-                        message: "connection_id must be a UUID"
-                    )
-                }
-                selectedConnectionID = parsed
-            } else {
-                selectedConnectionID = nil
-            }
-            return v2AsyncResultCall(id: request.id, timeoutSeconds: 10) {
-                let closed = await MobileHostConnectionRegistry.shared
-                    .debugCloseConnections(connectionID: selectedConnectionID)
-                return .ok([
-                    "closed_connection_ids": closed.map(\.uuidString),
-                    "closed_count": closed.count,
-                ])
-            }
-        case "debug.mobile.transport.reconnect_loop":
-            guard let duration = request.params["duration_seconds"] as? NSNumber,
-                  let interval = request.params["interval_seconds"] as? NSNumber else {
-                return v2Error(
-                    id: request.id,
-                    code: "invalid_params",
-                    message: "duration_seconds and interval_seconds are required"
-                )
-            }
-            let durationSeconds = duration.doubleValue
-            let intervalSeconds = interval.doubleValue
-            guard durationSeconds > 0, durationSeconds <= 1_800,
-                  intervalSeconds >= 0.25, intervalSeconds <= 300 else {
-                return v2Error(
-                    id: request.id,
-                    code: "invalid_params",
-                    message: "duration_seconds must be 0<value<=1800 and interval_seconds must be 0.25...300"
-                )
-            }
-            let selectedConnectionID: UUID?
-            if let rawConnectionID = request.params["connection_id"] {
-                guard let value = rawConnectionID as? String,
-                      let parsed = UUID(uuidString: value) else {
-                    return v2Error(
-                        id: request.id,
-                        code: "invalid_params",
-                        message: "connection_id must be a UUID"
-                    )
-                }
-                selectedConnectionID = parsed
-            } else {
-                selectedConnectionID = nil
-            }
-            return v2AsyncResultCall(id: request.id, timeoutSeconds: durationSeconds + 30) {
-                let startedAt = ContinuousClock.now
-                let clock = ContinuousClock()
-                var cycles = 0
-                var closedConnectionIDs: [String] = []
-                while startedAt.duration(to: ContinuousClock.now) < .seconds(durationSeconds) {
-                    guard !Task.isCancelled else { break }
-                    let closed = await MobileHostConnectionRegistry.shared
-                        .debugCloseConnections(connectionID: selectedConnectionID)
-                    cycles += 1
-                    closedConnectionIDs.append(contentsOf: closed.map(\.uuidString))
-                    mobileReconnectDebugLog.info(
-                        "debug.reconnect_loop cycle=\(cycles) closed=\(closed.count) interval_s=\(intervalSeconds)"
-                    )
-                    let elapsed = startedAt.duration(to: ContinuousClock.now)
-                    let elapsedComponents = elapsed.components
-                    let elapsedSeconds = Double(elapsedComponents.seconds)
-                        + Double(elapsedComponents.attoseconds) / 1_000_000_000_000_000_000
-                    let remaining = durationSeconds - elapsedSeconds
-                    guard remaining > 0 else { break }
-                    let delay = min(intervalSeconds, remaining)
-                    try? await clock.sleep(for: .seconds(delay))
-                }
-                return .ok([
-                    "duration_seconds": durationSeconds,
-                    "interval_seconds": intervalSeconds,
-                    "cycles": cycles,
-                    "closed_connection_ids": closedConnectionIDs,
-                    "closed_count": closedConnectionIDs.count,
-                ])
-            }
 #endif
         case "current.list":
             return socketWorkerCurrentWorkResponse(id: request.id, params: request.params)
@@ -2320,7 +2097,6 @@ class TerminalController {
             if request.method == "debug.sidebar.simulate_drag"
                 || request.method == "debug.global_search.query"
                 || request.method == "debug.window.screenshot"
-                || request.method == "debug.mobile.transport.disconnect"
                 || request.method == "debug.cloudtree.gallery"
                 || request.method == "debug.window_hints" {
                 return v2Error(id: request.id, code: "method_not_found", message: "Unknown method")
@@ -3442,11 +3218,6 @@ class TerminalController {
             return v2Result(id: id, v2CaffeineStatus())
         case "caffeine.set":
             return v2Result(id: id, v2CaffeineSet(params: params))
-        // mobile.host.status/mobile.workspace.list/mobile.terminal.* (+terminal.*
-        // aliases), mobile.terminal.paste/terminal.paste, and chat.sessions.dump
-        // handled by ControlCommandCoordinator (bodies stay; shared with
-        // mobileHostHandleRPC).
-
         // system.identify (forwards to the still-shared v2Identify), system.tree,
         // auth.login, and the DEBUG-only mobile.dev_stack_auth.configure handled
         // by ControlCommandCoordinator.
@@ -5481,7 +5252,7 @@ class TerminalController {
             "move_up", "move_down", "move_top",
             "close_others", "close_above", "close_below",
             "mark_read", "mark_unread",
-            "set_color", "clear_color", "mobile_connect"
+            "set_color", "clear_color"
         ]
 
         var result: V2CallResult = .err(code: "invalid_params", message: "Unknown workspace action", data: [
@@ -5490,34 +5261,6 @@ class TerminalController {
         ])
 
         v2MainSync {
-            if action == "mobile_connect" {
-                let windowId = v2ResolveWindowId(tabManager: tabManager)
-                guard let workspace = AppDelegate.shared?.performMobileConnectWorkspaceAction(
-                    tabManager: tabManager,
-                    preferredWindow: windowId.flatMap { AppDelegate.shared?.mainWindow(for: $0) },
-                    focusWorkspace: v2FocusAllowed(),
-                    debugSource: "cli.workspaceAction.mobileConnect"
-                ) else {
-                    result = .err(
-                        code: "unavailable",
-                        message: String(
-                            localized: "cli.workspaceAction.tailscalePairingUnavailable",
-                            defaultValue: "Mobile Pairing is unavailable"
-                        ),
-                        data: nil
-                    )
-                    return
-                }
-                result = .ok([
-                    "action": action,
-                    "workspace_id": workspace.id.uuidString,
-                    "workspace_ref": v2Ref(kind: .workspace, uuid: workspace.id),
-                    "window_id": v2OrNull(windowId?.uuidString),
-                    "window_ref": v2Ref(kind: .window, uuid: windowId)
-                ])
-                return
-            }
-
             let requestedWorkspaceId = v2UUID(params, "workspace_id") ?? tabManager.selectedTabId
             guard let workspaceId = requestedWorkspaceId,
                   let workspace = tabManager.tabs.first(where: { $0.id == workspaceId }) else {
@@ -6768,10 +6511,8 @@ class TerminalController {
         }
     }
 
-    // The three feed reply handlers are internal (not private) because the
-    // mobile data plane dispatches the same bodies from
-    // `TerminalController+MobileFeed.swift`'s verb family; every entrypoint
-    // resolves through the single `FeedCoordinator.deliverReply` path.
+    // Every feed reply entrypoint resolves through the single
+    // `FeedCoordinator.deliverReply` path.
     nonisolated func v2FeedPermissionReply(params: [String: Any]) -> V2CallResult {
         guard let requestId = params["request_id"] as? String else {
             return .err(
@@ -12306,27 +12047,6 @@ class TerminalController {
     /// base64 encode/decode round-trip — kept verbatim so the reply bytes
     /// match the legacy `readTerminalTextBase64` pipeline exactly — run off
     /// the main actor.
-    /// Serves the v1 `iroh_diag` socket command: the host's Iroh Connection
-    /// Report in the same plain-language format the Settings pane exports,
-    /// read from the same `DiagnosticLog` snapshot path so the two can never
-    /// disagree.
-    private nonisolated func irohDiagText() -> String {
-        let semaphore = DispatchSemaphore(value: 0)
-        nonisolated(unsafe) var export = ""
-        Task {
-            // Reads the nonisolated static ring directly: no main-actor hop, so
-            // the verb keeps working when the main thread is wedged (the case
-            // connection diagnostics exist for). The wait blocks only on the
-            // log's own drain actor, and the execution policy keeps this
-            // command off the main thread, so the wait cannot self-deadlock.
-            let report = await MobileHostDiagnostics.log.snapshot()
-            export = String(decoding: report.humanReadableExport(), as: UTF8.self)
-            semaphore.signal()
-        }
-        semaphore.wait()
-        return export
-    }
-
     private nonisolated func readScreenText(_ args: String) -> String {
         let options: ReadScreenOptions
         switch parseReadScreenArgs(args) {
@@ -12534,7 +12254,6 @@ class TerminalController {
           reset_bonsplit_underflow_count  - Reset bonsplit underflow counter (test-only)
           empty_panel_count               - Count EmptyPanelView appearances (test-only)
           reset_empty_panel_count         - Reset EmptyPanelView appearance count (test-only)
-          debug.mobile.transport.reconnect_loop - Repeatedly close mobile transports for a bounded duration (test-only)
         """
 #endif
         return text
@@ -15449,547 +15168,8 @@ class TerminalController {
         return false
     }
 
-    // MARK: - Mobile Host V2 Methods
-
-    @MainActor
-    func mobileHostHandleRPC(
-        _ request: MobileHostRPCRequest,
-        executionContext: MobileHostRPCExecutionContext? = nil
-    ) async -> MobileHostRPCResult {
-        // The mobile data-plane RPC speaks `MobileHostRPCRequest` /
-        // `MobileHostRPCResult` and dispatches directly to the app-side
-        // `v2Mobile*` bodies. It deliberately does NOT route through the v2
-        // control-socket `ControlCommandCoordinator` (whose native result type is
-        // `ControlCallResult`): doing so would force a
-        // `MobileHostRPCRequest → ControlRequest → ControlCallResult →
-        // MobileHostRPCResult` type round-trip with no behavior change. The v2
-        // control socket shares the same bodies through `handleMobileHost`, so the
-        // wire bytes stay identical across both entrypoints without a bridge here.
-        if request.mustNameItsTerminal,
-           MobileHostRPCRequest.phoneNamedTerminalID(params: request.params) == nil,
-           !["surface_id", "terminal_id", "tab_id"].contains(where: { v2UUID(request.params, $0) != nil }) {
-            // A phone must name the terminal it writes to or closes; the
-            // focused terminal on this Mac is never a stand-in.
-            return mobileHostResult(.err(
-                code: "terminal_id_required",
-                message: "Terminal input must name its terminal",
-                data: nil
-            ))
-        }
-        // A phone someone disconnected from a terminal sends no input and gets
-        // no replay for it until mobile.terminal.reattach.
-        if let detachedError = mobileDetachedGateError(method: request.method, params: request.params) {
-            return mobileHostResult(detachedError)
-        }
-        let result: V2CallResult
-        switch request.method {
-        case "mobile.host.status":
-            result = v2MobileHostStatus(params: request.params, includePrivateMetadata: false)
-#if DEBUG
-        case "mobile.rpc.methods":
-            result = .ok([
-                "schema_version": 1,
-                "methods": MobileHostService.irohReleaseGateRPCMethods,
-            ])
-#endif
-        case "mobile.attach_ticket.create":
-            result = await v2MobileAttachTicketCreate(params: request.params)
-        case "mobile.workspace.list":
-            // The v2 method carries the authenticated host identity with the
-            // workspace snapshot so a cold reconnect does not need a second
-            // relay round trip. Older clients continue using `workspace.list`.
-            result = v2MobileWorkspaceListWithHostStatus(params: request.params)
-        case "workspace.list":
-            result = v2Bool(request.params, "include_host_status") == true
-                ? v2MobileWorkspaceListWithHostStatus(params: request.params)
-                : v2MobileWorkspaceList(params: request.params)
-        case "mobile.workspace.changes.summary",
-             "mobile.workspace.changes.files",
-             "mobile.workspace.changes.file_diff",
-             "mobile.workspace.changes.file_stat",
-             "mobile.workspace.changes.file_fetch":
-            result = await v2MobileWorkspaceChanges(method: request.method, params: request.params)
-        case "mobile.directory.search":
-            result = await v2MobileDirectorySearch(
-                params: request.params,
-                filesystemJobQuota: mobileTaskFilesystemJobQuota
-            )
-        case "mobile.directory.list":
-            result = await v2MobileDirectoryList(
-                params: request.params,
-                filesystemJobQuota: mobileTaskFilesystemJobQuota
-            )
-        case "workspace.create":
-            result = await v2MobileWorkspaceCreate(params: request.params)
-        case "mobile.task.attachment.upload":
-            result = v2MobileTaskAttachmentUpload(params: request.params)
-        case "mobile.task.models.list":
-            result = await v2MobileTaskModelsList(params: request.params)
-        case "mobile.terminal.create", "terminal.create":
-            result = v2MobileTerminalCreate(params: request.params)
-        case "mobile.terminal.input", "terminal.input":
-            result = v2MobileTerminalInput(params: request.params)
-        case "mobile.terminal.paste", "terminal.paste":
-            result = await v2MobileTerminalPaste(params: request.params)
-        case "mobile.terminal.paste_image", "terminal.paste_image":
-            result = v2MobileTerminalPasteImage(params: request.params)
-        case "mobile.terminal.replay", "terminal.replay":
-            result = v2MobileTerminalReplay(params: request.params)
-        case "mobile.terminal.viewport", "terminal.viewport":
-            result = v2MobileTerminalViewport(params: request.params)
-        case "mobile.terminal.scroll", "terminal.scroll":
-            result = v2MobileTerminalScroll(params: request.params)
-        case "mobile.terminal.reattach":
-            result = v2MobileTerminalReattach(params: request.params)
-        case "mobile.terminal.size_policy.set":
-            result = v2MobileTerminalSizePolicySet(params: request.params)
-        case "mobile.terminal.participant.disconnect":
-            result = v2MobileTerminalParticipantDisconnect(
-                params: request.params,
-                connectionID: executionContext?.connectionID
-            )
-        case "mobile.terminal.mouse", "terminal.mouse":
-            result = v2MobileTerminalMouse(params: request.params)
-        case "mobile.terminal.close":
-            result = v2MobileTerminalClose(params: request.params)
-        case "mobile.terminal.rename":
-            result = v2MobileTerminalRename(params: request.params)
-        case let method where method.hasPrefix("mobile.terminal.artifact."):
-            result = await v2MobileTerminalArtifactDispatch(
-                method: method,
-                params: request.params,
-                executionContext: executionContext
-            )
-        case "workspace.action":
-            result = v2MobileWorkspaceAction(params: request.params)
-        case "workspace.move":
-            result = v2MobileWorkspaceMove(params: request.params)
-        case "workspace.group.action", "workspace.group.create":
-            result = request.method == "workspace.group.create" ? v2MobileWorkspaceGroupCreate(params: request.params) : v2MobileWorkspaceGroupAction(params: request.params)
-        case let method where method.hasPrefix("chief."):
-            // Chief already has one validated owner-backed implementation for
-            // the local control socket. Reuse it for the authenticated mobile
-            // data plane instead of maintaining a second parser or a second
-            // set of owner/conversation checks. `chiefResult` returns the
-            // Foundation-shaped v2 result, which is bridged to the mobile
-            // envelope below just like every other mobile handler.
-            result = await chiefMobileResult(method: method, params: request.params)
-        case let method where method.hasPrefix("mobile.chat."):
-            result = await v2MobileChatDispatch(
-                method: method,
-                params: request.params,
-                executionContext: executionContext
-            )
-        case let method where method.hasPrefix("mobile.browser."):
-            result = await v2MobileBrowserDispatch(
-                method: method,
-                params: request.params,
-                connectionID: executionContext?.connectionID
-            )
-        case let method where method.hasPrefix("mobile.simulator."):
-            result = await v2MobileSimulatorDispatch(
-                method: method,
-                params: request.params,
-                connectionID: executionContext?.connectionID
-            )
-        case let method where method.hasPrefix("mobile.todo."):
-            result = v2MobileTodoDispatch(method: method, params: request.params)
-        case "mobile.status.set", "mobile.status.cycle":
-            result = v2MobileTodoDispatch(method: request.method, params: request.params)
-        case "mobile.surface.focus":
-            result = v2MobileSurfaceFocus(params: request.params)
-        case let method where method.hasPrefix("mobile.panel.artifact."):
-            result = await v2MobilePanelArtifactDispatch(
-                method: method,
-                params: request.params,
-                executionContext: executionContext
-            )
-        case "workspace.close":
-            result = v2MobileWorkspaceClose(params: request.params)
-        case "workspace.group.collapse":
-            result = v2MobileWorkspaceGroupSetCollapsed(params: request.params, isCollapsed: true)
-        case "workspace.group.expand":
-            result = v2MobileWorkspaceGroupSetCollapsed(params: request.params, isCollapsed: false)
-        case "notification.dismiss":
-            result = v2MobileNotificationDismiss(params: request.params)
-        case "notification.reconcile":
-            result = v2MobileNotificationReconcile(params: request.params)
-        case "notification.feed.list":
-            result = await v2MobileNotificationFeedList(
-                params: request.params,
-                responseID: request.id.map { String(describing: $0) }
-            )
-        case "feed.list":
-            result = await v2MobileFeedList(
-                params: request.params,
-                responseID: request.id.map { String(describing: $0) }
-            )
-        case "feed.text":
-            result = v2MobileFeedText(params: request.params)
-        case "feed.permission.reply":
-            result = v2FeedPermissionReply(params: request.params)
-        case "feed.question.reply":
-            result = v2FeedQuestionReply(params: request.params)
-        case "feed.exit_plan.reply":
-            result = v2FeedExitPlanReply(params: request.params)
-        case "notification.feed.mark_read":
-            result = v2MobileNotificationFeedMarkRead(params: request.params)
-        case "notification.feed.mark_unread":
-            result = v2MobileNotificationFeedMarkUnread(params: request.params)
-        case "notification.feed.mark_all_read":
-            result = v2MobileNotificationFeedMarkAllRead(params: request.params)
-        case "mobile.sync.fetch":
-            result = v2MobileSyncFetch(params: request.params)
-        case "phone_push.settings.update":
-            result = v2MobilePhonePushSettingsUpdate(params: request.params)
-        case "phone_push.status.get":
-            // The payload is intentionally content-free. This authenticated
-            // request supplies the same-account token that the client's paired
-            // host-status exchange reuses for the private readiness block.
-            result = .ok(["ok": true])
-        case "phone_push.test":
-            result = v2MobilePhonePushTest()
-        case "caffeine.status":
-            result = v2CaffeineStatus()
-        case "caffeine.set":
-            result = v2CaffeineSet(params: request.params)
-        default:
-            result = .err(code: "method_not_found", message: "Unknown mobile method", data: [
-                "method": request.method
-            ])
-        }
-        return mobileHostResult(result)
-    }
-
-    /// Adds the authenticated host proof to the v2 workspace snapshot. This is
-    /// called after the mobile connection has been admitted. The published v2
-    /// installation identity is authoritative for this response; the physical
-    /// device identity belongs to legacy pairing and must never replace it.
-    /// If the identity is unavailable, return the plain workspace result and
-    /// let the client use its legacy fallback request.
-    @MainActor
-    private func v2MobileWorkspaceListWithHostStatus(
-        params: [String: Any]
-    ) -> V2CallResult {
-        let workspaceResult = v2MobileWorkspaceList(params: params)
-        guard case let .ok(workspacePayload) = workspaceResult,
-              var workspaceObject = workspacePayload as? [String: Any] else {
-            return workspaceResult
-        }
-        guard case let .ok(hostStatusPayload) = MobileHostPublicStatusCache.result(
-            includeIdentity: true
-        ), let hostStatusObject = hostStatusPayload as? [String: Any] else {
-            return workspaceResult
-        }
-        workspaceObject["host_status"] = hostStatusObject
-        return .ok(workspaceObject)
-    }
-
-    /// Publish a `terminal.set_font` event to connected iOS device(s) so the
-    /// mirrored terminal live-zooms its font (the grid reflows automatically on
-    /// the phone). Drives the same iOS apply path as a pinch/zoom step, just
-    /// initiated from the Mac for automation (`cmux mobile set-font <size>`).
-    ///
-    /// Params: `{ "font_size": Number, optional "surface_id": String,
-    /// optional "workspace_id": String }`. When `surface_id` is omitted the
-    /// phone applies the size to every mounted surface. `nonisolated` because it
-    /// only touches the Sendable connection registry via
-    /// ``MobileHostService/emitEvent(topic:payload:)``.
-    nonisolated func v2MobileTerminalSetFont(params: [String: Any]) -> V2CallResult {
-        guard let fontSize = v2Double(params, "font_size") else {
-            return .err(
-                code: "invalid_params",
-                message: "Missing or invalid font_size",
-                data: nil
-            )
-        }
-        guard fontSize.isFinite, fontSize > 0 else {
-            return .err(
-                code: "invalid_params",
-                message: "font_size must be a positive number of points",
-                data: ["font_size": fontSize]
-            )
-        }
-        var payload: [String: Any] = ["font_size": fontSize]
-        if let surfaceID = v2RawString(params, "surface_id") {
-            payload["surface_id"] = surfaceID
-        }
-        if let workspaceID = v2RawString(params, "workspace_id") {
-            payload["workspace_id"] = workspaceID
-        }
-        let hasSubscribers = MobileHostService.hasEventSubscribers(topic: "terminal.set_font")
-        MobileHostService.emitEvent(topic: "terminal.set_font", payload: payload)
-        return .ok([
-            "ok": true,
-            "font_size": fontSize,
-            "delivered": hasSubscribers,
-        ])
-    }
-
-    /// Returns the sibling Mac dev tags this Mac grants to its paired
-    /// development phones (`cmux mobile compatible-tags list`).
-    nonisolated func v2MobileCompatibleTagsGet() -> V2CallResult {
-        .ok(["tags": MobileCompatibleMacTags.tags()])
-    }
-
-    /// Replaces the sibling-tag grant set and pushes the new set to every
-    /// subscribed phone over `mobile.compatible_tags.changed`, so a connected
-    /// phone re-runs discovery (grant) or prunes (revoke) without a rebuild.
-    /// A phone that is offline right now adopts the set from authenticated
-    /// host status on its next connect.
-    ///
-    /// Params: `{ "tags": [String] }` — the FULL grant set (the CLI implements
-    /// add/remove as read-modify-write), so application is idempotent.
-    nonisolated func v2MobileCompatibleTagsSet(params: [String: Any]) -> V2CallResult {
-        guard let rawTags = params["tags"] as? [String] else {
-            return .err(
-                code: "invalid_params",
-                message: "Missing or invalid tags array",
-                data: nil
-            )
-        }
-        let rejected = MobileCompatibleMacTags.rejectedTags(from: rawTags)
-        guard rejected.isEmpty else {
-            return .err(
-                code: "invalid_params",
-                message: "Release-lane tags cannot be granted to a development phone",
-                data: ["rejected": rejected]
-            )
-        }
-        let stored = MobileCompatibleMacTags.set(rawTags)
-        let topic = "mobile.compatible_tags.changed"
-        let hasSubscribers = MobileHostService.hasEventSubscribers(topic: topic)
-        MobileHostService.emitEvent(topic: topic, payload: ["tags": stored])
-        return .ok([
-            "ok": true,
-            "tags": stored,
-            "delivered": hasSubscribers,
-        ])
-    }
-
-    /// Mobile-gated wrapper over ``v2WorkspaceAction(params:)``.
-    func v2MobileWorkspaceAction(params: [String: Any]) -> V2CallResult {
-        let rawAction = v2RawString(params, "action")
-        guard let action = Self.mobileWorkspaceActionKey(rawAction),
-              Self.mobileAllowsWorkspaceAction(rawAction) else {
-            return .err(
-                code: "method_not_found",
-                message: "Unsupported workspace action for mobile",
-                data: ["action": v2OrNull(rawAction)]
-            )
-        }
-        // Reject a present-but-malformed workspace_id like the other mobile
-        // handlers, then require it to actually be present and resolvable: this
-        // is a mutating action, so it must target an explicit workspace and never
-        // fall back to the Mac's currently selected workspace (which
-        // v2WorkspaceAction would otherwise do for a missing workspace_id).
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        guard let targetWorkspaceID = v2UUID(params, "workspace_id") else {
-            return .err(code: "invalid_params", message: "Missing or invalid workspace_id", data: nil)
-        }
-        if action == "set_description" || action == "clear_description" {
-            guard let tabManager = v2ResolveTabManager(params: params),
-                  let workspace = tabManager.tabs.first(where: { $0.id == targetWorkspaceID }) else {
-                return .err(code: "not_found", message: "Workspace not found", data: nil)
-            }
-            if MobileWorkspaceMetadataLimits
-                .projectedCustomDescription(workspace.customDescription)
-                .isTruncated {
-                return .err(
-                    code: "conflict",
-                    message: "Workspace description is too long to edit from mobile",
-                    data: ["workspace_id": targetWorkspaceID.uuidString]
-                )
-            }
-        }
-        var sanitizedParams = params
-        switch action {
-        case "set_description":
-            guard let normalized = MobileWorkspaceMetadataLimits.normalizedCustomDescription(
-                v2String(params, "description")
-            ) else {
-                return .err(code: "invalid_params", message: "Missing or invalid description", data: nil)
-            }
-            sanitizedParams["description"] = normalized
-        case "set_color":
-            guard let colorRaw = v2String(params, "color")?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !colorRaw.isEmpty,
-                  colorRaw.utf8.count <= MobileWorkspaceMetadataLimits.customColorMaxUTF8Bytes else {
-                return .err(code: "invalid_params", message: "Missing or invalid color", data: nil)
-            }
-            sanitizedParams["color"] = colorRaw
-        default:
-            break
-        }
-        return v2WorkspaceAction(params: sanitizedParams)
-    }
-    private func mobileHostResult(_ result: V2CallResult) -> MobileHostRPCResult {
-        switch result {
-        case let .ok(payload):
-            return .ok(payload)
-        case let .err(code, message, data):
-            let safeMessage = code == "internal_error" ? "Mobile host operation failed" : message
-            let safeData = code == "internal_error" ? nil : data
-            return .failure(MobileHostRPCError(code: code, message: safeMessage, data: safeData))
-        }
-    }
-    func v2MobileHostStatus(
-        params: [String: Any],
-        includePrivateMetadata: Bool = true
-    ) -> V2CallResult {
-        let status = MobileHostService.shared.statusSnapshot()
-        // Single source of truth shared with the mobile listener's public-status
-        // paths, so the advertised capabilities can never drift. Includes
-        // workspace.actions.v1 (the mobile-gated pin/unpin/rename handler), which
-        // the iOS client uses to show or hide rename/pin.
-        let capabilities = MobileHostService.mobileHostCapabilities
-        guard includePrivateMetadata else {
-            return .ok(MobileHostService.publicStatusPayload(
-                routes: status.routes
-            ))
-        }
-
-        let tabManager = v2ResolveTabManager(params: params)
-        let workspaceCount = tabManager?.tabs.count ?? 0
-        guard case let .ok(identityPayload) = MobileHostPublicStatusCache.result(
-            includeIdentity: true
-        ), var payload = identityPayload as? [String: Any] else {
-            return .ok([
-                "mac_device_id": MobileHostIdentity.deviceID(),
-                "mac_display_name": v2OrNull(MobileHostIdentity.instanceDisplayName()),
-                "host_service": status.payload,
-                "workspace_count": workspaceCount,
-                "terminal_fidelity": "render_grid",
-                "capabilities": capabilities,
-            ])
-        }
-        payload["host_service"] = status.payload
-        payload["workspace_count"] = workspaceCount
-        return .ok(payload)
-    }
-
-    #if DEBUG
-    #endif
-
-    enum MobileTerminalAliasUUID {
-        case missing
-        case value(UUID)
-        case invalid
-        case conflict
-    }
-
-    func mobileTerminalAliasUUID(params: [String: Any]) -> MobileTerminalAliasUUID {
-        var selected: UUID?
-        var sawAlias = false
-        for key in ["surface_id", "terminal_id", "tab_id"] {
-            guard v2HasNonNullParam(params, key) else {
-                continue
-            }
-            sawAlias = true
-            guard let candidate = v2UUID(params, key) else {
-                return .invalid
-            }
-            if let selected, selected != candidate {
-                return .conflict
-            }
-            selected = selected ?? candidate
-        }
-        if let selected {
-            return .value(selected)
-        }
-        return sawAlias ? .invalid : .missing
-    }
-
-    func mobileTerminalAliasValidationError(params: [String: Any]) -> V2CallResult? {
-        switch mobileTerminalAliasUUID(params: params) {
-        case .missing, .value:
-            return nil
-        case .invalid:
-            return .err(code: "invalid_params", message: "Missing or invalid terminal_id", data: nil)
-        case .conflict:
-            return .err(code: "invalid_params", message: "Conflicting terminal identifiers", data: nil)
-        }
-    }
-
-    func mobileWorkspaceIDValidationError(params: [String: Any]) -> V2CallResult? {
-        guard v2HasNonNullParam(params, "workspace_id"),
-              v2UUID(params, "workspace_id") == nil else {
-            return nil
-        }
-        return .err(code: "invalid_params", message: "Missing or invalid workspace_id", data: nil)
-    }
-
-    func clearAllMobileViewportReports(reason: String) {
-        guard !mobileViewportReportsBySurfaceID.isEmpty || !mobileViewportGenerationsBySurfaceID.isEmpty || !mobileViewportReportCleanupTimersBySurfaceID.isEmpty || !mobileViewportApplyGovernorsBySurfaceID.isEmpty else { return }
-
-        for timer in mobileViewportReportCleanupTimersBySurfaceID.values {
-            timer.cancel()
-        }
-        // A lifecycle boundary (account change, test reset) bypasses the apply
-        // governor: teardown wants the uncapped size deterministically now,
-        // not after a stability window.
-        let surfaceIDs = Array(
-            Set(mobileViewportReportsBySurfaceID.keys)
-                .union(mobileViewportGenerationsBySurfaceID.keys)
-                .union(mobileViewportApplyGovernorsBySurfaceID.keys)
-        )
-        mobileViewportReportsBySurfaceID.removeAll(); mobileViewportGenerationsBySurfaceID.removeAll()
-        mobileViewportReportCleanupTimersBySurfaceID.removeAll()
-        // Account change or test reset: participants belonged to the old account.
-        resetLocalSizingHosts()
-
-        for surfaceID in surfaceIDs {
-            teardownMobileViewportGovernor(surfaceID: surfaceID)
-            terminalSocketTarget(surfaceID: surfaceID)?.surface.clearMobileViewportLimit(reason: reason)
-        }
-    }
-
-    #if DEBUG
-    func debugResetMobileViewportReportsForTesting() {
-        clearAllMobileViewportReports(reason: "mobile.viewport.testReset")
-    }
-
-    func debugSetMobileViewportReportForTesting(
-        surfaceID: UUID,
-        clientID: String,
-        columns: Int,
-        rows: Int,
-        updatedAt: Date = Date()
-    ) {
-        var reports = mobileViewportReportsBySurfaceID[surfaceID] ?? [:]
-        reports[clientID] = MobileViewportReport(
-            columns: columns,
-            rows: rows,
-            updatedAt: updatedAt
-        )
-        mobileViewportReportsBySurfaceID[surfaceID] = reports
-    }
-
-    func debugMobileViewportReportClientIDsForTesting(surfaceID: UUID) -> Set<String>? {
-        guard let reports = mobileViewportReportsBySurfaceID[surfaceID] else {
-            return nil
-        }
-        return Set(reports.keys)
-    }
-    #endif
-
-    func terminalSocketTarget(surfaceID: UUID) -> ControlTerminalSocketTarget? {
-        guard let tabManager = controlTabManager(surfaceID: surfaceID),
-              let workspace = tabManager.tabs.first(where: {
-                  $0.terminalInputTarget(forPanelID: surfaceID) != nil
-              }) else {
-            return nil
-        }
-        guard let owned = workspace.terminalInputTarget(forPanelID: surfaceID) else {
-            return nil
-        }
-        return workspace.controlSocketTerminalTarget(for: owned)
-    }
-
-    // Restored: still used by the v1 close-workspace path (its v2
-    // counterpart moved to ControlCommandCoordinator).
+    // Still used by the v1 close-workspace path (its v2 counterpart moved to
+    // ControlCommandCoordinator).
     private func workspaceCloseProtectedMessage() -> String {
         String(
             localized: "workspace.closeProtected.message",
@@ -15997,563 +15177,36 @@ class TerminalController {
         )
     }
 
-    func v2MobileTerminalCreate(params: [String: Any]) -> V2CallResult {
-        guard let tabManager = v2ResolveTabManager(params: params) else {
-            return .err(code: "unavailable", message: "Workspace context is unavailable", data: nil)
-        }
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        guard let workspace = v2ResolveWorkspace(params: params, tabManager: tabManager) else {
-            return .err(code: "not_found", message: "Workspace not found", data: nil)
-        }
-        guard let paneId = workspace.bonsplitController.focusedPaneId ?? workspace.bonsplitController.allPaneIds.first else {
-            return .err(code: "not_found", message: "Pane not found", data: nil)
-        }
-        guard let terminal = workspace.newTerminalSurface(
-            inPane: paneId,
-            focus: false,
-            autoRefreshMetadata: false,
-            preserveFocusWhenUnfocused: false,
-            inheritWorkingDirectoryFallback: true,
-            allowTextBoxFocusDefault: false,
-            inheritStartupWork: false
-        ) else {
-            return .err(code: "internal_error", message: "Failed to create terminal", data: nil)
-        }
-        // workspace.updated emit is handled by MobileWorkspaceListObserver.
-        return v2MobileWorkspaceList(
-            params: params,
-            tabManager: tabManager,
-            createdTerminalID: terminal.id.uuidString
+    // MARK: - Accepted terminal input
+
+    /// Advances classic Feed attention and agent-chat state from the shared
+    /// accepted-terminal-input seam.
+    @MainActor
+    func noteAcceptedAgentInput(surfaceID: UUID, at: Date = Date()) {
+        _ = agentChatTranscriptService?.noteExplicitInput(
+            surfaceID: surfaceID.uuidString,
+            at: at
         )
+        FeedCoordinator.shared.noteExplicitInput(surfaceID: surfaceID, at: at)
     }
 
-    func v2MobileTerminalReplay(params: [String: Any]) -> V2CallResult {
-        let traceID = v2String(params, "trace_id")
-            .flatMap(DiagnosticTerminalTraceID.init(stringValue:))
-        let traceStartedAt = DispatchTime.now().uptimeNanoseconds
-        func recordTrace(_ event: String) {
-            guard let traceID else { return }
-            let elapsed = (DispatchTime.now().uptimeNanoseconds - traceStartedAt) / 1_000_000
-            MobileHostIrxRuntime.journal.record(
-                "terminal-trace",
-                event,
-                [
-                    "trace_id": traceID.stringValue,
-                    "operation": "replay",
-                    "elapsed_ms": String(elapsed),
-                ]
-            )
-        }
-        recordTrace("host_received")
-        defer { recordTrace("host_response_ready") }
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            #if DEBUG
-            cmuxDebugLog("mobile.terminal.replay NOT_FOUND surface=\(v2RawString(params, "surface_id") ?? "nil")")
-            #endif
-            return .err(code: "not_found", message: "Terminal surface not found", data: nil)
-        }
-        let surfaceId = resolved.surfaceID
-        let terminalTarget = resolved.target
-        let hasViewportReportFields = params["client_id"] != nil || params["viewport_columns"] != nil || params["viewport_rows"] != nil
-        if hasViewportReportFields, v2String(params, "client_id") == nil || v2Int(params, "viewport_columns") == nil || v2Int(params, "viewport_rows") == nil {
-            return .err(code: "invalid_params", message: "Invalid mobile viewport report", data: nil)
-        }
-        // A hibernated agent has no runtime, so this replay would be empty and
-        // no output would follow: the viewer would stay blank. Once resumed,
-        // the runtime's output streams to the viewer like any live terminal.
-        terminalTarget.resumeAgentHibernationForRemoteAttach()
-        let expectedViewport = applyMobileViewportReport(
-            params: params,
-            terminalTarget: terminalTarget,
-            reason: "mobile.terminal.replay"
-        )
-        if hasViewportReportFields, expectedViewport == nil {
-            #if DEBUG
-            cmuxDebugLog(
-                "mobile.terminal.replay VIEWPORT_PENDING surface=\(surfaceId.uuidString.prefix(8)) expected=unavailable"
-            )
-            #endif
-            return .err(
-                code: "viewport_transition",
-                message: "Terminal viewport is still resizing",
-                data: nil
-            )
-        }
-        // A Cloud terminal's host decides the grid. The phone's relay sub-view
-        // was just reported above; until the host's state shows it, a capture
-        // would be at the pre-join grid and then resize, so the phone retries.
-        if let clientID = v2String(params, "client_id"),
-           let relay = cloudSizingRelaysBySurfaceID[surfaceId]?.value,
-           relay.relayAwaitsHost(clientID: clientID) {
-            return .err(
-                code: "viewport_transition",
-                message: "Terminal viewport is still resizing",
-                data: nil
-            )
-        }
-        let state = MobileTerminalByteTee.shared.replayState(surfaceID: surfaceId)
-        let seq = state?.seq ?? 0
-        // Screen-anchored replays hydrate the phone's local scrollback: honor
-        // the client's requested history depth up to the shared budget so the
-        // replay reset does not truncate what the phone can scroll through.
-        let anchor: MobileTerminalRenderGridFrame.Anchor =
-            v2String(params, "anchor") == MobileTerminalRenderGridFrame.Anchor.screen.rawValue
-            ? .screen
-            : .viewport
-        let scrollbackLines: Int
-        if anchor == .screen {
-            let requested = v2Int(params, "max_scrollback_rows")
-                ?? MobileTerminalScrollbackPreference.defaultRows
-            scrollbackLines = MobileTerminalScrollbackPreference.clamped(requested)
-        } else {
-            scrollbackLines = TerminalController.mobileReplayScrollbackLineBudget
-        }
-        let renderGrid = mobileTerminalRenderGridFrame(
-            terminalTarget: terminalTarget,
-            surfaceID: surfaceId,
-            seq: seq,
-            scrollbackLines: scrollbackLines,
-            anchor: anchor
-        )
-        if let expectedViewport,
-           let renderGrid,
-           !MobileTerminalReplayViewportFence.accepts(
-               capturedColumns: renderGrid.columns,
-               capturedRows: renderGrid.rows,
-               expectedColumns: expectedViewport.columns,
-               expectedRows: expectedViewport.rows
-           ) {
-            #if DEBUG
-            cmuxDebugLog(
-                "mobile.terminal.replay VIEWPORT_PENDING surface=\(surfaceId.uuidString.prefix(8)) " +
-                "expected=\(expectedViewport.columns)x\(expectedViewport.rows) " +
-                "captured=\(renderGrid.columns)x\(renderGrid.rows)"
-            )
-            #endif
-            return .err(
-                code: "viewport_transition",
-                message: "Terminal viewport is still resizing",
-                data: [
-                    "expected_columns": expectedViewport.columns,
-                    "expected_rows": expectedViewport.rows,
-                    "captured_columns": renderGrid.columns,
-                    "captured_rows": renderGrid.rows,
-                ]
-            )
-        }
-        #if DEBUG
-        cmuxDebugLog("mobile.terminal.replay surface=\(surfaceId.uuidString.prefix(8)) renderGrid=\(renderGrid != nil) seq=\(seq) hasState=\(state != nil)")
-        #endif
-        var payload: [String: Any] = [
-            "workspace_id": resolved.workspace.id.uuidString,
-            "surface_id": surfaceId.uuidString,
-            "seq": seq,
-        ]
-        if let renderGrid,
-           let renderGridObject = try? renderGrid.jsonObject() {
-            payload["columns"] = renderGrid.columns
-            payload["rows"] = renderGrid.rows
-            payload["render_grid"] = renderGridObject
-        } else {
-            if let expectedViewport {
-                guard let surface = terminalTarget.surface.liveSurfaceForGhosttyAccess(
-                    reason: "mobileTerminalReplay.viewportFence"
-                ) else {
-                    return .err(
-                        code: "viewport_transition",
-                        message: "Terminal viewport is still resizing",
-                        data: nil
-                    )
-                }
-                let size = ghostty_surface_size(surface)
-                let capturedColumns = max(Int(size.columns), 1)
-                let capturedRows = max(Int(size.rows), 1)
-                guard MobileTerminalReplayViewportFence.accepts(
-                    capturedColumns: capturedColumns,
-                    capturedRows: capturedRows,
-                    expectedColumns: expectedViewport.columns,
-                    expectedRows: expectedViewport.rows
-                ) else {
-                    #if DEBUG
-                    cmuxDebugLog(
-                        "mobile.terminal.replay VIEWPORT_PENDING surface=\(surfaceId.uuidString.prefix(8)) " +
-                        "expected=\(expectedViewport.columns)x\(expectedViewport.rows) " +
-                        "captured=\(capturedColumns)x\(capturedRows) fallback=1"
-                    )
-                    #endif
-                    return .err(
-                        code: "viewport_transition",
-                        message: "Terminal viewport is still resizing",
-                        data: [
-                            "expected_columns": expectedViewport.columns,
-                            "expected_rows": expectedViewport.rows,
-                            "captured_columns": capturedColumns,
-                            "captured_rows": capturedRows,
-                        ]
-                    )
-                }
-            }
-            let snapshotSurface = terminalTarget.surface.liveSurfaceForGhosttyAccess(
-                reason: "mobileTerminalReplay.snapshot"
-            )
-            let snapshotSize = snapshotSurface.map(ghostty_surface_size)
-            let snapshotData = snapshotSize.flatMap { size in
-                terminalTarget.surface.readBoundedScreenTailVT(
-                    maxRows: max(Int(size.rows), 1),
-                    maxBytes: SessionPersistencePolicy.maxScrollbackCharactersPerTerminal * 4
-                )
-            }?.data(using: .utf8)
-                ?? readTerminalTextFromVTExportForSnapshot(
-                    terminalTarget: terminalTarget,
-                    bindingAction: "write_active_file:copy,vt",
-                    lineLimit: nil,
-                    normalizeLineEndings: false
-                )?.data(using: .utf8)
-                ?? Data()
-            let data = state?.data ?? Data()
-            if let size = snapshotSize {
-                payload["columns"] = max(Int(size.columns), 1)
-                payload["rows"] = max(Int(size.rows), 1)
-            }
-            if !snapshotData.isEmpty {
-                payload["snapshot_format"] = "ghostty.active.vt"
-                payload["snapshot_data_b64"] = snapshotData.base64EncodedString()
-            } else if !data.isEmpty {
-                payload["data_b64"] = data.base64EncodedString()
-            }
-        }
-        recordTrace("host_capture_finished")
-        // Hand the phone the host's own share of this round trip. Without it a
-        // slow replay is unattributable: the phone cannot tell a slow capture
-        // here from a slow or stalled transport between us.
-        addSharedSizingReplayFields(to: &payload, surfaceID: surfaceId, clientID: v2String(params, "client_id"))
-        payload["host_elapsed_ms"] = Int(
-            (DispatchTime.now().uptimeNanoseconds &- traceStartedAt) / 1_000_000
-        )
-        return .ok(payload)
-    }
+    // MARK: - Terminal paste
 
-    /// Record (or clear) a paired device's reported terminal grid, recompute
-    /// the smallest grid across all attached devices, cap this surface to it
-    /// (drawing the macOS viewport border when the pane is larger), and return
-    /// the resulting effective grid so the device can pin + letterbox its own
-    /// render to match. This is the iOS/macOS half of the tmux-style shared
-    /// resize: the smallest attached viewport wins and every device shows the
-    /// same cols×rows with a clear border around the live area.
-    func v2MobileTerminalViewport(params: [String: Any]) -> V2CallResult {
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return .err(code: "not_found", message: "Terminal surface not found", data: nil)
-        }
-        let surfaceId = resolved.surfaceID
-        let terminalTarget = resolved.target
-        if let clientID = v2String(params, "client_id"),
-           let detachedError = mobileClientDetachedError(surfaceID: surfaceId, clientID: clientID) {
-            return detachedError
-        }
-
-        let reportedGrid: (columns: Int, rows: Int)?
-        let allowLiveSurfaceFallback: Bool
-        // A client-backed clear can drop the final report and restore the
-        // uncapped surface size while returning no grid.
-        var clearedClientReport = false
-        if v2Bool(params, "clear") == true {
-            if let clientID = v2String(params, "client_id") {
-                clearedClientReport = true
-                reportedGrid = clearMobileViewportReport(
-                    surfaceID: terminalTarget.surfaceID,
-                    clientID: clientID, generation: v2Int(params, "viewport_generation").flatMap { $0 >= 0 ? UInt64($0) : nil }, requireGeneration: true,
-                    reason: "mobile.terminal.viewport.clear"
-                )
-            } else {
-                reportedGrid = nil
-            }
-            allowLiveSurfaceFallback = false
-        } else {
-            reportedGrid = applyMobileViewportReport(
-                params: params,
-                terminalTarget: terminalTarget,
-                sticky: true,
-                reason: "mobile.terminal.viewport"
-            )
-            allowLiveSurfaceFallback = true
-        }
-        if reportedGrid != nil || clearedClientReport {
-            // The viewport resize is a geometry change without PTY bytes. The
-            // render-grid observer must discard its old emission baseline now,
-            // before the resize-triggered render notification is flushed, so
-            // the phone receives a full frame at the settled row count.
-            MobileTerminalRenderObserver.shared.noteTerminalViewportChanged(
-                surfaceID: surfaceId
-            )
-        }
-
-        var payload: [String: Any] = [
-            "workspace_id": resolved.workspace.id.uuidString,
-            "surface_id": surfaceId.uuidString,
-        ]
-        if let reportedGrid {
-            payload["columns"] = reportedGrid.columns
-            payload["rows"] = reportedGrid.rows
-        } else if allowLiveSurfaceFallback,
-                  let surface = terminalTarget.surface.liveSurfaceForGhosttyAccess(reason: "mobileTerminalViewport") {
-            let size = ghostty_surface_size(surface)
-            payload["columns"] = max(Int(size.columns), 1)
-            payload["rows"] = max(Int(size.rows), 1)
-        }
-        let renderFloor = MobileTerminalByteTee.shared.currentRenderCaptureIdentity(
-            surfaceID: surfaceId
-        )
-        payload["render_epoch"] = renderFloor.epoch
-        payload["render_revision_floor"] = renderFloor.revision
-        return .ok(payload)
-    }
-
-    /// Forward a phone scroll gesture to the real surface so libghostty handles
-    /// it per-mode (scrollback in the normal screen, mouse-wheel to the program
-    /// in the alt screen). The producer already exports the live `vp_top`, so
-    /// the resulting viewport mirrors back to the phone; nudge an emit since a
-    /// pure scroll with no PTY output may not fire a render/tick on its own.
-    func v2MobileTerminalScroll(params: [String: Any]) -> V2CallResult {
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return mobileInputNotFound(params: params)
-        }
-        let surfaceId = resolved.surfaceID
-        let terminalTarget = resolved.target
-        let delivery = mobileInputDelivery(params: params)
-        if let answer = mobileInputAdmissionAnswer(delivery, workspaceID: resolved.workspace.id, surfaceID: surfaceId) {
-            return answer
-        }
-        let deltaLines = (params["delta_lines"] as? NSNumber)?.doubleValue ?? 0
-        let col = (params["col"] as? NSNumber)?.intValue ?? 0
-        let row = (params["row"] as? NSNumber)?.intValue ?? 0
-        if deltaLines != 0 {
-            terminalTarget.surface.mobileScroll(deltaLines: deltaLines, col: max(0, col), row: max(0, row))
-            MobileTerminalRenderObserver.shared.noteTerminalBytes(surfaceID: terminalTarget.surfaceID)
-        }
-        let acknowledgement = MobileHostTerminalInputApplier.shared.completeAccepted(delivery)
-        return .ok(mobileInputSuccessPayload(mobileTerminalScrollResponsePayload(
-            workspaceID: resolved.workspace.id,
-            terminalTarget: terminalTarget,
-            surfaceID: surfaceId,
-            params: params
-        ), acknowledgement: acknowledgement))
-    }
-
-    func v2MobileTerminalMouse(params: [String: Any]) -> V2CallResult {
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return mobileInputNotFound(params: params)
-        }
-        let surfaceId = resolved.surfaceID
-        let terminalTarget = resolved.target
-        let delivery = mobileInputDelivery(params: params)
-        if let answer = mobileInputAdmissionAnswer(delivery, workspaceID: resolved.workspace.id, surfaceID: surfaceId) {
-            return answer
-        }
-        let col = (params["col"] as? NSNumber)?.intValue ?? 0
-        let row = (params["row"] as? NSNumber)?.intValue ?? 0
-        terminalTarget.surface.mobileClick(col: max(0, col), row: max(0, row))
-        MobileTerminalRenderObserver.shared.noteTerminalBytes(surfaceID: terminalTarget.surfaceID)
-        let acknowledgement = MobileHostTerminalInputApplier.shared.completeAccepted(delivery)
-        return .ok(mobileInputSuccessPayload([
-            "workspace_id": resolved.workspace.id.uuidString,
-            "surface_id": surfaceId.uuidString,
-        ], acknowledgement: acknowledgement))
-    }
-
-    func v2MobileTerminalInput(params: [String: Any]) -> V2CallResult {
-        guard let text = v2RawString(params, "text"), !text.isEmpty else {
-            return .err(code: "invalid_params", message: "Missing text", data: nil)
-        }
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return mobileInputNotFound(params: params)
-        }
-        let surfaceId = resolved.surfaceID
-        let terminalTarget = resolved.target
-        let terminalPanel = terminalTarget.panel
-        let delivery = mobileInputDelivery(params: params)
-        if let answer = mobileInputAdmissionAnswer(delivery, workspaceID: resolved.workspace.id, surfaceID: surfaceId) {
-            return answer
-        }
-        #if DEBUG
-        HostLatencyTrace.stamp(
-            "host.in.recv",
-            "s=\(surfaceId.uuidString.prefix(8).lowercased()) bytes=\(text.utf8.count)"
-        )
-        #endif
-
-        _ = applyMobileViewportReport(params: params, terminalTarget: terminalTarget)
-
-        #if DEBUG
-        let sendStart = ProcessInfo.processInfo.systemUptime
-        #endif
-        let sendResult = MobileTerminalByteTee.shared.performMobileInput(
-            surfaceID: surfaceId,
-            sequence: (params["input_sequence"] as? String).flatMap(UInt64.init)
-        ) { terminalTarget.sendInputResult(text) }
-        let acknowledgement = MobileHostTerminalInputApplier.shared.complete(delivery, result: sendResult)
-        switch sendResult {
-        case .sent:
-            // PTY output is already observed by MobileTerminalByteTee, which
-            // schedules the post-parser render-grid tick. Forcing a refresh
-            // here emits a full frame before the echoed bytes arrive, sending
-            // screen-anchored iOS clients through the verified replay path on
-            // every keystroke.
-            break
-        case .queued:
-            break
-        case .inputQueueFull:
-            return mobileInputWriteFailure(code: "input_queue_full", message: Self.terminalInputQueueFullMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        case .surfaceUnavailable:
-            return mobileInputWriteFailure(code: "surface_unavailable", message: Self.terminalSurfaceUnavailableMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        case .processExited:
-            return mobileInputWriteFailure(code: "process_exited", message: Self.terminalProcessExitedMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        }
-        #if DEBUG
-        let sendMs = (ProcessInfo.processInfo.systemUptime - sendStart) * 1000.0
-        cmuxDebugLog(
-            "mobile.terminal.input workspace=\(resolved.workspace.id.uuidString.prefix(8)) surface=\(surfaceId.uuidString.prefix(8)) queued=\(sendResult == .queued ? 1 : 0) chars=\(text.count) ms=\(String(format: "%.2f", sendMs))"
-        )
-        #endif
-        var payload: [String: Any] = [
-            "workspace_id": resolved.workspace.id.uuidString,
-            "surface_id": terminalPanel.id.uuidString,
-            "queued": sendResult == .queued,
-        ]
-        if let seq = MobileTerminalByteTee.shared.currentSequence(surfaceID: surfaceId) {
-            payload["terminal_seq"] = seq
-            #if DEBUG
-            if sendResult == .sent {
-                HostLatencyTrace.stamp(
-                    "host.in.applied",
-                    "s=\(surfaceId.uuidString.prefix(8).lowercased()) seq=\(seq)"
-                )
-            }
-            #endif
-        }
-        return .ok(mobileInputSuccessPayload(payload, acknowledgement: acknowledgement))
-    }
-
-    /// Handle `terminal.paste_image`: a paired client (the iOS app) forwards an
-    /// image it pasted as base64 bytes. We materialize it to a temp file on the
-    /// Mac and inject the shell-escaped path as terminal input, exactly the way a
-    /// local clipboard-image paste does, so the running TUI (e.g. Claude Code)
-    /// attaches the image from the path.
-    func v2MobileTerminalPasteImage(params: [String: Any]) -> V2CallResult {
-        guard let base64 = v2RawString(params, "image_base64"),
-              let imageData = Data(base64Encoded: base64), !imageData.isEmpty else {
-            return .err(code: "invalid_params", message: "Missing or invalid image_base64", data: nil)
-        }
-        let format = v2RawString(params, "image_format") ?? "png"
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return mobileInputNotFound(params: params)
-        }
-        let surfaceId = resolved.surfaceID
-        let terminalTarget = resolved.target
-        let terminalPanel = terminalTarget.panel
-        let delivery = mobileInputDelivery(params: params)
-        if let answer = mobileInputAdmissionAnswer(delivery, workspaceID: resolved.workspace.id, surfaceID: surfaceId) {
-            return answer
-        }
-
-        _ = applyMobileViewportReport(params: params, terminalTarget: terminalTarget)
-
-        guard let escapedPath = GhosttyApp.terminalPasteboard.saveImageData(imageData, fileExtension: format) else {
-            return mobileInputWriteFailure(
-                code: "invalid_params",
-                message: "Image payload was empty or exceeded the size limit",
-                surfaceID: surfaceId,
-                acknowledgement: MobileHostTerminalInputApplier.shared.reject(delivery)
-            )
-        }
-
-        let sendResult = terminalTarget.sendInputResult(escapedPath)
-        let acknowledgement = MobileHostTerminalInputApplier.shared.complete(delivery, result: sendResult)
-        switch sendResult {
-        case .sent:
-            terminalTarget.forceRefresh(reason: "mobileHost.terminalPasteImage")
-        case .queued:
-            break
-        case .inputQueueFull:
-            return mobileInputWriteFailure(code: "input_queue_full", message: Self.terminalInputQueueFullMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        case .surfaceUnavailable:
-            return mobileInputWriteFailure(code: "surface_unavailable", message: Self.terminalSurfaceUnavailableMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        case .processExited:
-            return mobileInputWriteFailure(code: "process_exited", message: Self.terminalProcessExitedMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
-        }
-        #if DEBUG
-        cmuxDebugLog(
-            "mobile.terminal.paste_image workspace=\(resolved.workspace.id.uuidString.prefix(8)) surface=\(surfaceId.uuidString.prefix(8)) bytes=\(imageData.count) format=\(format)"
-        )
-        #endif
-        return .ok(mobileInputSuccessPayload([
-            "workspace_id": resolved.workspace.id.uuidString,
-            "surface_id": terminalPanel.id.uuidString,
-            "queued": sendResult == .queued,
-        ], acknowledgement: acknowledgement))
-    }
-
-    /// Deliver a composed block from the mobile composer as a bracketed paste
-    /// followed by an optional single submit key.
-    ///
-    /// This mirrors the macOS TextBox composer dispatch
-    /// (`[.pasteText(payload), .namedKey(submitKey)]`): the text goes through
-    /// `sendText` (libghostty `ghostty_surface_text`), which bracketed-pastes it
-    /// (`ESC[200~ … ESC[201~` when DECSET 2004 is active) so the agent's line
-    /// editor inserts the whole, possibly multi-line, block as literal text
-    /// instead of treating every interior newline as a submit. A single named
-    /// submit key then commits it once. The `terminal.input` path is wrong for a
+    /// `terminal.paste`: pastes a composed prompt as one unit, then commits it
+    /// with a single submit key. The `surface.send_text` path is wrong for a
     /// composed block: `parsedSocketInputEvents` rewrites every `\n`/`\r` to a
     /// raw CR, so an N-line message fragments into N submissions.
     ///
     /// `submit_key` is optional: `return`/`enter` (default) or `ctrl+enter`
     /// submit; `none` pastes without submitting so the composer can keep editing.
-    func v2MobileTerminalPaste(params: [String: Any]) async -> V2CallResult {
+    func v2TerminalPaste(params: [String: Any]) async -> V2CallResult {
         guard let text = v2RawString(params, "text"), !text.isEmpty else {
             return .err(code: "invalid_params", message: "Missing text", data: nil)
         }
         // Resolve the optional submit key up front so an unsupported value fails
-        // before any text is pasted (no partial application). The phone sends
-        // `return` as the default submit *intent*; the agent-aware upgrade to
-        // `ctrl+enter` happens below once the surface (and its agent context) is
-        // resolved, because only the Mac knows which agent is running.
+        // before any text is pasted (no partial application). `return` is the
+        // default submit *intent*; the agent-aware upgrade to `ctrl+enter`
+        // happens below once the surface (and its agent context) is resolved.
         let submitKeyRaw = (v2String(params, "submit_key") ?? "return").lowercased()
         var submitKeyName: String?
         var submitKeyWasReturnIntent = false
@@ -16568,35 +15221,24 @@ class TerminalController {
         default:
             return .err(code: "invalid_params", message: "Unsupported submit_key", data: ["submit_key": submitKeyRaw])
         }
-        if let error = mobileWorkspaceIDValidationError(params: params) {
-            return error
-        }
-        if let error = mobileTerminalAliasValidationError(params: params) {
-            return error
-        }
-        guard let resolved = mobileCanonicalTerminalTarget(params: params) else {
-            return mobileInputNotFound(params: params)
+        guard let resolved = socketCanonicalTerminalTarget(params: params) else {
+            return .err(code: "not_found", message: "Terminal surface not found", data: nil)
         }
         let surfaceId = resolved.surfaceID
         let terminalTarget = resolved.target
         let terminalPanel = terminalTarget.panel
-        let delivery = mobileInputDelivery(params: params)
-        if let answer = mobileInputAdmissionAnswer(delivery, workspaceID: resolved.workspace.id, surfaceID: surfaceId) {
-            return answer
-        }
 
-        guard mobileTerminalPasteInFlightSurfaceIDs.insert(surfaceId).inserted else {
+        guard terminalPasteInFlightSurfaceIDs.insert(surfaceId).inserted else {
             return .err(code: "busy", message: "A prompt is already being submitted to this terminal", data: nil)
         }
-        defer { mobileTerminalPasteInFlightSurfaceIDs.remove(surfaceId) }
+        defer { terminalPasteInFlightSurfaceIDs.remove(surfaceId) }
 
         // Mirror the macOS TextBox composer's submit-key selection
         // (`TextBoxInput.dispatchEvents`): Claude Code needs `ctrl+enter` to
         // submit a multi-line block, while plain `return` submits a newline mid
-        // prompt. The phone cannot know the running agent, so it always asks for
-        // `return`; upgrade that intent here when the surface is Claude and the
-        // composed text spans multiple lines. Explicit `ctrl+enter`/`none` from
-        // the client are honored as-is.
+        // prompt. Upgrade a `return` intent here when the surface is Claude and
+        // the composed text spans multiple lines. Explicit `ctrl+enter`/`none`
+        // are honored as-is.
         if submitKeyWasReturnIntent {
             submitKeyName = TextBoxAgentDetection.composedPromptSubmitKey(
                 containsNewline: text.contains("\n") || text.contains("\r"),
@@ -16604,38 +15246,26 @@ class TerminalController {
             )
         }
 
-        _ = applyMobileViewportReport(params: params, terminalTarget: terminalTarget)
-
         // Send through the TerminalPanel explicit-input wrappers (not the raw
         // surface): they run `resumeForExplicitInputIfNeeded()` first, waking a
-        // hibernated agent terminal the same way local typing does, so a mobile
-        // composer submit cannot write into a cold surface.
+        // hibernated agent terminal the same way local typing does.
         let textResult = terminalTarget.sendTextResult(text)
-        // The paste and its submit key are one unit: once the text is
-        // accepted the unit counts as applied, even if the submit key fails
-        // (reported below), so a resend never pastes the block twice.
-        let acknowledgement = MobileHostTerminalInputApplier.shared.complete(
-            delivery,
-            result: textResult.inputSendResult
-        )
         switch textResult {
         case .sent, .queued:
             break
         case .inputQueueFull:
-            return mobileInputWriteFailure(code: "input_queue_full", message: Self.terminalInputQueueFullMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
+            return .err(code: "input_queue_full", message: Self.terminalInputQueueFullMessage, data: ["surface_id": surfaceId.uuidString])
         case .surfaceUnavailable:
-            return mobileInputWriteFailure(code: "surface_unavailable", message: Self.terminalSurfaceUnavailableMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
+            return .err(code: "surface_unavailable", message: Self.terminalSurfaceUnavailableMessage, data: ["surface_id": surfaceId.uuidString])
         case .processExited:
-            return mobileInputWriteFailure(code: "process_exited", message: Self.terminalProcessExitedMessage, surfaceID: surfaceId, acknowledgement: acknowledgement)
+            return .err(code: "process_exited", message: Self.terminalProcessExitedMessage, data: ["surface_id": surfaceId.uuidString])
         }
 
         // The paste text is already accepted by the surface above. From here on a
-        // submit-key failure must NOT surface as an RPC error: the client treats
-        // any error as "nothing was sent" and keeps the composer draft, so a
-        // retry would paste the whole block a second time. Report partial
-        // success instead — `submitted: false` plus `submit_error` — so the
-        // client clears the draft (the text is sitting at the prompt) and can
-        // tell the user the submit keypress is still needed.
+        // submit-key failure must NOT surface as an RPC error: a caller treats
+        // any error as "nothing was sent", so a retry would paste the whole block
+        // a second time. Report partial success instead — `submitted: false`
+        // plus `submit_error`.
         var submitted = false
         var submitError: String?
         if let submitKeyName {
@@ -16643,7 +15273,7 @@ class TerminalController {
             // window as a newline. React-based editors can also process paste
             // and Enter in one render with a stale, empty input buffer. Keep a
             // separate input turn, with margin for the documented cooldown,
-            // and await it before acknowledging submission to the phone.
+            // and await it before acknowledging submission.
             let generation = terminalTarget.surface.runtimeSurfaceGeneration
             do {
                 try await Task.sleep(for: .milliseconds(150))
@@ -16657,7 +15287,7 @@ class TerminalController {
             }
             // Closing/replacing a terminal during the suspension must never
             // send Enter into a different process or a newly created surface.
-            guard let current = mobileCanonicalTerminalTarget(params: params)?.target,
+            guard let current = socketCanonicalTerminalTarget(params: params)?.target,
                   current.surface === terminalTarget.surface,
                   current.surface.runtimeSurfaceGeneration == generation else {
                 return .ok([
@@ -16686,7 +15316,7 @@ class TerminalController {
             }
         }
 
-        terminalTarget.forceRefresh(reason: "mobileHost.terminalPaste")
+        terminalTarget.forceRefresh(reason: "terminal.paste")
 
         if submitted,
            let rawEventID = v2String(params, "feed_event_id"),
@@ -16696,7 +15326,7 @@ class TerminalController {
 
         #if DEBUG
         cmuxDebugLog(
-            "mobile.terminal.paste workspace=\(resolved.workspace.id.uuidString.prefix(8)) surface=\(surfaceId.uuidString.prefix(8)) chars=\(text.count) submitted=\(submitted ? 1 : 0)"
+            "terminal.paste workspace=\(resolved.workspace.id.uuidString.prefix(8)) surface=\(surfaceId.uuidString.prefix(8)) chars=\(text.count) submitted=\(submitted ? 1 : 0)"
         )
         #endif
 
@@ -16709,297 +15339,10 @@ class TerminalController {
         if let submitError {
             payload["submit_error"] = submitError
         }
-        if let seq = MobileTerminalByteTee.shared.currentSequence(surfaceID: surfaceId) {
-            payload["terminal_seq"] = seq
-        }
-        return .ok(mobileInputSuccessPayload(payload, acknowledgement: acknowledgement))
+        return .ok(payload)
     }
 
-    private func applyMobileViewportReport(
-        params: [String: Any],
-        terminalTarget: ControlTerminalSocketTarget,
-        sticky: Bool = false,
-        reason: String = "mobile.terminal.input"
-    ) -> (columns: Int, rows: Int)? {
-        let terminalPanel = terminalTarget.panel
-        guard let clientID = v2String(params, "client_id"),
-              let rawColumns = v2Int(params, "viewport_columns"),
-              let rawRows = v2Int(params, "viewport_rows") else {
-            return nil
-        }
-        // A phone someone disconnected stays out until it reattaches.
-        if isMobileClientDetached(surfaceID: terminalPanel.id, clientID: clientID) { return nil }
-        let columns = min(max(rawColumns, 20), 300)
-        let rows = min(max(rawRows, 5), 120); let generation = v2Int(params, "viewport_generation").flatMap { $0 >= 0 ? UInt64($0) : nil }
-        let now = Date()
-        var reports = mobileViewportReportsBySurfaceID[terminalPanel.id] ?? [:]
-        reports = reports.filter { _, report in
-            report.sticky || now.timeIntervalSince(report.updatedAt) <= Self.mobileViewportReportTTL
-        }
-        // The generation fence orders only the dedicated viewport reports
-        // (which carry viewport_generation) against each other and against
-        // generation-carrying clears. Generationless piggybacks from
-        // terminal.input / terminal.paste / scroll / mobile.terminal.replay
-        // stay accepted: they ride live requests, so their dimensions are
-        // current by construction, and they remain the recovery path when a
-        // dedicated report fails or exhausts its retries. The separate fence
-        // map survives their overwrites, so a later stale dedicated report is
-        // still rejected.
-        if let generation {
-            if let existingGeneration = reports[clientID]?.generation
-                ?? mobileViewportGenerationsBySurfaceID[terminalPanel.id]?[clientID],
-               existingGeneration > generation { return nil }
-            mobileViewportGenerationsBySurfaceID[terminalPanel.id, default: [:]][clientID] = generation
-        } else if reports[clientID] == nil,
-                  mobileViewportGenerationsBySurfaceID[terminalPanel.id]?[clientID] != nil {
-            // A generation-carrying clear tombstoned this client (fence entry
-            // recorded, report removed) and no newer dedicated report has
-            // re-pinned it, so a generationless report arriving now was sent
-            // before the detach. Reject it: a detached device must not
-            // resurrect its viewport pin. Attached clients keep a sticky
-            // dedicated report, so their piggyback recovery path is
-            // unaffected.
-            return nil
-        } else if reports[clientID]?.generation != nil {
-            // A generationless report cannot supersede a generation-carrying
-            // pin: modern clients attach generations to every dims-carrying
-            // request once a dedicated report exists, so a generationless
-            // arrival here is a stale pre-fence report (for example cached
-            // dimensions surviving a reconnect) that must not overwrite newer
-            // geometry. Legacy clients never record a generation, so their
-            // reports keep replacing each other freely.
-            return nil
-        }
-        let reportIsSticky = sticky || (reports[clientID]?.sticky ?? false)
-        reports[clientID] = MobileViewportReport(
-            columns: columns,
-            rows: rows,
-            updatedAt: now, generation: generation,
-            deviceKind: v2String(params, "device_kind").flatMap(TerminalDeviceKind.init(rawValue:))
-                ?? reports[clientID]?.deviceKind ?? .iphone,
-            deviceName: v2String(params, "device_name") ?? reports[clientID]?.deviceName,
-            deviceID: v2String(params, "device_id").map { String($0.prefix(64)) } ?? reports[clientID]?.deviceID,
-            sticky: reportIsSticky
-        )
-        mobileViewportReportsBySurfaceID[terminalPanel.id] = reports
-        scheduleMobileViewportReportCleanup(surfaceID: terminalPanel.id, reports: reports)
-        return resolveSharedSizing(
-            surfaceID: terminalPanel.id,
-            reports: reports,
-            countsOverride: mobileCountsOverrideParam(params).map { (clientID: clientID, value: $0) },
-            reason: reason
-        )
-    }
-
-    /// Route one negotiated mobile viewport target through the surface's apply
-    /// governor so flapping reports cannot resize the PTY (and SIGWINCH the
-    /// foreground TUI) more than once per stability window
-    /// (https://github.com/manaflow-ai/cmux/issues/13474).
-    ///
-    /// - Returns: The grid the replay fence should expect: the fresh fit when
-    ///   the target applies now, otherwise the surface's current live grid
-    ///   (the fence must describe what capture will see now, not the deferred
-    ///   target; a deferred change converges on the phone's next replay).
-    @discardableResult
-    func governMobileViewportTarget(
-        surfaceID: UUID,
-        target: MobileViewportApplyGovernor.Target,
-        immediate: Bool = false,
-        reason: String
-    ) -> (columns: Int, rows: Int)? {
-        var governor = mobileViewportApplyGovernorsBySurfaceID[surfaceID] ?? MobileViewportApplyGovernor()
-        let decision = governor.request(target, immediate: immediate)
-        mobileViewportApplyGovernorsBySurfaceID[surfaceID] = governor
-        switch decision {
-        case .apply(let target):
-            if immediate {
-                // An explicit leave supersedes any staged change; its timer
-                // has nothing left to flush.
-                mobileViewportGovernorFlushTasksBySurfaceID[surfaceID]?.cancel()
-                mobileViewportGovernorFlushTasksBySurfaceID[surfaceID] = nil
-            }
-            return performMobileViewportTarget(surfaceID: surfaceID, target: target, reason: reason)
-        case .stage(let target, let scheduleFlush):
-            #if DEBUG
-            cmuxDebugLog(
-                "mobile.viewport.govern stage surface=\(surfaceID.uuidString.prefix(8)) " +
-                "reschedule=\(scheduleFlush ? 1 : 0) reason=\(reason)"
-            )
-            #endif
-            if scheduleFlush {
-                scheduleMobileViewportGovernorFlush(
-                    surfaceID: surfaceID,
-                    window: Self.mobileViewportStabilityWindow(for: target),
-                    reason: reason
-                )
-            }
-            return currentMobileViewportGrid(surfaceID: surfaceID)
-        case .drop:
-            return currentMobileViewportGrid(surfaceID: surfaceID)
-        }
-    }
-
-    private static func mobileViewportStabilityWindow(
-        for target: MobileViewportApplyGovernor.Target
-    ) -> Duration {
-        switch target {
-        case .cap: return mobileViewportCapApplyStabilityWindow
-        case .uncapped: return mobileViewportUncapApplyStabilityWindow
-        }
-    }
-
-    func performMobileViewportTarget(
-        surfaceID: UUID,
-        target: MobileViewportApplyGovernor.Target,
-        reason: String
-    ) -> (columns: Int, rows: Int)? {
-        guard let surface = terminalSocketTarget(surfaceID: surfaceID)?.surface else { return nil }
-        switch target {
-        case .cap(let columns, let rows):
-            return surface.applyMobileViewportLimit(columns: columns, rows: rows, reason: reason)
-        case .uncapped:
-            surface.clearMobileViewportLimit(reason: reason)
-            return nil
-        }
-    }
-
-    func currentMobileViewportGrid(surfaceID: UUID) -> (columns: Int, rows: Int)? {
-        guard let surface = terminalSocketTarget(surfaceID: surfaceID)?
-            .surface.liveSurfaceForGhosttyAccess(reason: "mobileViewportGovernor.currentGrid") else {
-            return nil
-        }
-        let size = ghostty_surface_size(surface)
-        return (columns: max(Int(size.columns), 1), rows: max(Int(size.rows), 1))
-    }
-
-    private func scheduleMobileViewportGovernorFlush(
-        surfaceID: UUID,
-        window: Duration,
-        reason: String
-    ) {
-        mobileViewportGovernorFlushTasksBySurfaceID[surfaceID]?.cancel()
-        mobileViewportGovernorFlushTasksBySurfaceID[surfaceID] = Task { @MainActor [weak self] in
-            try? await ContinuousClock().sleep(for: window)
-            guard !Task.isCancelled, let self else { return }
-            self.mobileViewportGovernorFlushTasksBySurfaceID[surfaceID] = nil
-            guard var governor = self.mobileViewportApplyGovernorsBySurfaceID[surfaceID] else { return }
-            let target = governor.flush()
-            self.mobileViewportApplyGovernorsBySurfaceID[surfaceID] = governor
-            guard let target else { return }
-            #if DEBUG
-            cmuxDebugLog(
-                "mobile.viewport.govern flush surface=\(surfaceID.uuidString.prefix(8)) reason=\(reason)"
-            )
-            #endif
-            _ = self.performMobileViewportTarget(surfaceID: surfaceID, target: target, reason: reason)
-            if target == .uncapped {
-                // The surface is back to its uncapped size with nothing
-                // staged; the next cap is a cold attach again.
-                self.mobileViewportApplyGovernorsBySurfaceID[surfaceID] = nil
-            }
-        }
-    }
-
-    func teardownMobileViewportGovernor(surfaceID: UUID) {
-        mobileViewportGovernorFlushTasksBySurfaceID[surfaceID]?.cancel()
-        mobileViewportGovernorFlushTasksBySurfaceID[surfaceID] = nil
-        mobileViewportApplyGovernorsBySurfaceID[surfaceID] = nil
-    }
-
-    /// Remove a single client's viewport report for a surface (dedicated
-    /// `mobile.terminal.viewport` clear, or a disconnect), then recompute the
-    /// remaining min and re-apply or clear the surface's viewport limit so the
-    /// macOS border reflects only the devices still attached. Every caller is
-    /// an explicit leave, so the new size applies without the governor's
-    /// stability window.
-    func clearMobileViewportReport(
-        surfaceID: UUID,
-        clientID: String, generation: UInt64? = nil, requireGeneration: Bool = false,
-        reason: String
-    ) -> (columns: Int, rows: Int)? {
-        if requireGeneration, let generation { if let existingGeneration = mobileViewportReportsBySurfaceID[surfaceID]?[clientID]?.generation ?? mobileViewportGenerationsBySurfaceID[surfaceID]?[clientID], existingGeneration > generation { return nil }; mobileViewportGenerationsBySurfaceID[surfaceID, default: [:]][clientID] = generation }
-        else if requireGeneration, (mobileViewportReportsBySurfaceID[surfaceID]?[clientID]?.generation ?? mobileViewportGenerationsBySurfaceID[surfaceID]?[clientID]) != nil { return nil }
-        else if var generations = mobileViewportGenerationsBySurfaceID[surfaceID] { generations.removeValue(forKey: clientID); mobileViewportGenerationsBySurfaceID[surfaceID] = generations.isEmpty ? nil : generations }
-        guard var reports = mobileViewportReportsBySurfaceID[surfaceID], reports[clientID] != nil else { return nil }
-        reports.removeValue(forKey: clientID)
-        if reports.isEmpty {
-            mobileViewportReportsBySurfaceID[surfaceID] = nil
-            mobileViewportReportCleanupTimersBySurfaceID[surfaceID]?.cancel()
-            mobileViewportReportCleanupTimersBySurfaceID[surfaceID] = nil
-            _ = resolveSharedSizing(surfaceID: surfaceID, reports: [:], immediate: true, reason: reason)
-            return nil
-        }
-        mobileViewportReportsBySurfaceID[surfaceID] = reports
-        scheduleMobileViewportReportCleanup(surfaceID: surfaceID, reports: reports)
-        return resolveSharedSizing(surfaceID: surfaceID, reports: reports, immediate: true, reason: reason)
-    }
-
-    /// Drop every viewport report owned by the given client IDs across all
-    /// surfaces. Called when a mobile connection closes so a disconnected
-    /// device stops pinning the grid even though it never sent an explicit
-    /// clear. Sticky reports rely on this signal instead of the TTL.
-    func clearMobileViewportReports(clientIDs: Set<String>, reason: String) {
-        guard !clientIDs.isEmpty else { return }
-        for surfaceID in Set(mobileViewportReportsBySurfaceID.keys).union(mobileViewportGenerationsBySurfaceID.keys) {
-            for clientID in clientIDs {
-                _ = clearMobileViewportReport(surfaceID: surfaceID, clientID: clientID, reason: reason)
-            }
-        }
-    }
-
-    private func scheduleMobileViewportReportCleanup(
-        surfaceID: UUID,
-        reports: [String: MobileViewportReport]
-    ) {
-        mobileViewportReportCleanupTimersBySurfaceID[surfaceID]?.cancel()
-        // Sticky reports live for the connection lifetime, so they never drive
-        // a TTL timer; only non-sticky (input-piggyback) reports expire.
-        guard let nextExpiry = reports.values
-            .filter({ !$0.sticky })
-            .map({ $0.updatedAt.addingTimeInterval(Self.mobileViewportReportTTL) })
-            .min() else {
-            mobileViewportReportCleanupTimersBySurfaceID[surfaceID] = nil
-            return
-        }
-
-        let timer = DispatchSource.makeTimerSource(queue: .main)
-        let millisecondsUntilExpiry = max(1, Int((nextExpiry.timeIntervalSinceNow + 1) * 1000))
-        timer.schedule(deadline: .now() + .milliseconds(millisecondsUntilExpiry))
-        timer.setEventHandler { [weak self] in
-            Task { @MainActor [weak self] in
-                self?.pruneMobileViewportReports(surfaceID: surfaceID, reason: "mobile.viewport.reportsExpired")
-            }
-        }
-        mobileViewportReportCleanupTimersBySurfaceID[surfaceID] = timer
-        timer.resume()
-    }
-
-    private func pruneMobileViewportReports(surfaceID: UUID, reason: String) {
-        let now = Date()
-        guard var reports = mobileViewportReportsBySurfaceID[surfaceID] else {
-            mobileViewportReportCleanupTimersBySurfaceID[surfaceID]?.cancel()
-            mobileViewportReportCleanupTimersBySurfaceID[surfaceID] = nil
-            return
-        }
-
-        reports = reports.filter { _, report in
-            report.sticky || now.timeIntervalSince(report.updatedAt) <= Self.mobileViewportReportTTL
-        }
-
-        guard !reports.isEmpty else {
-            mobileViewportReportsBySurfaceID[surfaceID] = nil
-            mobileViewportReportCleanupTimersBySurfaceID[surfaceID]?.cancel()
-            mobileViewportReportCleanupTimersBySurfaceID[surfaceID] = nil
-            _ = resolveSharedSizing(surfaceID: surfaceID, reports: [:], reason: reason)
-            return
-        }
-
-        mobileViewportReportsBySurfaceID[surfaceID] = reports
-        _ = resolveSharedSizing(surfaceID: surfaceID, reports: reports, reason: reason)
-        scheduleMobileViewportReportCleanup(surfaceID: surfaceID, reports: reports)
-    }
-
-    func mobileResolveWorkspaceAndSurface(
+    func socketResolveWorkspaceAndSurface(
         params: [String: Any],
         requireTerminal: Bool
     ) -> (tabManager: TabManager, workspace: Workspace, surfaceId: UUID?)? {
@@ -17029,7 +15372,7 @@ class TerminalController {
             }
         } else if requireTerminal {
             surfaceId = workspace.focusedTerminalInputTarget()?.surfaceID
-                ?? mobileTerminalPanels(in: workspace).first?.id
+                ?? spatialTerminalPanels(in: workspace).first?.id
         } else {
             surfaceId = nil
         }
@@ -17056,7 +15399,7 @@ class TerminalController {
         return (tabManager, workspace, surfaceId)
     }
 
-    func mobileTerminalPanels(in workspace: Workspace) -> [TerminalPanel] {
+    func spatialTerminalPanels(in workspace: Workspace) -> [TerminalPanel] {
         // Use the workspace's spatial (left-to-right, top-to-bottom) panel order
         // so the phone's terminal dropdown matches the on-screen bonsplit layout,
         // rather than focused-first/UUID order. `is_focused` in the payload still

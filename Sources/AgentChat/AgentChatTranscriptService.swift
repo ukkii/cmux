@@ -105,12 +105,8 @@ final class AgentChatTranscriptService {
     init(
         registry: AgentChatSessionRegistry,
         resolver: AgentChatTranscriptResolver = AgentChatTranscriptResolver(),
-        hasEventSubscribers: @escaping @MainActor () -> Bool = {
-            MobileHostService.hasEventSubscribers(topic: AgentChatTranscriptService.eventTopic)
-        },
-        emitEventPayload: @escaping @MainActor ([String: Any]) -> Void = { payload in
-            MobileHostService.emitEvent(topic: AgentChatTranscriptService.eventTopic, payload: payload)
-        },
+        hasEventSubscribers: @escaping @MainActor () -> Bool = { false },
+        emitEventPayload: @escaping @MainActor ([String: Any]) -> Void = { _ in },
         now: @escaping () -> Date = { Date() },
         fallbackTranscriptPathResolver: AgentChatFallbackTranscriptResolutionCoordinator.Resolver? = nil,
         fallbackResolutionTimeout: Duration = .seconds(3),

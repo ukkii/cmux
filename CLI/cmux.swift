@@ -6898,9 +6898,6 @@ struct CMUXCLI {
         case "ping":
             let response = try sendV1Command("ping", client: client)
             print(response)
-        case "iroh-diag":
-            let response = try sendV1Command("iroh_diag", client: client)
-            print(response)
         case "capabilities":
             let response = try client.sendV2(method: "system.capabilities")
             print(jsonString(formatIDs(response, mode: idFormat)))
@@ -8015,119 +8012,6 @@ struct CMUXCLI {
 
         case "coderouter":
             try runCoderouterCommand(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput)
-
-        case "mobile":
-            let sub = commandArgs.first?.lowercased()
-            let rest = Array(commandArgs.dropFirst())
-            let mobileUsage = String(
-                localized: "cli.mobile.setFont.usage",
-                defaultValue: "Usage: cmux mobile set-font <points> [--surface <id>] [--workspace <id>]"
-            )
-            let compatibleTagsUsage = String(
-                localized: "cli.mobile.compatibleTags.usage",
-                defaultValue: "Usage: cmux mobile compatible-tags [list|set <tags...>|add <tags...>|remove <tags...>|clear]"
-            )
-            switch sub {
-            case "set-font":
-                guard let sizeArg = rest.first(where: { !$0.hasPrefix("--") }),
-                      let size = Double(sizeArg), size.isFinite, size > 0 else {
-                    throw CLIError(message: mobileUsage)
-                }
-                var params: [String: Any] = ["font_size": size]
-                if let surface = optionValue(rest, name: "--surface") {
-                    params["surface_id"] = surface
-                }
-                if let workspace = optionValue(rest, name: "--workspace") {
-                    params["workspace_id"] = workspace
-                }
-                let response = try client.sendV2(method: "mobile.terminal.set_font", params: params)
-                if jsonOutput {
-                    print(jsonString(response))
-                    break
-                }
-                let delivered = (response["delivered"] as? Bool) ?? false
-                if delivered {
-                    print(localizedFormat(
-                        "cli.mobile.setFont.applied",
-                        defaultValue: "Set mobile terminal font to %@pt on connected device(s).",
-                        sizeArg
-                    ))
-                } else {
-                    print(localizedFormat(
-                        "cli.mobile.setFont.appliedNoDevice",
-                        defaultValue: "Set mobile terminal font to %@pt (no iOS device is currently connected).",
-                        sizeArg
-                    ))
-                }
-            case "compatible-tags":
-                let action = rest.first?.lowercased() ?? "list"
-                let requestedTags = Array(rest.dropFirst())
-                    .flatMap { $0.split(separator: ",").map(String.init) }
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-                    .filter { !$0.isEmpty }
-                func currentTags() throws -> [String] {
-                    let response = try client.sendV2(method: "mobile.compatible_tags.get", params: [:])
-                    return (response["tags"] as? [String]) ?? []
-                }
-                if action == "list" {
-                    let tags = try currentTags()
-                    if jsonOutput {
-                        print(jsonString(["tags": tags]))
-                    } else if tags.isEmpty {
-                        print(String(
-                            localized: "cli.mobile.compatibleTags.empty",
-                            defaultValue: "No additional Mac dev tags are granted to this Mac's paired phones."
-                        ))
-                    } else {
-                        print(tags.joined(separator: "\n"))
-                    }
-                    break
-                }
-                let resolvedTags: [String]
-                switch action {
-                case "set":
-                    guard !requestedTags.isEmpty else { throw CLIError(message: compatibleTagsUsage) }
-                    resolvedTags = requestedTags
-                case "add":
-                    guard !requestedTags.isEmpty else { throw CLIError(message: compatibleTagsUsage) }
-                    resolvedTags = Array(Set(try currentTags()).union(requestedTags))
-                case "remove":
-                    guard !requestedTags.isEmpty else { throw CLIError(message: compatibleTagsUsage) }
-                    resolvedTags = Array(Set(try currentTags()).subtracting(requestedTags))
-                case "clear":
-                    resolvedTags = []
-                default:
-                    throw CLIError(message: compatibleTagsUsage)
-                }
-                let response = try client.sendV2(
-                    method: "mobile.compatible_tags.set",
-                    params: ["tags": resolvedTags]
-                )
-                if jsonOutput {
-                    print(jsonString(response))
-                    break
-                }
-                let stored = (response["tags"] as? [String]) ?? []
-                let delivered = (response["delivered"] as? Bool) ?? false
-                let storedList = stored.isEmpty
-                    ? String(localized: "cli.mobile.compatibleTags.none", defaultValue: "(none)")
-                    : stored.joined(separator: ", ")
-                if delivered {
-                    print(localizedFormat(
-                        "cli.mobile.compatibleTags.applied",
-                        defaultValue: "Granted Mac dev tags for paired phones: %@ (pushed to connected device(s)).",
-                        storedList
-                    ))
-                } else {
-                    print(localizedFormat(
-                        "cli.mobile.compatibleTags.appliedNoDevice",
-                        defaultValue: "Granted Mac dev tags for paired phones: %@ (applies when a phone next connects).",
-                        storedList
-                    ))
-                }
-            default:
-                throw CLIError(message: mobileUsage + "\n" + compatibleTagsUsage)
-            }
 
         case "rpc":
             guard let method = commandArgs.first?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -11342,16 +11226,6 @@ struct CMUXCLI {
                 client: client,
                 jsonOutput: jsonOutput,
                 idFormat: idFormat,
-                windowOverride: windowOverride
-            )
-        case "size", "size-policy", "size-to-me", "size-counts", "participants",
-             "disconnect-participant", "disconnect-others":
-            // Shared terminal sizing (docs/shared-terminal-sizing.md).
-            try runSurfaceSizingCommand(
-                subcommand: subcommand,
-                rest: Array(commandArgs.dropFirst()),
-                client: client,
-                jsonOutput: jsonOutput,
                 windowOverride: windowOverride
             )
         case "ls", "list", "tree", "catalog", "open", "project", "new-terminal", "new":
@@ -20921,16 +20795,6 @@ struct CMUXCLI {
 
             Check connectivity to the cmux socket server.
             """
-        case "iroh-diag":
-            return String(
-                localized: "cli.help.irohDiag",
-                defaultValue: """
-                Usage: cmux iroh-diag
-
-                Print the host's Iroh Connection Report as a plain-language timeline,
-                the same data as Settings > Networking > Connection Report.
-                """
-            )
         case "capabilities":
             return """
             Usage: cmux capabilities
@@ -22453,11 +22317,6 @@ struct CMUXCLI {
                    cmux surface resume show [--json] [flags]
                    cmux surface resume get [--json] [flags]
                    cmux surface resume clear [flags]
-                   cmux surface size|participants [--surface <id|ref|index>] [--json]
-                   cmux surface size-policy <latest|smallest|largest|priority|fixed> [--cols <n> --rows <n>] [--surface <id|ref|index>]
-                   cmux surface size-to-me|disconnect-others [--surface <id|ref|index>]
-                   cmux surface size-counts <true|false|auto> [--participant <id>] [--surface <id|ref|index>]
-                   cmux surface disconnect-participant <participant-id> [--surface <id|ref|index>]
 
             ls / open / new-terminal: the surface catalog. Terminals, VNC screens and browsers
             on This Mac and on every cloud machine are resources (`<machine>/<kind>/<key>`,

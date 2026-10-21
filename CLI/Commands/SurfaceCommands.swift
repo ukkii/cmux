@@ -160,13 +160,6 @@ struct SurfaceCommand: SharedLegacyFacadeCommand {
             SurfaceOpenCommand.self,
             SurfaceNewTerminalCommand.self,
             SurfaceResumeGroupCommand.self,
-            SurfaceSizeCommand.self,
-            SurfaceParticipantsCommand.self,
-            SurfaceSizeToMeCommand.self,
-            SurfaceDisconnectOthersCommand.self,
-            SurfaceSizePolicyCommand.self,
-            SurfaceSizeCountsCommand.self,
-            SurfaceDisconnectParticipantCommand.self,
         ],
         defaultSubcommand: SurfaceListCommand.self,
         helpNames: []
@@ -240,58 +233,6 @@ struct SurfaceNewTerminalCommand: SharedLegacyFacadeCommand {
         helpNames: [],
         aliases: ["new"]
     )
-}
-
-/// The shared terminal sizing verbs (`runSurfaceSizingCommand`). They take the
-/// same workspace/surface/window selector as `surface resume`.
-struct SurfaceSizeCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size", helpNames: [])
-}
-
-struct SurfaceParticipantsCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "participants", helpNames: [])
-}
-
-struct SurfaceSizeToMeCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size-to-me", helpNames: [])
-}
-
-struct SurfaceDisconnectOthersCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "disconnect-others", helpNames: [])
-}
-
-struct SurfaceSizePolicyCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    // Strings, not Int: the legacy runner owns the integer check.
-    @Option(name: .customLong("cols")) var cols: String?
-    @Option(name: .customLong("rows")) var rows: String?
-    @Argument(completion: .list(["latest", "smallest", "largest", "priority", "fixed"])) var mode: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size-policy", helpNames: [])
-}
-
-struct SurfaceSizeCountsCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Option(name: .customLong("participant")) var participant: String?
-    @Argument(completion: .list(["true", "false", "auto"])) var value: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size-counts", helpNames: [])
-}
-
-struct SurfaceDisconnectParticipantCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    /// An id from `cmux surface participants`.
-    @Argument var participant: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "disconnect-participant", helpNames: [])
 }
 
 /// `surface resume`. Named apart from `SurfaceResumeCommand`, which declares the

@@ -10,8 +10,6 @@ struct CloudTreeRowHeight {
     func height(of item: Any, in outlineView: NSOutlineView) -> CGFloat {
         guard let node = item as? CloudTreeNode else { return GlobalFontMagnification.scaledSize(style.rowHeight) }
         switch node.kind {
-        case .devicesEmpty(let section):
-            return GlobalFontMagnification.scaledSize(CloudTreeDevicesEmptyView.rowHeight(for: section, style: style))
         case .machine:
             return GlobalFontMagnification.scaledSize(style.machineRowHeight(
                 hasStats: false,

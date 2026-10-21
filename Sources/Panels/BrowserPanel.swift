@@ -1,5 +1,4 @@
 import CmuxCloud
-import CmuxMobileHost
 import Foundation
 import CMUXMobileCore
 import CmuxCore
@@ -2157,13 +2156,6 @@ final class BrowserPanel: Panel, ObservableObject {
     let browserEmulation = BrowserWebKitEmulationController()
     var webViewDidRequestClose: (() -> Void)?
     var openAppLinkInBrowserSplit: ((URL) -> Bool)?
-    var mobileBrowserStreamSignalHandlers: [UUID: (MobileBrowserPanelNativeSignal) -> Void] = [:]
-    var mobileBrowserStreamMessageHandler: MobileBrowserDirtyMessageHandler?
-    var mobileBrowserStreamScriptInstanceID: UUID?
-    var mobileBrowserStreamRenderHost: BrowserOffscreenRenderHost?
-    var mobileBrowserStreamPreviousViewport: BrowserViewport?
-    var mobileBrowserStreamPreviousViewportWasCaptured = false
-    var mobileBrowserStreamViewport: MobileBrowserViewport?
     /// Automation keeps its dialogs until answered, even after its command
     /// returns. Physical input hands subsequent dialogs back to the native UI.
     enum BrowserDialogOwner {
@@ -2265,7 +2257,6 @@ final class BrowserPanel: Panel, ObservableObject {
             guard oldValue != currentURL else { return }
             SurfaceCatalog.shared.cloudBrowserDocumentDidChange(self)
             applyConfiguredWebViewBackground()
-            mobileBrowserStreamStateDidChange(markDirty: true)
         }
     }
 
@@ -2340,7 +2331,6 @@ final class BrowserPanel: Panel, ObservableObject {
         didSet {
             guard oldValue != pageTitle else { return }
             SurfaceCatalog.shared.cloudBrowserDocumentDidChange(self)
-            mobileBrowserStreamStateDidChange(markDirty: true)
         }
     }
 
@@ -2348,12 +2338,7 @@ final class BrowserPanel: Panel, ObservableObject {
     @Published private(set) var faviconPNGData: Data?
 
     /// Published loading state
-    @Published var isLoading: Bool = false {
-        didSet {
-            guard oldValue != isLoading else { return }
-            mobileBrowserStreamStateDidChange(markDirty: true)
-        }
-    }
+    @Published var isLoading: Bool = false
 
     /// Published download state for browser downloads (navigation + context menu).
     @Published private(set) var isDownloading: Bool = false
@@ -2371,20 +2356,10 @@ final class BrowserPanel: Panel, ObservableObject {
     @Published private(set) var isMuted: Bool = false
 
     /// Published can go back state
-    @Published private(set) var canGoBack: Bool = false {
-        didSet {
-            guard oldValue != canGoBack else { return }
-            mobileBrowserStreamStateDidChange()
-        }
-    }
+    @Published private(set) var canGoBack: Bool = false
 
     /// Published can go forward state
-    @Published private(set) var canGoForward: Bool = false {
-        didSet {
-            guard oldValue != canGoForward else { return }
-            mobileBrowserStreamStateDidChange()
-        }
-    }
+    @Published private(set) var canGoForward: Bool = false
 
     var nativeCanGoBack: Bool = false
     var nativeCanGoForward: Bool = false
@@ -2408,12 +2383,7 @@ final class BrowserPanel: Panel, ObservableObject {
     var isMainFrameProvisionalNavigationActive: Bool = false
 
     /// Published estimated progress (0.0 - 1.0)
-    @Published var estimatedProgress: Double = 0.0 {
-        didSet {
-            guard oldValue != estimatedProgress else { return }
-            mobileBrowserStreamStateDidChange()
-        }
-    }
+    @Published var estimatedProgress: Double = 0.0
 
     /// Increment to request a UI-only flash highlight (e.g. from a keyboard shortcut).
     @Published private(set) var focusFlashToken: Int = 0
@@ -3357,7 +3327,6 @@ final class BrowserPanel: Panel, ObservableObject {
         setupMediaPlaybackMessageHandler(for: webView); setupFormStateMessageHandler(for: webView)
         webAuthnCoordinator.install(on: webView)
         applyMuteState(to: webView, reason: "bindWebView")
-        mobileBrowserWebViewDidBind()
         BrowserReplTabAttachments.shared.webViewDidBind(webView, panelID: id)
     }
     private func setupSSLTrustBypassMessageHandler(for webView: WKWebView) {
@@ -3792,17 +3761,6 @@ final class BrowserPanel: Panel, ObservableObject {
             preferences: webView.configuration.preferences
         )
         self.insecureHTTPAlertFactory = { NSAlert() }
-        mobileBrowserDialogBroker.onPresented = { [weak self] dialog in
-            guard let self, !self.mobileBrowserStreamSignalHandlers.isEmpty else { return }
-            self.publishMobileBrowserStreamSignal(.dialog(dialog))
-        }
-        mobileBrowserDialogBroker.onResolved = { [weak self] resolved in
-            guard let self else { return }
-            if !self.mobileBrowserStreamSignalHandlers.isEmpty {
-                self.publishMobileBrowserStreamSignal(.dialogResolved(resolved))
-                self.publishMobileBrowserStreamSignal(.dirty(editableFocused: nil))
-            }
-        }
         hiddenWebViewDiscardManager.delegate = self
         applyProxyConfigurationIfAvailable()
         BrowserProfileStore.shared.noteUsed(resolvedProfileID)
@@ -5252,8 +5210,6 @@ final class BrowserPanel: Panel, ObservableObject {
         automationNavigationCoordinator.invalidate()
         navigationDelegate?.cancelPendingAuthenticationPrompts()
         mobileBrowserDialogBroker.resolveAll()
-        clearMobileStreamViewport()
-        publishMobileBrowserStreamSignal(.closed)
         automationDocumentReadiness.invalidate()
         automationWatchdog.invalidate()
         refreshWebViewLifecycleState()
@@ -6445,7 +6401,7 @@ extension BrowserPanel: BrowserHiddenWebViewDiscardManagerDelegate {
             isVisualAutomationCaptureActive: activeVisualAutomationCaptureCount > 0
                 || !mobileBrowserDialogBroker.pendingDialogs.isEmpty
                 || BrowserReplTabAttachments.shared.attachment(for: id) != nil,
-            isMobileBrowserStreamActive: !mobileBrowserStreamSignalHandlers.isEmpty,
+            isMobileBrowserStreamActive: false,
             hasPopups: !popupControllers.isEmpty,
             isCapturingMedia: webView.cmuxIsCapturingMedia,
             isPlayingMedia: isPlayingMedia,
@@ -9451,16 +9407,6 @@ final class BrowserUIDelegate: BrowserPDFPreviewActionUIDelegate {
                 },
                 presentAlert: presentAlert
             )
-            return nil
-        }
-
-        if owner?.mobileBrowserStreamSignalHandlers.isEmpty == false {
-            if let requestNavigation {
-                recordPDFPrintIntent?(navigationAction.request, navigationAction.sourceFrame)
-                requestNavigation(navigationAction.request, .currentTab)
-            } else {
-                browserLoadRequest(navigationAction.request, in: webView)
-            }
             return nil
         }
 
