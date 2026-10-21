@@ -4,9 +4,8 @@ import CmuxHomeCore
 import Foundation
 import Testing
 
-/// Gaps a real Cloud run found: question cards answered without Home (`chief.answer`), the
-/// provisioning row timing from the approved `vm new` (not from the card), the machine's
-/// name stored for the row, and a stopped turn's "Stopped" row.
+/// Gaps a real run found: question cards answered without Home (`chief.answer`) and a
+/// denied command that leaves only its approval receipt.
 @Suite struct ChiefCloudFollowUpTests {
     let conversation = ChiefConversationOwner.defaultConversationID
 
@@ -107,7 +106,7 @@ import Testing
         }
     }
 
-    // MARK: Provisioning after approval
+    // MARK: Approval of a create command
 
     static let create = "cmux vm new --detach --name api --size 8g --json"
 
@@ -123,47 +122,6 @@ import Testing
         }
     }
 
-    @Test func provisioningTimesFromTheApprovedCommandNotFromItsCard() async throws {
-        let gate = Gate()
-        let clock = ChiefTestClock()
-        let home = ChiefFixture().home
-        let owner = try ChiefConversationOwner(home: home, brain: Self.creatingBrain(gate, output: """
-            {
-              "id" : "vm-794a4009e0b04396a17dae037acb59a8",
-              "displayName" : "api-box"
-            }
-            """), userDisplayName: "Tester", now: { clock.now }) { _ in
-            ChiefTurnContext(systemPrompt: "You are Chief.", workingDirectory: home.root, environment: [:])
-        }
-        try await ChiefFixture.send("create it", to: owner)
-        #expect(await ChiefFixture.eventually { await owner.isWaitingForApproval(conversation) })
-        // While the card waits there is no provisioning row (nothing counts "Creating cloud machine… 30s").
-        let waiting = try await owner.snapshot(of: conversation, tail: 10).messages
-        #expect(waiting.count == 2)
-        guard case .approval? = waiting.last?.parts.first else { Issue.record("expected the card"); return }
-        #expect(!waiting.contains { message in message.parts.contains { part in
-            if case .work(let work) = part { return ChiefCloudProvisioning.isProvisioning(work) }
-            return false
-        } })
-
-        clock.advance(by: 45)
-        let card = try #require(await owner.pendingApproval(in: conversation))
-        try await owner.answerApproval(conversation: conversation, message: card.message, part: card.part, choice: "Allow")
-        let allowed = try await owner.snapshot(of: conversation, tail: 10).messages
-        #expect(allowed.count == 3)
-        let row = try #require(allowed.last)
-        guard case .work(let work)? = row.parts.first else { Issue.record("expected the row"); return }
-        // The row comes back under the receipt, its elapsed time counting from the Allow, with the machine's name.
-        #expect(ChiefCloudProvisioning.isProvisioning(work) && work.status == .running && work.preview == "api")
-        #expect(row.createdAt == clock.now && row.createdAt > waiting[1].createdAt)
-
-        await gate.open()
-        let done = try await ChiefFixture.idleMessages(owner, count: 3)
-        guard case .work(let created)? = done.first(where: { $0.id == row.id })?.parts.first else { Issue.record("no row"); return }
-        // `vm new --json` answers "displayName": the row keeps the name for display and the id in `host`.
-        #expect(created.host == "vm-794a4009e0b04396a17dae037acb59a8" && created.preview == "api-box")
-    }
-
     @Test func aDeniedCreateLeavesOnlyTheReceipt() async throws {
         let gate = Gate()
         let owner = try ChiefFixture().owner(Self.creatingBrain(gate, ok: false, output: "denied"))
@@ -177,24 +135,4 @@ import Testing
         guard case .approval(let ref)? = messages.last?.parts.first else { Issue.record("expected the receipt"); return }
         #expect(ref.decided == "Deny")
     }
-
-    @Test func machineNamesComeFromTheCommandAndTheJSON() {
-        #expect(ChiefCloudProvisioning.machineName(inCommand: Self.create) == "api")
-        #expect(ChiefCloudProvisioning.machineName(inCommand: "cmux vm new --name=\"chief-dogfood-1\" --json") == "chief-dogfood-1")
-        #expect(ChiefCloudProvisioning.machineName(inCommand: "cmux vm new --detach --json") == nil)
-        #expect(ChiefCloudProvisioning.machineName(inOutput: #"{"id":"vm-1","displayName":"chief-dogfood-1"}"#) == "chief-dogfood-1")
-        #expect(ChiefCloudProvisioning.machineName(inOutput: #"{"id": "vm-1", "name": "api"}"#) == "api")
-        #expect(ChiefCloudProvisioning.machineName(inOutput: "vm-1 is ready") == nil)
-        #expect(ChiefCloudProvisioning.machineName(inOutput: nil) == nil)
-    }
-}
-
-/// A settable clock for message times.
-final class ChiefTestClock: @unchecked Sendable {
-    private let lock = NSLock()
-    private var date = Date(timeIntervalSince1970: 1_800_000_000)
-
-    var now: Date { lock.withLock { date } }
-
-    func advance(by seconds: TimeInterval) { lock.withLock { date += seconds } }
 }

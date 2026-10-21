@@ -5,7 +5,7 @@ import (
 	"syscall"
 )
 
-func cloudCLIConnectionUserID(conn net.Conn) (uint32, error) {
+func unixSocketPeerUserID(conn net.Conn) (uint32, error) {
 	unixConn, ok := conn.(*net.UnixConn)
 	if !ok {
 		return 0, syscall.EINVAL
@@ -17,7 +17,7 @@ func cloudCLIConnectionUserID(conn net.Conn) (uint32, error) {
 	var uid uint32
 	var credentialErr error
 	if err := raw.Control(func(fd uintptr) {
-		uid, credentialErr = cloudCLIUserIDFromFD(int(fd))
+		uid, credentialErr = unixSocketPeerUserIDFromFD(int(fd))
 	}); err != nil {
 		return 0, err
 	}

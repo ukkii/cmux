@@ -3,7 +3,7 @@ import CmuxAgentQuestion
 import Foundation
 import Testing
 
-/// The `cmux-question` / `cmux-result` blocks lifted out of the Chief's reply
+/// The `cmux-question` blocks lifted out of the Chief's reply
 /// text, alone and through the Claude Code and Codex parsers.
 @Suite struct ChiefStructuredBlocksTests {
     static let questionBody = """
@@ -58,18 +58,10 @@ import Testing
         #expect(events.last == .textSegmentEnd)
     }
 
-    @Test func resultBlockBecomesAResultCard() {
-        let body = #"{"title": "Codex is working on brave-otter", "subtitle": "fix login · ws_4f2c", "machine": "brave-otter", "workspace": "ws_4f2c", "status": "working"}"#
-        let events = run("Started.\n```cmux-result\n\(body)\n```\n", chunk: 5)
-        #expect(events.contains(.result(ChiefResultCard(title: "Codex is working on brave-otter", subtitle: "fix login · ws_4f2c",
-                                                        machine: "brave-otter", workspace: "ws_4f2c", status: .working))))
-        #expect(text(events) == "Started.\n")
-    }
-
     @Test func invalidOrIncompleteBlocksFallBackToText() {
         // Bad JSON: the block's text shows as written.
-        let bad = "```cmux-result\n{\"title\": \"x\"}\n```\n"
-        #expect(text(run(bad, chunk: 4)) == "```cmux-result\n{\"title\": \"x\"}\n```")
+        let bad = "```cmux-question\n{\"title\": \"x\"}\n```\n"
+        #expect(text(run(bad, chunk: 4)) == "```cmux-question\n{\"title\": \"x\"}\n```")
         // The reply ends inside a block: its text shows.
         #expect(text(run("Oops ```cmux-question\n{\"prompt\": ", chunk: 3)) == "Oops ```cmux-question\n{\"prompt\": ")
         // The reply ends on the closing fence with no newline after it: still a block.
@@ -82,7 +74,7 @@ import Testing
         let reply = "Run `cmux vm ls` first.\n```sh\ncmux vm ls --json\n```\nAnd ```cmux-other\nx\n``` too``"
         let events = run(reply, chunk: 2)
         #expect(text(events) == reply)
-        #expect(!events.contains { if case .question = $0 { return true }; if case .result = $0 { return true }; return false })
+        #expect(!events.contains { if case .question = $0 { return true }; return false })
     }
 
     @Test func heldTextFlushesBeforeATool() {
@@ -147,22 +139,5 @@ import Testing
     @Test func promptExamplesParse() {
         let events = run(ChiefSystemPrompt.cards, chunk: 64)
         #expect(events.filter { if case .question = $0 { return true }; return false }.count == 1)
-        #expect(events.filter { if case .result = $0 { return true }; return false }.isEmpty)
-    }
-
-    // MARK: Provisioning commands
-
-    @Test func provisioningCommandsAreRecognized() {
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cmux vm new --detach --name api --size 8g --json") == .create)
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cmux cloud wait brave-otter --wake") == .wait)
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cd /tmp && cmux vm wait brave-otter") == .wait)
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cmux vm route --provision --json") == .create)
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cmux vm route --json") == nil)
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cmux vm new --help") == nil)
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cmux vm ls --json") == nil)
-        #expect(ChiefCloudProvisioning.phase(ofCommand: "cmux vm terminal wait m term --pattern x") == nil)
-        #expect(ChiefCloudProvisioning.machine(inOutput: "{\n  \"id\" : \"brave-otter\",\n  \"provider\" : \"x\"") == "brave-otter")
-        #expect(ChiefCloudProvisioning.machine(inOutput: "brave-otter is ready\nnext: …") == "brave-otter")
-        #expect(ChiefCloudProvisioning.machine(inCommand: "cmux vm wait brave-otter --wake") == "brave-otter")
     }
 }

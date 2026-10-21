@@ -8,8 +8,13 @@ nonisolated private let cmuxSettingsFileStoreLogger = Logger(subsystem: "com.cmu
 
 final class CmuxSettingsFileStore {
     static let currentSchemaVersion = 1
-    static let schemaURLString = "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json"
-    private static let legacySchemaURLString = "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux-settings.schema.json"
+    static let schemaURLString = "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json"
+    /// Schema URLs written by earlier builds. Bootstrapped settings rewrite
+    /// them to `schemaURLString`; the upstream `web/` tree no longer exists.
+    private static let legacySchemaURLStrings = [
+        "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux-settings.schema.json",
+        "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+    ]
     private static let releaseBundleIdentifier = "com.cmuxterm.app"
     private static let backupsDefaultsKey = "cmux.settingsFile.backups.v1"
     private static let importedManagedDefaultsDefaultsKey = "cmux.settingsFile.importedManagedDefaults.v1"
@@ -274,7 +279,9 @@ final class CmuxSettingsFileStore {
             guard let source = String(data: data, encoding: .utf8) else {
                 return data
             }
-            let updated = source.replacingOccurrences(of: Self.legacySchemaURLString, with: Self.schemaURLString)
+            let updated = Self.legacySchemaURLStrings.reduce(source) { partial, legacyURL in
+                partial.replacingOccurrences(of: legacyURL, with: Self.schemaURLString)
+            }
             return Data(updated.utf8)
         }
         return nil

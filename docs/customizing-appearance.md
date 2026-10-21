@@ -276,7 +276,7 @@ surface-tab-bar-font-size = 12
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+  "$schema": "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json",
   "schemaVersion": 1,
   "app": {
     "appearance": "system",

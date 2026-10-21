@@ -3093,8 +3093,6 @@ final class BrowserPanel: Panel, ObservableObject {
         false
     }
 
-    // Internal so BrowserPrewarmedWebViewPool builds prewarm webviews with
-    // identical configuration, making adoption a drop-in swap.
     static func makeWebView(
         profileID: UUID,
         websiteDataStore: WKWebsiteDataStore? = nil
@@ -3685,25 +3683,11 @@ final class BrowserPanel: Panel, ObservableObject {
         self.preservesExplicitEphemeralWebsiteDataStore =
             preservesExplicitEphemeralWebsiteDataStore
         let webView: CmuxWebView
-        var adoptedPrewarmedWebView = false
+        var adoptedPopupWebView = false
         if let popup = Self.takePendingPopupWebView(for: initialURL) {
             // WebKit loads the popup's document into this web view itself.
             webView = popup
-            adoptedPrewarmedWebView = true
-        } else if let prewarmed = Self.claimedPrewarmedWebView(
-            isRemoteWorkspace: isRemoteWorkspace,
-            initialRequest: initialRequest,
-            renderInitialNavigation: renderInitialNavigation,
-            initialURL: initialURL,
-            profileID: resolvedProfileID,
-            websiteDataStore: websiteDataStore
-        ) {
-            webView = prewarmed
-            // A pooled webview captured the default zoom when it was prewarmed, which
-            // may predate a settings change (or the startup cmux.json import), so
-            // re-apply the current configured default on adoption.
-            webView.pageZoom = CGFloat(BrowserZoomSettings().current(defaults: .standard))
-            adoptedPrewarmedWebView = true
+            adoptedPopupWebView = true
         } else {
             webView = Self.makeWebView(
                 profileID: resolvedProfileID,
@@ -3941,7 +3925,6 @@ final class BrowserPanel: Panel, ObservableObject {
         installDetachedDeveloperToolsWindowCloseObserver()
         installHiddenWebViewDiscardPolicyObserver()
         applyBrowserThemeModeIfNeeded()
-        ReactGrabScriptLoader.prefetch()
         insecureHTTPAlertWindowProvider = { [weak self] in
             if let self, let window = browserInteractiveModalHostWindow(for: self.webView) {
                 return window
@@ -3984,11 +3967,11 @@ final class BrowserPanel: Panel, ObservableObject {
             // navigation transition to refresh it later.
             refreshWebViewLifecycleState()
             guard renderInitialNavigation else { return }
-            if adoptedPrewarmedWebView {
-                // Already navigated while hidden; record for recovery paths.
+            if adoptedPopupWebView {
+                // WebKit already navigates the popup; record for recovery paths.
                 navigationDelegate?.recordAttemptedRequest(URLRequest(url: url), displayURL: url)
-                // The pool only vends finished loads; seed the committed flag so
-                // blank-shell healing never reloads the adopted page on reveal.
+                // Seed the committed flag so blank-shell healing never reloads
+                // the adopted popup's page on reveal.
                 hasCommittedDocumentSinceWebViewReplacement = true
                 refreshBackgroundAppearance()
             } else {

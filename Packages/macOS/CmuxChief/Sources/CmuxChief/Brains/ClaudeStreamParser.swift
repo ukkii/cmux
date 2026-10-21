@@ -43,7 +43,7 @@ struct ClaudeStreamParser: Sendable {
     private var blockKinds: [Int: String] = [:]
     private var startedTools: Set<String> = []
     private var openText = false
-    /// Lifts `cmux-question` / `cmux-result` blocks out of the reply text.
+    /// Lifts `cmux-question` blocks out of the reply text.
     var blocks = ChiefStructuredBlocks()
 
     init(sessionID: String? = nil) {

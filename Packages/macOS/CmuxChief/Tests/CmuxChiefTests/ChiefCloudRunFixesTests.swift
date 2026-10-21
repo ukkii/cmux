@@ -95,33 +95,6 @@ import Testing
         #expect(!reader.allows(["cmux", "vm", "exec", "vm-794a", "--", "pwd"]))
     }
 
-    // MARK: Sign-in result
-
-    @Test func aSignInResultIsStoredAsWaitingAndOutlivesARelaunch() {
-        let card = ChiefResultCard(title: "Codex needs sign-in on chief-dogfood-1", subtitle: "Open the workspace and choose Sign in with Device Code",
-                                   machine: "vm-794a", workspace: "ws_962f", status: .needsSignIn)
-        #expect(ChiefResultCard.Status(rawValue: "needs_sign_in") == .needsSignIn)
-        let work = ChiefConversationOwner.resultWork(card)
-        #expect(work.status == .waiting && work.host == "vm-794a" && work.session == "ws_962f")
-
-        let summary = ConversationSummary(id: conversation, owner: .local, participants: [], createdAt: Date(), updatedAt: Date())
-        func message(_ seq: Int, _ part: MessagePart) -> Message {
-            Message(id: MessageID("msg_\(seq)"), conversation: conversation, seq: Seq(seq), clientMessageID: .make(),
-                    author: ChiefConversationOwner.userID, parts: [part], createdAt: Date())
-        }
-        var state = ChiefConversationState(summary: summary, messages: [
-            message(1, .work(work)),
-            message(2, .work(WorkRef(session: "call-1", title: "git clone", status: .running))),
-        ])
-        ChiefConversationOwner.settleInterrupted(&state)
-        let statuses = state.messages.compactMap { message -> WorkRef.Status? in
-            if case .work(let w)? = message.parts.first { return w.status }
-            return nil
-        }
-        // The remote agent's card keeps its state; the local call that never finished fails.
-        #expect(statuses == [.waiting, .failed])
-    }
-
     // MARK: Prompt
 
     @Test func thePromptTeachesNoCloudMachines() {

@@ -227,3 +227,33 @@ The repository now holds only what the macOS app build and its local tooling nee
   describe removed features.
 - **Translated READMEs:** the 20 `README.*.md` translations described upstream's product
   and pricing and are deleted. `README.md` describes this fork and how to build it.
+
+## Remaining network behaviour
+
+The app makes no automatic connections to cmux or Manaflow servers. It still contacts:
+
+- **Browser panes:** sites you navigate to, their favicons, and search suggestions from
+  the chosen search engine as you type in the omnibar (on by default; with Google it
+  also queries DuckDuckGo and Bing suggestions). Turn off in Settings → Browser.
+- **Apple Safe Browsing:** WKWebView's default fraudulent-website check.
+- **React Grab:** the pinned, SHA-256-verified `react-grab` script is fetched from
+  unpkg.com only when you invoke "Toggle React Grab", never on browser panel creation.
+- **GitHub PR badges:** api.github.com through your `gh` token / `GH_TOKEN` while the
+  sidebar's pull-request display is on (default on), plus the zsh integration's periodic
+  `gh pr view` (stopped with the same setting via `CMUX_NO_PR_WATCH=1`).
+- **SSH:** the hosts you connect to with `cmux ssh`. The cmuxd-remote daemons
+  (darwin/linux × arm64/amd64) are built into the app by
+  `scripts/bundle-remote-daemons.sh` and uploaded over that SSH connection; nothing is
+  downloaded.
+- **User-configured endpoints:** automation webhooks and similar URLs you set yourself.
+- **Local agent CLIs:** Claude Code, Codex and other CLIs cmux launches contact their own
+  providers.
+- **Computer Use helper (cmux-cua):** PostHog telemetry (including the install ping) and
+  the GitHub release check are compiled out by `scripts/cmux-cua-codex-delivery-mode.patch`;
+  the env opt-outs stay as a second layer.
+- **Help and docs links** (cmux.com, GitHub) open only when clicked. The `$schema` URL
+  written into `cmux.json` now points at this fork's `schemas/cmux.schema.json`.
+
+Also removed in this pass: the "Forward notifications to my iPhone" popover entry, Chief's
+Cloud provisioning/result cards, the unused pricing WebView prewarm pool, the unused
+MarkdownUI dependency, and the cmuxd-remote Cloud CLI bridge.

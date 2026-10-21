@@ -59,8 +59,10 @@ cmux-launched agent then connects through the authenticated, variant-scoped
 socket and can perceive the desktop through screenshots and accessibility
 trees and act with click, type, scroll, hotkey, drag, app, window, cursor, and
 diagnostic tools.
-cmux's injection disables the upstream cmux-cua engine's telemetry and self-update
-checks.
+The cmux build of the cmux-cua engine has its PostHog telemetry (including the
+install ping) and its GitHub update check compiled out, so the helper never
+contacts either service. cmux's environment injection still sets the upstream
+opt-outs as a second layer.
 
 The first functional `$cmux-cua` request from a current cmux agent session opens
 the existing onboarding window when setup is required. This is an explicit
@@ -201,8 +203,9 @@ toolchain on the build machine:
 The pinned source is cached under `~/Library/Caches/cmux/cmux-cua`; after
 the first successful build no network access is needed until the pinned
 commit changes. The build applies the checked-in
-`scripts/cmux-cua-codex-delivery-mode.patch` after the SHA check because the
-pinned native engine has the delivery ladder while its Codex adapter does not
-forward that field. Set `CMUX_CUA_SRC=/path/to/cmux-cua` to build from a local
+`scripts/cmux-cua-codex-delivery-mode.patch` after the SHA check. The patch
+forwards the Codex adapter's `delivery_mode` field to the pinned native
+engine's delivery ladder, and it stubs out the engine's telemetry POST and
+GitHub release lookup. Set `CMUX_CUA_SRC=/path/to/cmux-cua` to build from a local
 checkout (it must still be at the pinned commit); the same patch is applied
 idempotently there.

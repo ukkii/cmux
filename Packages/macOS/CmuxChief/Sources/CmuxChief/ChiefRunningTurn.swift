@@ -40,12 +40,6 @@ struct ChiefRunningTurn {
     /// The running tool row a waiting card took the place of (its call id and work part): allowed,
     /// the row comes back under the card's receipt, so Home draws one "Ran … · Allowed" row.
     var approvedWork: [ChiefApprovalSlot: (tool: String, work: WorkRef)] = [:]
-    /// The turn's one Cloud provisioning row (``ChiefCloudProvisioning``), once a provisioning call started.
-    var provisioning: MessageID?
-    /// The provisioning step of each running provisioning call, by tool call id.
-    var provisioningCalls: [String: ChiefCloudProvisioning] = [:]
-    /// The provisioning row's status so far.
-    var provisioningStatus: WorkRef.Status = .running
     /// When the turn started, for its ``ChiefTurnStats``.
     let startedAt: Date
     /// The engine from the turn's context, once it is built.

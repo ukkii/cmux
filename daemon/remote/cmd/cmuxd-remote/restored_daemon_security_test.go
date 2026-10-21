@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -13,22 +12,6 @@ import (
 	"strings"
 	"testing"
 )
-
-func TestRestoredCloudBridgeIsPrivate(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	path := makeShortUnixSocketPath(t)
-	if err := newCloudCLIBridge().start(ctx, path, io.Discard); err != nil {
-		t.Fatal(err)
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if info.Mode().Perm() != 0600 {
-		t.Fatalf("bridge socket mode = %o, want 600", info.Mode().Perm())
-	}
-}
 
 func TestRestoredWaitSignalRejectsSymlink(t *testing.T) {
 	home := t.TempDir()

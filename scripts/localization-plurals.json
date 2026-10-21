@@ -523,12 +523,6 @@
       1
     ]
   },
-  "notifications.forwardToPhone.mode.subtitle": {
-    "source": "Away means the screen is locked or asleep, the screensaver is running, or there has been no keyboard or mouse input for %lld minutes.",
-    "arguments": [
-      1
-    ]
-  },
   "panel.cloudVM.loading.elapsed": {
     "source": "%ds elapsed",
     "arguments": [

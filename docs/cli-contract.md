@@ -839,7 +839,7 @@ Docs topics:
 | --- | --- |
 | `docs` | List docs topics without a socket. |
 | `docs settings` | Print the configuration docs URL, raw schema URL, cmux.json paths, backup reminder, and reload command. |
-| `docs shortcuts` | Print shortcut docs and raw shortcut data resources. |
+| `docs shortcuts` | Print shortcut docs and the settings schema resource. |
 | `docs api` | Print API docs and raw CLI contract resources. |
 | `docs browser` | Print browser automation docs and raw browser skill resources. |
 | `docs capture` | Print the capture skill and command reference for `cmux shot` and `cmux record`. Aliases include `screenshot`, `shot`, `record` and `gif`. |

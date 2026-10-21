@@ -6517,7 +6517,7 @@ extension SessionPersistenceTests {
         let secret = Data("approval-secret".utf8)
         let initialSettings = """
         {
-          "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+          "$schema": "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json",
           // keep root comment
           "schemaVersion": 1,
           "terminal": {
@@ -6569,7 +6569,7 @@ extension SessionPersistenceTests {
         let secret = Data("approval-secret".utf8)
         let initialSettings = """
         {
-          "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+          "$schema": "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json",
           // keep utf16 comment
           "schemaVersion": 1,
           "terminal": {
@@ -6614,7 +6614,7 @@ extension SessionPersistenceTests {
         let secret = Data("approval-secret".utf8)
         try """
         {
-          "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+          "$schema": "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json",
           // keep migration comment
           "schemaVersion": 1,
           "rightSidebar": {

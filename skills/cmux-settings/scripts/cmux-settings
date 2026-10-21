@@ -55,7 +55,7 @@ from cmux_jsonc_edit import JSONCEditError, remove_jsonc_path, set_jsonc_path
 
 DEFAULT_PATH = Path.home() / ".config" / "cmux" / "cmux.json"
 SCHEMA_URL = (
-    "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json"
+    "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json"
 )
 
 
