@@ -80,7 +80,6 @@ Environment:
 | `fork` | Replace the CLI with a provider fork process restored from structured surface state. |
 | `restore-session` | Restore the previously saved cmux session; `--from <channel\|path>` reopens another install's saved session (full trust) or an exported file (untrusted: no automatic resume of custom commands, SSH, or environment from the file) as additional windows, and `--export <path> [--force]` writes this install's saved session to a file. Both require cmux to be running. |
 | `open` | Open files, directories, or URLs in cmux. Files and web pages take focus only when run interactively; run by an agent or script they open in the background. `--focus <true\|false>` and `--no-focus` override. |
-| `feedback` | Open feedback UI or submit feedback with `--email`, `--body`, and repeated `--image`. |
 | `feed` | Open the keyboard-first Feed TUI or manage persisted Feed workstream history. |
 | `themes` | List, set, clear, or interactively pick Ghostty themes. |
 | `import` | Import font, colors, cursor, Option-as-Alt, padding, opacity/blur and scrollback from iTerm2, Terminal, Alacritty, Kitty, WezTerm or a Warp theme into cmux's own Ghostty config and a generated theme. With no terminal, lists detected terminals (and prompts in a TTY). `--dry-run` prints the diff without writing; writing asks for confirmation in a TTY and otherwise (scripts, pipes, `--json`) requires `--yes`; `--path <file>` overrides detection; `--json` prints the plan. Never writes `~/.config/ghostty/config` or the source terminal's files. Works without a running app. |
@@ -1097,7 +1096,6 @@ the expected text without connecting to a cmux socket.
 - `cmux restore-session --help` -> `Usage: cmux restore-session`
 - `cmux session restore --help` -> `Usage: cmux session restore [--list] [--session <id>]...`
 - `cmux open --help` -> `Usage: cmux open <path-or-url>...`
-- `cmux feedback --help` -> `Usage: cmux feedback`
 - `cmux feed --help` -> `Usage: cmux feed tui [--opentui|--legacy]`
 - `cmux hooks --help` -> `Usage: cmux hooks setup [agent] [--agent <name>] [--yes|-y]`
 - `cmux codex --help` -> `Usage: cmux codex <install-hooks|uninstall-hooks>`

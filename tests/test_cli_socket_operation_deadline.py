@@ -237,8 +237,6 @@ def trickle_relay_challenge_handler(conn: socket.socket, stop_event: threading.E
 def run_cli(cli_path: str, socket_path: str, timeout: float = 3.0, args: tuple[str, ...] = ("ping",)) -> RunResult:
     env = cli_environment(socket_path)
     env["CMUXTERM_CLI_RESPONSE_TIMEOUT_SEC"] = "0.2"
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
-    env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
     if socket_path.startswith("127.0.0.1:"):
         env["CMUX_RELAY_ID"] = "deadline-test"
         env["CMUX_RELAY_TOKEN"] = "11" * 32

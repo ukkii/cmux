@@ -227,7 +227,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "CMUX_SOCKET_PATH": socketPath,
                 "CMUX_BUNDLED_CLI_PATH": cliPath,
                 "CMUX_CLAUDE_PID": "8535",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "ANTHROPIC_BASE_URL": "https://proxy.example.test",
                 "ANTHROPIC_API_KEY": "must-not-cross-admission",
             ],
@@ -286,7 +285,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_CLAUDE_PID": "8535",
                 "CMUX_WORKSPACE_ID": "workspace-stale",
                 "CMUX_SURFACE_ID": "surface-stale",
@@ -347,7 +345,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_CLAUDE_PID": "8535",
                 "CMUX_WORKSPACE_ID": "workspace-stale",
                 "CMUX_SURFACE_ID": "surface-stale",
@@ -400,7 +397,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_CLAUDE_PID": "8535",
                 "CMUX_WORKSPACE_ID": "33333333-3333-3333-3333-333333333333",
                 "CMUX_SURFACE_ID": "44444444-4444-4444-4444-444444444444",
@@ -485,7 +481,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "HOME": root.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                 "PWD": root.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_AGENT_HOOK_STATE_DIR": root.path,
                 "CMUX_AGENT_HOOK_ROUTE_SNAPSHOT": "1",
                 pidKey: "8535",
@@ -550,7 +545,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             timeout: 2
         )
@@ -581,7 +575,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "CMUX_SOCKET_PATH": socketPath,
                 "CMUX_BUNDLED_CLI_PATH": cliPath,
                 "CMUX_CLAUDE_PID": "8535",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: #"{"session_id":"stalled"}"#,
             timeout: 2.5
@@ -625,7 +618,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                 "CMUX_CLAUDE_PID": "8535",
                 "CMUX_SURFACE_ID": "surface-8535",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: rawPayload,
             timeout: 5
@@ -680,7 +672,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_SURFACE_ID": "surface-ingress-budget",
                 "CMUX_CLAUDE_PID": "8535",
             ],
@@ -767,7 +758,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                     "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                     "CMUX_CLAUDE_PID": "8535",
                     "CMUX_SURFACE_ID": "surface-8535",
-                    "CMUX_CLI_SENTRY_DISABLED": "1",
                 ],
                 standardInput: rawPayload,
                 timeout: 5
@@ -836,7 +826,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_SURFACE_ID": "surface-\(agent)-lifecycle-flags",
                 "CMUX_\(agent.uppercased())_PID": "8535",
             ],
@@ -910,7 +899,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_SURFACE_ID": "surface-claude-background-work",
                 "CMUX_CLAUDE_PID": "8535",
             ],
@@ -963,7 +951,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             environment: [
                 "HOME": FileManager.default.temporaryDirectory.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: payload,
             timeout: 5
@@ -1033,7 +1020,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             "CMUX_AGENT_HOOK_ROUTE_SNAPSHOT": "1",
             "CMUX_AGENT_HOOK_STATE_DIR": root.path,
             pidKey: "8535",
-            "CMUX_CLI_SENTRY_DISABLED": "1",
         ]
         let result = runCodexHookProcess(
             executablePath: cliPath,
@@ -1107,7 +1093,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "CMUX_SURFACE_ID": "22222222-2222-2222-2222-222222222222",
                 "CMUX_GEMINI_PID": "8535",
                 "CMUX_AGENT_HOOK_RELAY_ORIGIN": "1",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: #"{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"true"}}"#,
             timeout: 10
@@ -1177,7 +1162,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "CMUX_WORKSPACE_ID": "11111111-1111-1111-1111-111111111111",
                 "CMUX_SURFACE_ID": "22222222-2222-2222-2222-222222222222",
                 "CMUX_AGENT_HOOK_RELAY_ORIGIN": "1",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: payload,
             timeout: 10
@@ -1236,7 +1220,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "CMUX_WORKSPACE_ID": staleWorkspaceID,
                 "CMUX_SURFACE_ID": staleSurfaceID,
                 "CMUX_GEMINI_PID": "8535",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: """
             {"session_id":"decision-session","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"true"}}
@@ -1315,7 +1298,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
                 "CMUX_SURFACE_ID": surfaceID,
                 "CMUX_CODEX_PID": "8535",
                 "CMUX_AGENT_HOOK_STATE_DIR": root.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: """
             {"session_id":"codex-decision-session","hook_event_name":"PermissionRequest","tool_name":"Write"}
@@ -1389,7 +1371,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             var environment = [
                 "HOME": root.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
             environment.merge(producer.environment, uniquingKeysWith: { _, value in value })
             let result = runCodexHookProcess(
@@ -1467,7 +1448,6 @@ struct CLIClaudeHookTimeoutRegressionTests {
             "CMUX_SOCKET_PATH": socketPath,
             "CMUX_BUNDLED_CLI_PATH": cli.path,
             "CMUX_CUSTOM_CLAUDE_PATH": claude.path,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
             "FAKE_CLAUDE_SETTINGS_OUTPUT": settings.path,
         ]
     }

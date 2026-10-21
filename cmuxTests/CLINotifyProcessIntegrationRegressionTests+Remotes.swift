@@ -26,7 +26,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["HOME"] = home.path
         environment["CFFIXED_USER_HOME"] = home.path
         environment["LANG"] = "en_US.UTF-8"

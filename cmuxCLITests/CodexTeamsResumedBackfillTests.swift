@@ -80,7 +80,6 @@ struct CodexTeamsResumedBackfillTests {
         for key in environment.keys where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["AppleLanguages"] = "(en)"
         environment["AppleLocale"] = "en_US"
         environment["LANG"] = "en_US.UTF-8"

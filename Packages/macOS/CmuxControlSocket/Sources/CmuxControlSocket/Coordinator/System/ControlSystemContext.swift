@@ -3,7 +3,7 @@ public import Foundation
 /// The system/misc-domain slice of the control-command seam (a constituent of
 /// the ``ControlCommandContext`` umbrella): `system.identify`, `system.tree`,
 /// `auth.login`, `session.restore_previous`, `session.import`,
-/// `session.export`, `settings.open`, `feedback.open`,
+/// `session.export`, `settings.open`,
 /// `extension.sidebar.snapshot`, `workspace.action`, `surface.action` /
 /// `tab.action`, `surface.drag_to_split` / `surface.split_off`, and the
 /// DEBUG-only `mobile.dev_stack_auth.configure`.
@@ -75,15 +75,6 @@ public protocol ControlSystemContext: AnyObject {
     ///     the focus-allowance policy).
     /// - Returns: The open resolution.
     func controlSettingsOpen(targetRaw: String?, requestedActivate: Bool) -> ControlSettingsOpenResolution
-
-    /// Schedules the feedback composer for `feedback.open`.
-    ///
-    /// - Parameters:
-    ///   - workspaceID: The explicit `workspace_id`, if any.
-    ///   - windowID: The explicit `window_id`, if any.
-    ///   - requestedActivate: The requested `activate` flag (the app applies
-    ///     the focus-allowance policy).
-    func controlFeedbackOpen(workspaceID: UUID?, windowID: UUID?, requestedActivate: Bool)
 
     /// Snapshots the routed window's workspaces for
     /// `extension.sidebar.snapshot`.

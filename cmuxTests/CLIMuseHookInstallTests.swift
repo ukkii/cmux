@@ -29,7 +29,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
             "HOME": root.path,
             "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
             "CMUX_SOCKET_PATH": socketPath,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
         ]
         let result = runProcess(
             executablePath: cliPath,
@@ -119,7 +118,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
                 "XDG_CONFIG_HOME": xdgConfig.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                 "CMUX_SOCKET_PATH": makeSocketPath("muse-xdg"),
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             timeout: 5
         )

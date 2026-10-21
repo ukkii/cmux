@@ -222,7 +222,6 @@ extension TerminalController {
         )
         switch outcome {
         case .completed(let value):
-            socketLaneHealth.recordMainHopCompleted()
             return value
         case .abandoned:
             throw SocketMainActorHopTimeout(retryable: true)
@@ -309,34 +308,13 @@ extension TerminalController {
         ]
     }
 
-    /// The structured reply for a main-actor hop that timed out, plus the
-    /// Release telemetry that makes the stall visible: a breadcrumb per
-    /// timeout and one captured warning per stall episode.
+    /// The structured reply for a main-actor hop that timed out.
     nonisolated func socketMainHopTimeoutResponse(
         id: JSONValue?,
         method: String,
         isV2: Bool,
         error: SocketMainActorHopTimeout
     ) async -> String {
-        let poolMetrics = await socketClientWorkerPool.metrics()
-        let data: [String: Any] = [
-            "method": method,
-            "retryable": error.retryable,
-            "deadline_ms": Self.socketMainActorHopDeadlineMilliseconds,
-            "pool_active": poolMetrics.activeJobs,
-            "pool_pending": poolMetrics.pendingJobs,
-            "pool_rejected": poolMetrics.rejectedJobs,
-            "pool_expired": poolMetrics.expiredJobs,
-        ]
-        sentryBreadcrumb("socket.command.main_hop.timeout", category: "socket", data: data)
-        if socketLaneHealth.recordMainHopTimeout() {
-            sentryCaptureWarning(
-                "socket.main_actor_lane.stalled",
-                category: "socket",
-                data: data,
-                contextKey: "socket_main_lane"
-            )
-        }
         let message = Self.socketMainHopTimeoutMessage(retryable: error.retryable)
         guard isV2 else {
             return "ERROR: timeout retryable=\(error.retryable) \(message)"

@@ -201,7 +201,6 @@ def main() -> int:
             env["CMUX_WORKSPACE_ID"] = workspace_id
             env["CMUX_SURFACE_ID"] = surface_id
             env["CMUX_CLAUDE_HOOK_STATE_PATH"] = str(root / "claude-hook-state.json")
-            env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
             env["CMUX_CLAUDE_PID"] = "33333"
             env["CMUX_AGENT_LAUNCH_KIND"] = "claude"
             env["CMUX_AGENT_LAUNCH_CWD"] = launch_cwd

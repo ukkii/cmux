@@ -38,7 +38,6 @@ extension ShortcutAction {
         case .openChief: return String(localized: "shortcut.openChief.label", defaultValue: "Open Chief")
         case .commandPaletteNext: return "Command Palette: Next"
         case .commandPalettePrevious: return "Command Palette: Previous"
-        case .sendFeedback: return "Send Feedback"
         case .showNotifications: return "Show Notifications"
         case .jumpToUnread: return "Jump to Latest Unread"
         case .jumpToLastPrompt:

@@ -66,7 +66,7 @@ final class MainWindowHostingView<Content: View>: NSHostingView<Content> {
     }
 
     /// See ``MainWindowHitTestMutationMonitor`` (CMUXTERM-MACOS-41RH). Tests
-    /// replace it to observe reports without Sentry.
+    /// replace it to observe reports.
     var hitTestMutationMonitor = MainWindowHitTestMutationMonitor()
 
     override func hitTest(_ point: NSPoint) -> NSView? {

@@ -57,9 +57,8 @@ enum CmuxExtensionSidebarSelection {
         let localOptIn = Bool.decodeFromUserDefaults(
             UserDefaults.standard.object(forKey: key.userDefaultsKey)
         ) ?? key.defaultValue
-        // The beta toggle is intentionally subordinate to the remote release
-        // gate. This keeps the picker and persisted selection recoverable while
-        // allowing PostHog to roll the feature out or kill it without shipping.
+        // The beta toggle is intentionally subordinate to the release flag.
+        // This keeps the picker and persisted selection recoverable.
         let releaseEnabled = CmuxFeatureFlags.offMainEffectiveValue(
             for: CmuxFeatureFlags.conversationSidebarFlag
         )

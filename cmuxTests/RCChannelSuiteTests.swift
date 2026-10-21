@@ -76,7 +76,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         environment["GHOSTTY_RESOURCES_DIR"] = resourcesURL.path
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_BUNDLE_ID"] = bundleIdentifier
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,

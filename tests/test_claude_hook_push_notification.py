@@ -202,8 +202,6 @@ def run_push_notification_hook(
         env["CMUX_WORKSPACE_ID"] = workspace_id
         env["CMUX_SURFACE_ID"] = surface_id
         env["CMUX_CLAUDE_HOOK_STATE_PATH"] = os.path.join(server.root.name, "state.json")
-        env["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         proc = subprocess.run(
             [cli_path, "--socket", server.socket_path, "hooks", "claude", "push-notification"],
@@ -278,8 +276,6 @@ def run_unresolved_push_notification_hook(
         env["CMUX_WORKSPACE_ID"] = workspace_id
         env["CMUX_SURFACE_ID"] = recorded_surface_id
         env["CMUX_CLAUDE_HOOK_STATE_PATH"] = str(state_path)
-        env["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
         env.pop("CMUX_CLAUDE_PID", None)
 
         proc = subprocess.run(

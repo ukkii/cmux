@@ -3,7 +3,6 @@ import AppKit
 import CmuxAppKitSupportUI
 import CmuxCommandPalette
 import CmuxCore
-import CmuxFeedback
 import CmuxFoundation
 import CmuxAgentJournal
 import CmuxNotifications
@@ -25,7 +24,6 @@ import CmuxSwiftRender
 import CmuxSwiftRenderUI
 import ImageIO
 import Observation
-import CmuxProductAnalytics
 import SwiftUI
 import ObjectiveC
 import UniformTypeIdentifiers
@@ -1086,7 +1084,6 @@ struct ContentView: View {
     @State private var commandPalettePendingActivation: CommandPalettePendingActivation?
     @State private var commandPaletteResultsRevision: UInt64 = 0
     @State private var commandPaletteUsageHistoryByCommandId: [String: CommandPaletteUsageEntry] = [:]
-    @State private var isFeedbackComposerPresented = false
     @AppStorage(AppCatalogSection().renameSelectsExistingName.userDefaultsKey)
     private var commandPaletteRenameSelectAllOnFocus = AppCatalogSection().renameSelectsExistingName.defaultValue
     @AppStorage(AppCatalogSection().commandPaletteSearchesAllSurfaces.userDefaultsKey)
@@ -1712,7 +1709,6 @@ struct ContentView: View {
             sidebarUnread: sidebarUnread,
             titlebarControlsLayoutModel: titlebarControlsLayoutModel,
             windowId: windowId,
-            onSendFeedback: presentFeedbackComposer,
             onToggleSidebar: { sidebarState.toggle() },
             onNewTab: {
                 AppDelegate.shared?.performNewWorkspaceAction(
@@ -2712,11 +2708,6 @@ struct ContentView: View {
 #if DEBUG
                     cmuxDebugLog("startup.recovery tabCount=\(tabManager.tabs.count) selected=\(tabManager.selectedTabId?.uuidString.prefix(8) ?? "nil") mounted=\(mountedWorkspaceIds.count)")
 #endif
-                    sentryBreadcrumb("startup.recovery", data: [
-                        "tabCount": tabManager.tabs.count,
-                        "selectedTabId": tabManager.selectedTabId?.uuidString ?? "nil",
-                        "mountedCount": mountedWorkspaceIds.count
-                    ])
                 }
             }
         })
@@ -3309,17 +3300,6 @@ struct ContentView: View {
             _ = handleCommandPaletteRenameDeleteBackward(modifiers: [])
         })
 
-        view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .feedbackComposerRequested)) { notification in
-            let requestedWindow = notification.object as? NSWindow
-            guard Self.shouldHandleCommandPaletteRequest(
-                observedWindow: observedWindow,
-                requestedWindow: requestedWindow,
-                keyWindow: NSApp.keyWindow,
-                mainWindow: NSApp.mainWindow
-            ) else { return }
-            presentFeedbackComposer()
-        })
-
         view = AnyView(view.background(WindowAccessor(dedupeByWindow: false) { window in
             let overlayController = commandPaletteWindowOverlayController(for: window)
             overlayController.update(
@@ -3508,9 +3488,6 @@ struct ContentView: View {
         })
 
         view = AnyView(view.ignoresSafeArea().overlay(WindowContentOverlayBrowserHost()))
-        view = AnyView(view.sheet(isPresented: $isFeedbackComposerPresented) {
-            SidebarFeedbackComposerSheet()
-        })
 
         view = AnyView(view.onDisappear {
             sidebarState.removeVisibilityWillChangeHandler(ownerId: windowId)
@@ -10303,12 +10280,6 @@ struct ContentView: View {
 #endif
     }
 
-    private func presentFeedbackComposer() {
-        DispatchQueue.main.async {
-            isFeedbackComposerPresented = true
-        }
-    }
-
     static func shouldHandleCommandPaletteRequest(
         observedWindow: NSWindow?,
         requestedWindow: NSWindow?,
@@ -10392,7 +10363,6 @@ struct ContentView: View {
 
     /// Presents the palette and resets per-presentation launcher availability before rebuilding results.
     private func presentCommandPalette(initialQuery: String) {
-        ProductAnalytics.app.featureUsed(.commandPalette)
         refreshCachedDefaultTerminalStatus(refreshSearchCorpusIfPresented: false)
         commandPaletteFocusRestoreCoordinator.clear()
         let browserTarget = AppDelegate.shared?.focusedBrowserActionTarget(
@@ -11398,7 +11368,6 @@ struct VerticalTabsSidebar: View, Equatable {
     let sidebarUnread: SidebarUnreadModel
     let titlebarControlsLayoutModel: TitlebarControlsLayoutModel
     let windowId: UUID
-    let onSendFeedback: () -> Void
     let onToggleSidebar: () -> Void
     let onNewTab: () -> Void
     let observedWindowReference: WeakWindowReference
@@ -11996,8 +11965,7 @@ struct VerticalTabsSidebar: View, Equatable {
             if isPresented {
                 SidebarFooter(
                     fileExplorerState: fileExplorerState,
-                    modifierKeyMonitor: modifierKeyMonitor,
-                    onSendFeedback: onSendFeedback
+                    modifierKeyMonitor: modifierKeyMonitor
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -15706,13 +15674,12 @@ struct SidebarWorkspaceRowFramePreferenceKey: PreferenceKey {
 private struct SidebarFooter: View {
     @ObservedObject var fileExplorerState: FileExplorerState
     let modifierKeyMonitor: WindowScopedShortcutHintModifierMonitor
-    let onSendFeedback: () -> Void
 
     var body: some View {
 #if DEBUG
-        SidebarDevFooter(fileExplorerState: fileExplorerState, modifierKeyMonitor: modifierKeyMonitor, onSendFeedback: onSendFeedback)
+        SidebarDevFooter(fileExplorerState: fileExplorerState, modifierKeyMonitor: modifierKeyMonitor)
 #else
-        SidebarFooterButtons(fileExplorerState: fileExplorerState, modifierKeyMonitor: modifierKeyMonitor, onSendFeedback: onSendFeedback)
+        SidebarFooterButtons(fileExplorerState: fileExplorerState, modifierKeyMonitor: modifierKeyMonitor)
             .padding(.leading, 6)
             .padding(.trailing, 10)
             .padding(.bottom, 6)
@@ -15724,7 +15691,6 @@ struct SidebarFooterButtons: View {
     private var accountFlow: HostAccountFlow? { AppDelegate.shared?.auth?.accountFlow }
     @ObservedObject var fileExplorerState: FileExplorerState
     let modifierKeyMonitor: WindowScopedShortcutHintModifierMonitor
-    let onSendFeedback: () -> Void
     @State private var extensionBrowserAnchorView: NSView?
     @LiveSetting(\.betaFeatures.extensions) private var extensionsExperimentalEnabled
     // Reuse the exact Command-hold shortcut-hint signal that drives the per-row
@@ -15767,7 +15733,7 @@ struct SidebarFooterButtons: View {
                         SidebarMobileConnectButton()
                     }
                     if shows(.help) {
-                        SidebarHelpMenuButton(onSendFeedback: onSendFeedback)
+                        SidebarHelpMenuButton()
                     }
                     // Right of Help and left of Upgrade, per the footer design.
                     if shows(.cloud) {
@@ -15826,7 +15792,6 @@ private enum SidebarHelpMenuAction {
     case github
     case githubIssues
     case discord
-    case sendFeedback
     case welcome
 }
 
@@ -15847,7 +15812,6 @@ private struct SidebarHelpMenuButton: View {
     @State private var keyboardShortcutSettingsObserver = KeyboardShortcutSettingsObserver.shared
     @Environment(BrowserDataImportCoordinator.self) private var browserDataImportCoordinator: BrowserDataImportCoordinator?
 
-    let onSendFeedback: () -> Void
 
     @State private var isPopoverPresented = false
 
@@ -15871,11 +15835,6 @@ private struct SidebarHelpMenuButton: View {
     private var settingsShortcutHint: String {
         let _ = keyboardShortcutSettingsObserver.revision
         return KeyboardShortcutSettings.shortcut(for: .openSettings).displayString
-    }
-
-    private var sendFeedbackShortcutHint: String {
-        let _ = keyboardShortcutSettingsObserver.revision
-        return KeyboardShortcutSettings.shortcut(for: .sendFeedback).displayString
     }
 
     var body: some View {
@@ -15935,14 +15894,6 @@ private struct SidebarHelpMenuButton: View {
                 action: .importBrowserData,
                 accessibilityIdentifier: "SidebarHelpMenuOptionImportBrowserData",
                 isExternalLink: false
-            )
-            helpOptionButton(
-                title: String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback"),
-                action: .sendFeedback,
-                accessibilityIdentifier: "SidebarHelpMenuOptionSendFeedback",
-                isExternalLink: false,
-                shortcutHint: sendFeedbackShortcutHint,
-                trailingSystemImage: "bubble.left.and.text.bubble.right"
             )
             if docsURL != nil {
                 helpOptionButton(
@@ -16082,9 +16033,6 @@ private struct SidebarHelpMenuButton: View {
         case .discord:
             guard let discordURL else { return }
             NSWorkspace.shared.open(discordURL)
-        case .sendFeedback:
-            isPopoverPresented = false
-            onSendFeedback()
         case .welcome:
             isPopoverPresented = false
             Task { @MainActor in

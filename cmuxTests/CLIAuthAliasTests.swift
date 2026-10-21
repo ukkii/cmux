@@ -336,7 +336,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -396,7 +395,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -576,7 +574,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CMUX_SOCKET_PATH": makeSocketPath("missing"),
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -614,7 +611,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CODEROUTER_STDIN_FILE": stdinURL.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: "interactive input\n"
         )
@@ -681,7 +677,6 @@ struct CLICoderouterAliasTests {
             arguments: ["coderouter", "--version"],
             environment: [
                 "PATH": root.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -724,7 +719,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CODEROUTER_SIGNAL_FILE": signalURL.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -757,7 +751,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CMUX_SOCKET_PATH": makeSocketPath("missing"),
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -818,7 +811,6 @@ struct CLICoderouterAliasTests {
                 "PATH": root.path,
                 "CMUX_UNDER_TEST": cliPath,
                 "CODEROUTER_SENTINEL_FD": String(sentinelFD),
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -865,7 +857,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CMUX_UNDER_TEST": cliPath,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -916,7 +907,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CMUX_UNDER_TEST": cliPath,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -956,7 +946,6 @@ struct CLICoderouterAliasTests {
                 "PATH": root.path,
                 "CR_ARGS_FILE": argsURL.path,
                 "CMUX_SOCKET_PATH": handoffServer.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -1010,7 +999,6 @@ struct CLICoderouterAliasTests {
                 environment: [
                     "PATH": root.path,
                     "CMUX_SOCKET_PATH": handoffServer.path,
-                    "CMUX_CLI_SENTRY_DISABLED": "1",
                 ]
             )
             #expect(!result.timedOut, Comment(rawValue: result.stderr))
@@ -1054,7 +1042,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CMUX_SOCKET_PATH": handoffServer.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -1072,7 +1059,6 @@ struct CLICoderouterAliasTests {
                 "PATH": root.path,
                 "CODEROUTER_PROTOCOL_VALUE": "true",
                 "CMUX_SOCKET_PATH": handoffServer.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
         #expect(booleanResult.status != 0)
@@ -1113,7 +1099,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CMUX_SOCKET_PATH": handoffServer.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -1153,7 +1138,6 @@ struct CLICoderouterAliasTests {
             environment: [
                 "PATH": root.path,
                 "CMUX_SOCKET_PATH": handoffServer.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             allowUnsignedCoderouter: false
         )
@@ -1200,7 +1184,6 @@ struct CLICoderouterAliasTests {
                 "PATH": root.path,
                 "CODEROUTER_CAPABILITY_TEST_MODE": "slow",
                 "CMUX_SOCKET_PATH": handoffServer.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             timeout: 4
         )
@@ -1214,7 +1197,6 @@ struct CLICoderouterAliasTests {
                 "PATH": root.path,
                 "CODEROUTER_CAPABILITY_TEST_MODE": "oversized",
                 "CMUX_SOCKET_PATH": handoffServer.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
         #expect(!oversizedResult.timedOut)
@@ -1384,7 +1366,6 @@ struct CLICoderouterAliasTests {
                 "GCP_PROJECT": "gcp-project-config",
                 "GOOGLE_CLOUD_PROJECT": "google-project-config",
                 "GOOGLE_APPLICATION_CREDENTIALS": "/tmp/google-secret.json",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 

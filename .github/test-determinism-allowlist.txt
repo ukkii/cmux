@@ -32,7 +32,6 @@ Packages/Shared/CmuxIrohTransport/Tests/CmuxIrohTransportTests/CmxIrohHostRuntim
 Packages/Shared/CmuxIrohTransport/Tests/CmuxIrohTransportTests/CmxIrohOnlineAdmissionRegistryOfflineTests.swift	yield-count-poll	polls bounded by a Task.yield() count; convert to a deadline-bounded poll (#13903)
 Packages/Shared/CmuxIrohTransport/Tests/CmuxIrohTransportTests/CmxIrohRegistryContextProviderStalenessTests.swift	yield-count-poll	polls bounded by a Task.yield() count; convert to a deadline-bounded poll (#13903)
 Packages/Shared/CmuxIrohTransport/Tests/CmuxIrohTransportTests/CmxIrohServerSessionTests.swift	yield-count-poll	polls bounded by a Task.yield() count; convert to a deadline-bounded poll (#13903)
-Packages/Shared/CmuxSentryTelemetry/Tests/CmuxSentryReportingTests/TransportSentryReporterTests.swift	yield-count-poll	polls bounded by a Task.yield() count; convert to a deadline-bounded poll (#13903)
 Packages/iOS/CmuxMobileRPC/Tests/CmuxMobileRPCTests/CancellationIgnoringTokenProvider.swift	yield-count-poll	polls bounded by a Task.yield() count; convert to a deadline-bounded poll (#13903)
 Packages/iOS/CmuxMobileRPC/Tests/CmuxMobileRPCTests/MobileCoreRPCSessionPipelinedTests.swift	yield-count-poll	polls bounded by a Task.yield() count; convert to a deadline-bounded poll (#13903)
 Packages/iOS/CmuxMobileRPC/Tests/CmuxMobileRPCTests/MobileCoreRPCTokenTimeoutTests.swift	yield-count-poll	polls bounded by a Task.yield() count; convert to a deadline-bounded poll (#13903)

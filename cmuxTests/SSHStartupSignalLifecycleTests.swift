@@ -898,7 +898,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CMUX_TEST_SLEEP_LOG"] = sleepLog.path
         environment["CMUX_SSH_RECONNECT_DELAY_SECONDS"] = "0"
         environment["CMUX_SSH_RECONNECT_LIMIT"] = "2"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let child = try StreamingChildProcess(
             executablePath: "/bin/sh",
@@ -969,7 +968,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CMUX_TEST_SESSION_END_LOG"] = logFile.path
         environment["CMUX_TEST_ATTEMPT_FILE"] = attemptFile.path
         environment["CMUX_SSH_RECONNECT_DELAY_SECONDS"] = "0"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let child = try StreamingChildProcess(
             executablePath: "/bin/sh",
@@ -1030,7 +1028,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CMUX_SURFACE_ID"] = "22222222-2222-2222-2222-222222222222"
         environment["CMUX_TEST_SESSION_END_LOG"] = logFile.path
         environment["CMUX_SSH_RECONNECT_DELAY_SECONDS"] = "0"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let child = try StreamingChildProcess(
             executablePath: "/bin/sh",
@@ -1186,7 +1183,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CMUX_SURFACE_ID"] = "22222222-2222-2222-2222-222222222222"
         environment["CMUX_TEST_SESSION_END_LOG"] = logFile.path
         environment["CMUX_SSH_RECONNECT_DELAY_SECONDS"] = "0"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let child = try StreamingChildProcess(
             executablePath: "/bin/sh",
@@ -1403,8 +1399,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         var arguments = [
             "ssh",
@@ -1526,8 +1520,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,

@@ -97,7 +97,6 @@ class CloudHostnameTests(unittest.TestCase):
                            if not key.startswith("CMUX") and key != "DYLD_INSERT_LIBRARIES"}
             environment.update({
                 "CFFIXED_USER_HOME": server.root.name,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "DYLD_INSERT_LIBRARIES": self.library,
                 "AppleLanguages": "(en)",
             })

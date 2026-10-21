@@ -220,7 +220,6 @@ def verify_hook_persistence(cli_path: str, root: Path, base_env: dict[str, str])
                 b"".join(value.encode("utf-8") + b"\0" for value in launch_argv)
             ).decode("ascii"),
             "CMUX_AGENT_LAUNCH_CWD": str(workspace),
-            "CMUX_CLI_SENTRY_DISABLED": "1",
             "PI_CONFIG_DIR": ".custom-omp",
             "OPENAI_API_KEY": "secret-should-not-persist",
         }
@@ -352,8 +351,7 @@ def verify_restore_rejects_legacy_downgrade(cli_path: str, root: Path) -> None:
             record["fork_arguments"] = ["omp", "--session", session_id, "--fork"]
         socket_path = Path("/tmp") / f"cmux-omp-restore-{os.getpid()}-{time.monotonic_ns()}.sock"
         env = os.environ.copy()
-        env.update(CMUX_SOCKET_PATH=str(socket_path), CMUX_CLI_SENTRY_DISABLED="1",
-                   HOME=str(root), CFFIXED_USER_HOME=str(root), SHELL="/bin/sh")
+        env.update(CMUX_SOCKET_PATH=str(socket_path), HOME=str(root), CFFIXED_USER_HOME=str(root), SHELL="/bin/sh")
         for key in ("CMUX_SOCKET_CAPABILITY", "CMUX_SOCKET_PASSWORD", "CMUX_AGENT_HOOK_RELAY_ORIGIN"):
             env.pop(key, None)
         marker.unlink(missing_ok=True)

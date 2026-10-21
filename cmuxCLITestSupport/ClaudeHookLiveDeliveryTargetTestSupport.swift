@@ -64,8 +64,6 @@ enum ClaudeHookLiveDeliveryHarness {
             "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
             "CMUX_SOCKET_PATH": context.socketPath,
             "CMUX_CLAUDE_HOOK_STATE_PATH": context.storeURL.path,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
-            "CMUX_CLAUDE_HOOK_SENTRY_DISABLED": "1",
         ]
     }
 

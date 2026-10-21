@@ -45,7 +45,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = stateDir.path
         environment["CODEX_HOME"] = codexHome.path
 
@@ -120,7 +119,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = stateDir.path
         environment["CODEX_HOME"] = codexHome.path
 
@@ -237,7 +235,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = stateDir.path
         environment["CODEX_HOME"] = codexHome.path
 
@@ -300,7 +297,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         try data.write(to: stateDir.appendingPathComponent("\(agent)-hook-sessions.json"), options: .atomic)
         var processEnvironment = ProcessInfo.processInfo.environment
         for key in Array(processEnvironment.keys) where key.hasPrefix("CMUX_") { processEnvironment.removeValue(forKey: key) }
-        processEnvironment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         processEnvironment["CMUX_AGENT_HOOK_STATE_DIR"] = stateDir.path
         let result = runProcess(executablePath: cliPath, arguments: ["sessions", "list", "--agent", agent, "--session", sessionId, "--json"], environment: processEnvironment, timeout: 5)
         // Require rather than expect: letting a failed process fall through makes every caller fail
@@ -406,7 +402,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = stateDir.path
 
         let result = runProcess(
@@ -474,7 +469,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = stateDir.path
 
         let result = runProcess(
@@ -548,7 +542,6 @@ extension CMUXCLIErrorOutputRegressionTests {
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = stateDir.path
 
         let result = runProcess(

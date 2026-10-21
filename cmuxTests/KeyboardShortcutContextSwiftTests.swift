@@ -485,7 +485,6 @@ extension CMUXCLIErrorOutputRegressionTests {
     @Test func testGeneralHelpListsSimulatorNamespace() throws {
         let cliPath = try bundledCLIPath()
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         let result = runProcess(
             executablePath: cliPath,
             arguments: ["--help"],

@@ -90,16 +90,6 @@ struct ReloadConfigCommand: LegacyMetaCommand {
     static let configuration = CommandConfiguration(commandName: "reload-config", helpNames: [])
 }
 
-struct FeedbackCommand: LegacyMetaCommand {
-    @Option(name: .customLong("email")) var email: String?
-    @Option(name: .customLong("body")) var body: String?
-    // `--image` repeats; the array default `.singleValue` already reads exactly
-    // one value per occurrence, matching the legacy `parseRepeatedOption`.
-    @Option(name: .customLong("image"), completion: .file()) var images: [String] = []
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "feedback", helpNames: [])
-}
-
 struct ThemesCommand: LegacyMetaCommand {
     // No catch-all argument here: ArgumentParser already generates a rest-argument
     // spec to dispatch into `subcommands`, and a second one on this struct produces

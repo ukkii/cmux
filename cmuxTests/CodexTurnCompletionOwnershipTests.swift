@@ -328,7 +328,6 @@ struct CodexTurnCompletionOwnershipTests {
             "CMUX_CODEX_INVOCATION_ID": token,
             "CMUX_AGENT_HOOK_STATE_DIR": context.root.path,
             "CMUX_CODEX_TURN_LEDGER_PATH": context.root.appendingPathComponent("codex-turn-ledger.json").path,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
             "CMUX_AGENT_LAUNCH_KIND": "codex",
             "CMUX_AGENT_LAUNCH_EXECUTABLE": "/usr/local/bin/codex",
             "CMUX_AGENT_LAUNCH_CWD": context.root.path,

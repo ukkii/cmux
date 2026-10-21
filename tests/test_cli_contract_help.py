@@ -160,8 +160,6 @@ def run_cli_args(
         "CMUX_TAB_ID",
     ]:
         env.pop(key, None)
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
-    env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
     if extra_env:
         env.update(extra_env)
 

@@ -283,8 +283,6 @@ extension TerminalController {
             "session.import",
             "session.export",
             "settings.open",
-            "feedback.open",
-            "feedback.submit",
             "feed.push",
             "feed.permission.reply",
             "feed.question.reply",

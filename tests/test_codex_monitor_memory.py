@@ -178,7 +178,6 @@ def test_codex_monitor_rss_reaches_a_plateau(cli_path: str, root: Path) -> None:
             "CMUX_SURFACE_ID": FAKE_SURFACE_ID,
             "CMUX_WORKSPACE_ID": FAKE_WORKSPACE_ID,
             "CMUX_AGENT_HOOK_STATE_DIR": str(state_dir),
-            "CMUX_CLI_SENTRY_DISABLED": "1",
         }
     )
 

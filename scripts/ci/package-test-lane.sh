@@ -173,7 +173,6 @@ select_packages() {
     CmuxCloudTunnelCore
     CMUXDebugLog
     CmuxExtensionKit
-    CmuxFeedback
     CmuxLiveEval
     CmuxPanes
     CmuxPhonePush

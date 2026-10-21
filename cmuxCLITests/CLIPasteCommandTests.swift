@@ -285,7 +285,6 @@ struct CLIPasteCommandTests {
                 "CMUX_SOCKET_PASSWORD": "",
                 "CMUX_WORKSPACE_ID": Self.callerWorkspaceID,
                 "CMUX_SURFACE_ID": Self.callerSurfaceID,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CFFIXED_USER_HOME": home.path,
                 "HOME": home.path,
                 "PATH": ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin",

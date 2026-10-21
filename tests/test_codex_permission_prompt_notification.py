@@ -355,7 +355,6 @@ def test_native_permission_request_does_not_replay_previous_completion(
             "CMUX_AGENT_HOOK_STATE_DIR": str(state_root),
             "CMUX_WORKSPACE_ID": FAKE_WORKSPACE_ID,
             "CMUX_SURFACE_ID": FAKE_SURFACE_ID,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
         })
 
         def run_hook(command: str, event: str, **fields) -> None:

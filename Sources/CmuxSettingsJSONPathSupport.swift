@@ -203,10 +203,6 @@ enum AppSettingsFileMapping {
         .init(jsonKey: "reorderOnNotification", defaultsKey: app.reorderOnNotification.userDefaultsKey),
         .init(jsonKey: "iMessageMode", defaultsKey: IMessageModeSettings.key),
         .init(
-            jsonKey: "sendAnonymousTelemetry",
-            defaultsKey: app.sendAnonymousTelemetry.userDefaultsKey
-        ),
-        .init(
             jsonKey: "warnBeforeClosingTab",
             defaultsKey: app.warnBeforeClosingTab.userDefaultsKey
         ),

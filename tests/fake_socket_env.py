@@ -63,7 +63,6 @@ def cli_environment(socket_path: "str | os.PathLike[str] | None" = None, *,
     or surface id of its own.
     """
     env = {key: value for key, value in os.environ.items() if key not in INHERITED_SOCKET_KEYS}
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
     if socket_path is not None:
         env["CMUX_SOCKET_PATH"] = str(socket_path)
         env["CMUX_SOCKET"] = str(socket_path)

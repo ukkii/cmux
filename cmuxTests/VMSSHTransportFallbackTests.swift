@@ -89,8 +89,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
         // The successful fallback persists the trusted route via NSHomeDirectory().
         environment["CFFIXED_USER_HOME"] = homeURL.path
 
@@ -161,8 +159,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -219,8 +215,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,

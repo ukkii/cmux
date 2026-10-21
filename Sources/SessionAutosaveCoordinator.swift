@@ -99,7 +99,7 @@ final class SessionAutosaveCoordinator {
 
     func startIfNeeded() {
         guard timer == nil else { return }
-        guard !MacSentryStartupPolicy.isRunningUnderXCTest(environment: ProcessInfo.processInfo.environment) else { return }
+        guard !XCTestEnvironment.isRunningUnderXCTest(environment: ProcessInfo.processInfo.environment) else { return }
 
         let timer = DispatchSource.makeTimerSource(queue: .main)
         let interval = SessionPersistencePolicy.autosaveInterval

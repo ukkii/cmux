@@ -352,7 +352,6 @@ struct CLILocalZellijLifecycleTests {
         let sessionsURL = root.appendingPathComponent("sessions.txt", isDirectory: false)
         let layoutCopyURL = root.appendingPathComponent("layout-copy.kdl", isDirectory: false)
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_ZELLIJ_BIN"] = fakeZellij.path
         environment["CMUX_LOCAL_ZELLIJ_STATE_DIR"] = root.appendingPathComponent("state", isDirectory: true).path
         environment["FAKE_ZELLIJ_LOG"] = logURL.path

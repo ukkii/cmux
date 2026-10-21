@@ -1120,7 +1120,6 @@ struct AgentHookDeliveryQueueTests {
             "CMUX_WORKSPACE_ID": workspaceID,
             "CMUX_SURFACE_ID": surfaceID,
             "CMUX_AGENT_HOOK_STATE_DIR": root.path,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
             "CMUX_BUNDLED_CLI_PATH": cliPath,
             "CMUX_CODEX_HOOK_CMUX_BIN": cliPath,
             "CMUX_CODEX_PID": String(processID),

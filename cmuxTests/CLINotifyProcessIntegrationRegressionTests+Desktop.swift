@@ -135,7 +135,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
                 "CMUX_SOCKET_PATH": socketPath,
                 "CMUX_WORKSPACE_ID": "11111111-1111-1111-1111-111111111111",
                 "CMUX_SURFACE_ID": "22222222-2222-2222-2222-222222222222",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             timeout: 10
         )

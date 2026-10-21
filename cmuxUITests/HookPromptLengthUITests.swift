@@ -113,9 +113,7 @@ import base64, json, pathlib, socket, subprocess, sys, time, uuid
 cli, sock, root, log_path = sys.argv[1:]
 prefix = 'hook-length-' + uuid.uuid4().hex
 env = {'PATH': '/usr/bin:/bin:/usr/sbin:/sbin', 'HOME': root,
-       'CMUX_SOCKET_PATH': sock, 'CMUX_CLI_SENTRY_DISABLED': '1',
-       'CMUX_CLAUDE_HOOK_SENTRY_DISABLED': '1',
-       'CMUX_CLAUDE_HOOK_STATE_PATH': root + '/sessions.json'}
+       'CMUX_SOCKET_PATH': sock, 'CMUX_CLAUDE_HOOK_STATE_PATH': root + '/sessions.json'}
 
 def rpc(method, params):
     with socket.socket(socket.AF_UNIX) as connection:

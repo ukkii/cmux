@@ -111,8 +111,7 @@ struct CMUXCLIRestoreRecordRefreshTests {
             arguments: ["restore", "--surface", surfaceID, "codex", checkpointID],
             environment: [
                 "HOME": root.path, "CFFIXED_USER_HOME": root.path,
-                "CMUX_SOCKET_PATH": socketPath, "CMUX_CLI_SENTRY_DISABLED": "1",
-                "CMUX_CLI_TTY_NAME": "ttys-restore-refresh", "PATH": "/usr/bin:/bin"
+                "CMUX_SOCKET_PATH": socketPath, "CMUX_CLI_TTY_NAME": "ttys-restore-refresh", "PATH": "/usr/bin:/bin"
             ]
         )
         let methods = try responder.receivedRequests.compactMap { request in

@@ -87,8 +87,8 @@ public func formattedCloudVMHTTPError(status: Int, body: String) -> String {
         lines.append(contentsOf: details.map { "  \($0)" })
     }
     if let traceId = cloudVMString(object["traceId"]) ?? cloudVMString(ui?["traceId"]) {
-        // The support reference. Operators open the exact server trace,
-        // PostHog row and Sentry event from this one id.
+        // The support reference: operators open the exact server trace
+        // from this one id.
         lines.append("")
         lines.append(cloudVMReferenceLine(traceId: traceId))
     }
@@ -1129,7 +1129,7 @@ public actor VMClient {
         checkpointRenames: CloudRenameCoordinator,
         session: URLSession = .shared,
         operations: CloudOperationRecorder? = nil,
-        telemetry: VMClientTelemetry,
+        telemetry: VMClientTelemetry = VMClientTelemetry(),
         isCloudEnabled: @escaping @Sendable () -> Bool,
         isCloudAvailable: @escaping @Sendable () -> Bool = { true }
     ) -> CloudReadRequestCoordinator {

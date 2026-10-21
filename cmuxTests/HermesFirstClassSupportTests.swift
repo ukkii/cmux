@@ -1459,7 +1459,6 @@ struct HermesFirstClassSupportTests {
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                 "CMUX_BUNDLED_CLI_PATH": pinnedCLI.path,
                 "CMUX_SOCKET_PATH": socketPath,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -1513,7 +1512,6 @@ struct HermesFirstClassSupportTests {
                 "HOME": root.path,
                 "HERMES_HOME": hermesHome.path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -1540,7 +1538,6 @@ struct HermesFirstClassSupportTests {
                 "HOME": root.path,
                 "HERMES_HOME": blockedHermesHome,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 
@@ -1573,7 +1570,6 @@ struct HermesFirstClassSupportTests {
                 "HERMES_HOME": hermesHome.path,
                 "GROK_HOME": grokHome.path,
                 "PATH": "\(binDirectory.path):/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ]
         )
 

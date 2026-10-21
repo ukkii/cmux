@@ -255,7 +255,6 @@ struct CLICoderouterBootstrapTests {
             environment["AppleLanguages"] = "(en)"
             environment["AppleLocale"] = "en_US"
             environment["CMUX_SOCKET_PATH"] = socketPath
-            environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
             environment.merge(extra) { _, newValue in newValue }
             return environment
         }

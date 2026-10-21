@@ -30,7 +30,6 @@ extension CmuxSettingsFileStore {
         "app.openMarkdownInCmuxViewer",
         "app.iMessageMode",
         "app.reorderOnNotification",
-        "app.sendAnonymousTelemetry",
         "app.confirmQuit",
         "app.globalFontMagnification",
         "app.warnBeforeQuit",

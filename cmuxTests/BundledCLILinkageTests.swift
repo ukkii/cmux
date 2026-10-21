@@ -92,7 +92,6 @@ enum BundledCLITestSupport {
         environment["XDG_CACHE_HOME"] = home.appendingPathComponent(".cache", isDirectory: true).path
         environment["XDG_RUNTIME_DIR"] = runtimeURL.path
         environment["TMPDIR"] = tmpURL.path + "/"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment[isolatedSocketDiscoveryEnvironmentKey] = "1"
         return environment
     }

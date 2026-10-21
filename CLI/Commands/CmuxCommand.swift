@@ -33,7 +33,6 @@ struct CmuxCommand: AsyncParsableCommand {
             IrohDiagnosticsCommand.self,
             HelpCommand.self,
             ReloadConfigCommand.self,
-            FeedbackCommand.self,
             ThemesCommand.self,
             InternalFlagsCommand.self,
             SidebarFooterIconBalanceCommand.self,

@@ -191,7 +191,6 @@ struct CLICodexResumeNotificationTests {
                 "CMUX_WORKSPACE_ID": workspaceID,
                 "CMUX_SURFACE_ID": surfaceID,
                 "CMUX_AGENT_HOOK_STATE_DIR": root.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_CODEX_PID": String(getpid()),
             ],
             standardInput: """
@@ -241,7 +240,6 @@ struct CLICodexResumeNotificationTests {
                 "CMUX_WORKSPACE_ID": workspaceID,
                 "CMUX_SURFACE_ID": surfaceID,
                 "CMUX_AGENT_HOOK_STATE_DIR": root.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_CODEX_PID": String(getpid()),
             ],
             timeout: 5

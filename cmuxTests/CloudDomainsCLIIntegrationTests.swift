@@ -397,8 +397,6 @@ extension CMUXCLIErrorOutputRegressionTests {
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
         return environment
     }
 

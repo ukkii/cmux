@@ -290,8 +290,6 @@ struct CLIWorkspaceRefResolutionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
         environment.removeValue(forKey: "CMUX_SURFACE_ID")
         environment.removeValue(forKey: "CMUX_WORKSPACE_ID")
         environment.removeValue(forKey: "CMUX_WINDOW_ID")

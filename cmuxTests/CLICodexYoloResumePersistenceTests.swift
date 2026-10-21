@@ -122,7 +122,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
             for key in ["CODEX_HOME", "ANTHROPIC_BASE_URL", "CLAUDE_CONFIG_DIR"] {
                 environment.removeValue(forKey: key)
             }
-            environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
             let result = runProcess(
                 executablePath: cliPath,

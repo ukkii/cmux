@@ -50,7 +50,6 @@ extension CMUXCLI {
         def: AgentHookDef,
         commandArgs: [String],
         client: SocketClient,
-        telemetry: CLISocketSentryTelemetry,
         env: [String: String]
     ) {
         guard let source = autoNamingSource(for: def) else { return }
@@ -64,18 +63,15 @@ extension CMUXCLI {
             method: "workspace.set_auto_title",
             params: ["probe": true, "workspace_id": workspaceId, "panel_id": surfaceId]
         ), probe["enabled"] as? Bool == true else {
-            telemetry.breadcrumb("\(def.name)-hook.auto-name.disabled")
             return
         }
         guard probe["workspace_user_owned"] as? Bool != true else {
-            telemetry.breadcrumb("\(def.name)-hook.auto-name.user-owned")
             return
         }
 
         let sessionStore = ClaudeHookSessionStore(processEnv: env)
         let mapped = try? sessionStore.lookup(sessionId: sessionId)
         guard (try? sessionStore.isCurrent(sessionId: sessionId, workspaceId: workspaceId, surfaceId: surfaceId)) ?? false else {
-            telemetry.breadcrumb("\(def.name)-hook.auto-name.stale")
             return
         }
 
@@ -113,7 +109,7 @@ extension CMUXCLI {
         guard let sourceResult, !sourceResult.messages.isEmpty else { return }
 
         let resolution = resolvedSummarizerAgent(
-            probe: probe, sessionAgent: def.name, env: env, telemetry: telemetry
+            probe: probe, sessionAgent: def.name, env: env
         )
         runMessageBackedAutoName(
             sessionId: sessionId,
@@ -125,8 +121,7 @@ extension CMUXCLI {
             cloudNameContext: probe["cloud_name_context"],
             client: client,
             missingOverride: resolution.missingOverride,
-            telemetryKey: "\(def.name)-hook.auto-name",
-            telemetry: telemetry
+            telemetryKey: "\(def.name)-hook.auto-name"
         ) { engine, outcome in
             guard let context = engine.buildContext(from: sourceResult.messages) else { return nil }
             let prompt = engine.buildPrompt(currentTitle: outcome.lastTitle, context: context)
@@ -134,8 +129,7 @@ extension CMUXCLI {
                 summarizerAgent: resolution.agent,
                 prompt: prompt,
                 env: env,
-                timeout: engine.config.llmTimeout,
-                telemetry: telemetry
+                timeout: engine.config.llmTimeout
             ) else {
                 reportAutoNamingProblem("failed", agent: resolution.agent, workspaceId: workspaceId, client: client)
                 return nil
@@ -155,7 +149,6 @@ extension CMUXCLI {
         client: SocketClient,
         missingOverride: String?,
         telemetryKey: String,
-        telemetry: CLISocketSentryTelemetry,
         rawResponse: (AutoNamingEngine, ClaudeHookSessionStore.AutoNamingBeginOutcome) -> String?
     ) {
         guard !lines.isEmpty else { return }
@@ -169,7 +162,6 @@ extension CMUXCLI {
             client: client,
             missingOverride: missingOverride,
             telemetryKey: telemetryKey,
-            telemetry: telemetry,
             rawResponse: rawResponse
         )
     }
@@ -185,7 +177,6 @@ extension CMUXCLI {
         client: SocketClient,
         missingOverride: String?,
         telemetryKey: String,
-        telemetry: CLISocketSentryTelemetry,
         rawResponse: (AutoNamingEngine, ClaudeHookSessionStore.AutoNamingBeginOutcome) -> String?
     ) {
         guard !messages.isEmpty else { return }
@@ -199,7 +190,6 @@ extension CMUXCLI {
             client: client,
             missingOverride: missingOverride,
             telemetryKey: telemetryKey,
-            telemetry: telemetry,
             rawResponse: rawResponse
         )
     }
@@ -214,7 +204,6 @@ extension CMUXCLI {
         client: SocketClient,
         missingOverride: String?,
         telemetryKey: String,
-        telemetry: CLISocketSentryTelemetry,
         rawResponse: (AutoNamingEngine, ClaudeHookSessionStore.AutoNamingBeginOutcome) -> String?
     ) {
         let engine = AutoNamingEngine()
@@ -227,7 +216,6 @@ extension CMUXCLI {
             engine: engine
         ) else { return }
         guard case .proceed(let baseline) = outcome.decision else {
-            telemetry.breadcrumb("\(telemetryKey).throttled")
             return
         }
 
@@ -241,7 +229,6 @@ extension CMUXCLI {
             )
         }
         guard let rawResponse = rawResponse(engine, outcome) else {
-            telemetry.breadcrumb("\(telemetryKey).llm-failed")
             return
         }
         guard let sanitized = engine.sanitizeResponse(rawResponse, currentTitle: nil) else { return }
@@ -252,8 +239,7 @@ extension CMUXCLI {
             previousTitle: outcome.lastTitle,
             cloudNameContext: cloudNameContext,
             client: client,
-            telemetryKey: telemetryKey,
-            telemetry: telemetry
+            telemetryKey: telemetryKey
         )
         // Re-report a missing override only after the apply, so the app's
         // clear-on-apply doesn't immediately wipe the Settings note.
@@ -269,8 +255,7 @@ extension CMUXCLI {
         previousTitle: String?,
         cloudNameContext: Any? = nil,
         client: SocketClient,
-        telemetryKey: String,
-        telemetry: CLISocketSentryTelemetry
+        telemetryKey: String
     ) -> String? {
         guard let payload = try? client.sendV2(method: "workspace.set_auto_title", params: [
             "workspace_id": workspaceId,
@@ -279,15 +264,12 @@ extension CMUXCLI {
             "title": title,
             "cloud_name_context": cloudNameContext ?? NSNull()
         ]) else {
-            telemetry.breadcrumb("\(telemetryKey).socket-failed")
             return nil
         }
         if payload["workspace_applied"] as? Bool == true
             || (cloudNameContext is [String: Any] && payload["panel_applied"] as? Bool == true) {
-            telemetry.breadcrumb("\(telemetryKey).applied")
             return title
         }
-        telemetry.breadcrumb("\(telemetryKey).rejected")
         return previousTitle
     }
 }

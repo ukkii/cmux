@@ -69,7 +69,6 @@ struct CLIWorkspaceGroupSafetyTests {
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUXTERM_CLI_RESPONSE_TIMEOUT_SEC"] = "2"
 
         let process = Process()

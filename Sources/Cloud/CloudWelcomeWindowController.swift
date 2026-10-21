@@ -1,5 +1,4 @@
 import AppKit
-import CmuxProductAnalytics
 import CmuxSettings
 import SwiftUI
 
@@ -47,10 +46,6 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
     private let defaults: UserDefaults
     private let nextStep: @MainActor () -> CloudWelcomeNextStep
     private let performNextStep: @MainActor (CloudWelcomeNextStep, (@MainActor () -> Void)?) -> Void
-    private let analytics: ProductAnalytics
-    private let now: @MainActor () -> Date
-    /// Analytics for the card on screen, nil when none is.
-    private(set) var analyticsSession: CloudWelcomeAnalyticsSession?
 
     init(
         defaults: UserDefaults = .standard,
@@ -65,15 +60,11 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
                 )
             )
         },
-        performNextStep: @escaping @MainActor (CloudWelcomeNextStep, (@MainActor () -> Void)?) -> Void = CloudWelcomeWindowController.perform,
-        analytics: ProductAnalytics = .app,
-        now: @escaping @MainActor () -> Date = { Date() }
+        performNextStep: @escaping @MainActor (CloudWelcomeNextStep, (@MainActor () -> Void)?) -> Void = CloudWelcomeWindowController.perform
     ) {
         self.defaults = defaults
         self.nextStep = nextStep
         self.performNextStep = performNextStep
-        self.analytics = analytics
-        self.now = now
         super.init()
     }
 
@@ -128,10 +119,10 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
             appVersion: appVersion,
             policy: ManagedDevicePolicy(),
             isDebugBuild: isDebugBuild,
-            isRunningUnderXCTest: MacSentryStartupPolicy.isRunningUnderXCTest(environment: environment),
+            isRunningUnderXCTest: XCTestEnvironment.isRunningUnderXCTest(environment: environment),
             isUITestMode: environment["CMUX_UI_TEST_MODE"] == "1"
         ) else { return }
-        show(over: parent, trigger: .launchAnnouncement)
+        show(over: parent)
     }
 
     /// Claims the release announcement synchronously before creating its window.
@@ -159,18 +150,15 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
 
     /// Every normal presentation claims the same persisted marker. A direct
     /// Cloud action from a returning user continues at the card's next step.
-    ///
-    /// - Parameter trigger: The Cloud action that asked, for analytics.
     func present(
         over parent: NSWindow?,
-        trigger: CloudWelcomeTrigger,
         onEnabled: (@MainActor () -> Void)? = nil
     ) {
         guard claimPresentation() else {
             continueToNextStep(nextStep(), onEnabled: onEnabled)
             return
         }
-        show(over: parent, trigger: trigger, onEnabled: onEnabled)
+        show(over: parent, onEnabled: onEnabled)
     }
 
     private func claimPresentation() -> Bool {
@@ -184,7 +172,7 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
     /// recorded it as seen, and still records it so the launch never repeats it.
     func presentIntroduction(over parent: NSWindow?) {
         Self.markCampaignSeen(in: defaults)
-        show(over: parent, trigger: .sidebarCloudButton)
+        show(over: parent)
     }
 
     #if DEBUG
@@ -199,7 +187,6 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
         Self.markCampaignSeen(in: defaults)
         show(
             over: parent,
-            trigger: .debugMenu,
             posterShowsTitle: posterShowsTitle,
             posterShowsIcon: posterShowsIcon,
             showsNewBadge: showsNewBadge,
@@ -216,7 +203,6 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
 
     private func show(
         over parent: NSWindow?,
-        trigger: CloudWelcomeTrigger,
         sliderShowsFeatureList: Bool = true,
         sliderListUsesDots: Bool = false,
         posterHeadline: String? = CloudWelcomeView.headline,
@@ -228,12 +214,6 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
     ) {
         window?.close()
         self.onEnabled = onEnabled
-        analyticsSession = CloudWelcomeAnalyticsSession(
-            trigger: trigger,
-            currentStep: nextStep,
-            analytics: analytics,
-            now: now
-        )
         let window = makeWindow(
             sliderShowsFeatureList: sliderShowsFeatureList,
             sliderListUsesDots: sliderListUsesDots,
@@ -262,7 +242,6 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
         let rootView = CloudWelcomeAccountView(
             accountFlow: AppDelegate.shared?.auth?.accountFlow,
             resolveStep: nextStep,
-            onStepDisplayed: { [weak self] step in self?.analyticsSession?.stepDisplayed(step) },
             sliderShowsFeatureList: sliderShowsFeatureList,
             sliderListUsesDots: sliderListUsesDots,
             posterHeadline: posterHeadline,
@@ -349,13 +328,11 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
 
     /// Not Now, the card's ×, or Escape.
     func handleNotNow() {
-        analyticsSession?.clicked(.notNow, step: nil)
         dismiss()
     }
 
     /// The card's primary button, which offered `step`.
     func handleNext(_ step: CloudWelcomeNextStep) {
-        analyticsSession?.clicked(CloudWelcomeButton(step: CloudWelcomeAnalyticsSession.step(step)), step: step)
         continueToNextStep(step, onEnabled: onEnabled)
     }
 
@@ -402,19 +379,11 @@ final class CloudWelcomeWindowController: NSObject, NSWindowDelegate {
         window?.close()
         window = nil
         onEnabled = nil
-        endAnalyticsSession()
     }
 
     func windowWillClose(_ notification: Notification) {
         window = nil
         onEnabled = nil
-        endAnalyticsSession()
-    }
-
-    /// A card that closes without a button records `window_closed`.
-    private func endAnalyticsSession() {
-        analyticsSession?.windowClosed()
-        analyticsSession = nil
     }
 }
 
@@ -425,7 +394,6 @@ private struct CloudWelcomeAccountView: View {
     /// The controller's resolver, the one owner of the offered step; reading
     /// the account inside it during `body` keeps the view observing it.
     let resolveStep: @MainActor () -> CloudWelcomeNextStep
-    let onStepDisplayed: @MainActor (CloudWelcomeNextStep) -> Void
     let sliderShowsFeatureList: Bool
     let sliderListUsesDots: Bool
     let posterHeadline: String?
@@ -455,7 +423,6 @@ private struct CloudWelcomeAccountView: View {
             showsNewBadge: showsNewBadge,
             footerHasNotNow: footerHasNotNow
         )
-        .onChange(of: step) { _, displayed in onStepDisplayed(displayed) }
         .task {
             // The plan decides between Upgrade and Enable; ask once on show.
             if accountFlow?.isAuthenticated == true {

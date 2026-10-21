@@ -19,7 +19,7 @@ class VMCreateNameTests(unittest.TestCase):
 
     def create(self, server: ResizeSocket, name: str | None) -> None:
         environment = {key: value for key, value in os.environ.items() if not key.startswith("CMUX")}
-        environment.update({"CMUX_CLI_SENTRY_DISABLED": "1", "AppleLanguages": "(en)"})
+        environment.update({"AppleLanguages": "(en)"})
         arguments = [self.cli, "--socket", server.path, "vm", "new", "--detach"]
         if name is not None:
             arguments += ["--name", name]

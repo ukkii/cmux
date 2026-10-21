@@ -80,7 +80,6 @@ struct CLISendQueuedOutputTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment.removeValue(forKey: "CMUX_WORKSPACE_ID")
         environment.removeValue(forKey: "CMUX_SURFACE_ID")
         // Pin the child CLI to English so the queued-marker assertion is

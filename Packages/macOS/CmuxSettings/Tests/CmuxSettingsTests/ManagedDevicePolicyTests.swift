@@ -195,7 +195,6 @@ struct ManagedDevicePolicyTests {
         #expect(ManagedDevicePolicyKey.disableRemoteConnections.rawValue == "DisableRemoteConnections")
         #expect(ManagedDevicePolicyKey.disableFileTransfer.rawValue == "DisableFileTransfer")
         #expect(ManagedDevicePolicyKey.disableIrohNetworking.rawValue == "DisableIrohNetworking")
-        #expect(ManagedDevicePolicyKey.disableTelemetry.rawValue == "DisableTelemetry")
         #expect(ManagedDevicePolicyKey.disableAutomationWebhooks.rawValue == "DisableAutomationWebhooks")
         #expect(ManagedDevicePolicyKey.disableTLSTrustBypass.rawValue == "DisableTLSTrustBypass")
         #expect(ManagedDevicePolicyKey.disableComputerUse.rawValue == "DisableComputerUse")

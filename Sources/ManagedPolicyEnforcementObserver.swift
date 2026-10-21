@@ -55,7 +55,7 @@ final class ManagedPolicyEnforcementObserver {
     /// Settings lock: a transition only needs the change signal — except
     /// Computer Use, whose helper is re-applied on both directions.
     private static let settingsVisibleKeys: [ManagedDevicePolicyKey] = [
-        .disableTelemetry, .disableAutomationWebhooks,
+        .disableAutomationWebhooks,
         .disableTLSTrustBypass, .disableComputerUse, .disableCustomSidebars,
         .disableAICredentialUpload,
     ]

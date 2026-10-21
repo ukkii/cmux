@@ -1,6 +1,360 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "statusMenu.profiling.previewFolderFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture folder: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャプチャフォルダ: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufzeichnungsordner: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dossier de capture : %@"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مجلد الالتقاط: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Carpeta de captura: %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "擷取資料夾：%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捕获文件夹：%@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캡처 폴더: %@"
+          }
+        }
+      }
+    },
+    "statusMenu.profiling.showInFinder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finderで表示"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Finder zeigen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher dans le Finder"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار في Finder"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostrar en Finder"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Finder 中顯示"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在访达中显示"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finder에서 보기"
+          }
+        }
+      }
+    },
+    "statusMenu.profiling.capturePreviewLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture preview"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャプチャのプレビュー"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau der Aufzeichnung"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aperçu de la capture"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "معاينة الالتقاط"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vista previa de la captura"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "擷取預覽"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捕获预览"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캡처 미리보기"
+          }
+        }
+      }
+    },
+    "statusMenu.profiling.readyLocal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The capture is saved on this Mac. Use Show in Finder to open it."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャプチャはこのMacに保存されました。「Finderで表示」で開けます。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Aufzeichnung ist auf diesem Mac gespeichert. Öffne sie mit „Im Finder zeigen“."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La capture est enregistrée sur ce Mac. Utilisez « Afficher dans le Finder » pour l’ouvrir."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم حفظ الالتقاط على هذا الـ Mac. استخدم «إظهار في Finder» لفتحه."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La captura se guardó en este Mac. Usa Mostrar en Finder para abrirla."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "擷取已儲存在這台 Mac 上。使用「在 Finder 中顯示」來開啟。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捕获已保存在这台 Mac 上。使用“在访达中显示”打开。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캡처가 이 Mac에 저장되었습니다. Finder에서 보기로 여세요."
+          }
+        }
+      }
+    },
+    "statusMenu.profiling.captureFilesFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d profiling files in the capture folder."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャプチャフォルダにプロファイリングファイルが%d個あります。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Profiling-Dateien im Aufzeichnungsordner."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d fichiers de profilage dans le dossier de capture."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d من ملفات التحليل في مجلد الالتقاط."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d archivos de perfilado en la carpeta de captura."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "擷取資料夾中有 %d 個效能分析檔案。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捕获文件夹中有 %d 个性能分析文件。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캡처 폴더에 프로파일링 파일 %d개가 있습니다."
+          }
+        }
+      }
+    },
+    "statusMenu.profiling.captureWaiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The capture folder will be ready after capture."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャプチャ完了後にキャプチャフォルダが利用可能になります。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Aufzeichnungsordner ist nach der Aufzeichnung bereit."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le dossier de capture sera prêt après la capture."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيكون مجلد الالتقاط جاهزًا بعد الالتقاط."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La carpeta de captura estará lista después de la captura."
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "擷取完成後即可使用擷取資料夾。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捕获完成后即可使用捕获文件夹。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "캡처가 끝나면 캡처 폴더가 준비됩니다."
+          }
+        }
+      }
+    },
     "browser.omnibar.accessibilityLabel": {
       "extractionState": "manual",
       "localizations": {
@@ -305360,363 +305714,6 @@
         }
       }
     },
-    "settings.app.telemetry": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرسال بيانات تحليلية مجهولة"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Šalji anonimnu telemetriju"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send anonym telemetri"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anonyme Telemetriedaten senden"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send anonymous telemetry"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar telemetría anónima"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer des données de télémétrie anonymes"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Invia telemetria anonima"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "匿名のテレメトリを送信"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "익명 원격 측정 전송"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send anonym telemetri"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wysyłaj anonimową telemetrię"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar telemetria anônima"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отправлять анонимную телеметрию"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ส่งข้อมูลการวิเคราะห์แบบไม่ระบุตัวตน"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anonim telemetri gönder"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Надсилати анонімну телеметрію"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送匿名遥测数据"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送匿名遙測資料"
-          }
-        }
-      }
-    },
-    "settings.app.telemetry.subtitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "مشاركة بيانات الأعطال والاستخدام المجهولة للمساعدة في تحسين cmux."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dijelite anonimizirane podatke o padovima i korištenju kako biste pomogli u poboljšanju cmux."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Del anonymiserede nedbrud- og brugsdata for at hjælpe med at forbedre cmux."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anonymisierte Absturz- und Nutzungsdaten teilen, um cmux zu verbessern."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share anonymized crash and usage data to help improve cmux."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Compartir datos anónimos de fallos y uso para ayudar a mejorar cmux."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partager des données anonymisées de plantage et d'utilisation pour aider à améliorer cmux."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Condividi dati anonimi su arresti anomali e utilizzo per migliorare cmux."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmuxの改善に役立てるため、匿名化されたクラッシュおよび使用状況データを共有します。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux 개선을 위해 익명화된 충돌 및 사용 데이터를 공유합니다."
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Del anonymiserte krasj- og bruksdata for å bidra til å forbedre cmux."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Udostępniaj zanonimizowane dane o awariach i użyciu, aby pomóc ulepszyć cmux."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Compartilhar dados anonimizados de falhas e uso para ajudar a melhorar o cmux."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Делиться анонимными данными о сбоях и использовании для улучшения cmux."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "แชร์ข้อมูลการขัดข้องและการใช้งานแบบไม่ระบุตัวตนเพื่อช่วยปรับปรุง cmux"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux'u iyileştirmek için anonimleştirilmiş çökme ve kullanım verilerini paylaş."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Надсилати анонімні дані про збої та використання для покращення cmux."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分享匿名的崩溃和使用数据，帮助改进 cmux。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分享匿名的當機與使用資料，以協助改善 cmux。"
-          }
-        }
-      }
-    },
-    "settings.app.telemetry.subtitleChanged": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يسري التغيير عند التشغيل التالي."
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Promjena stupa na snagu pri sljedećem pokretanju."
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ændringen træder i kraft ved næste start."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Änderung wird beim nächsten Start wirksam."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change takes effect on next launch."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El cambio se aplicará en el próximo inicio."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La modification prendra effet au prochain lancement."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La modifica avrà effetto al prossimo avvio."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "変更は次回起動時に反映されます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "변경 사항은 다음 실행 시 적용됩니다."
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Endringen trer i kraft ved neste oppstart."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zmiana zacznie obowiązywać po ponownym uruchomieniu."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "A alteração terá efeito na próxima inicialização."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Изменение вступит в силу при следующем запуске."
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "การเปลี่ยนแปลงจะมีผลเมื่อเปิดใหม่ครั้งถัดไป"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Değişiklik bir sonraki başlatmada geçerli olur."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Зміна набуде чинності при наступному запуску."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "更改将在下次启动时生效。"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "變更將在下次啟動時生效。"
-          }
-        }
-      }
-    },
     "settings.app.theme": {
       "extractionState": "manual",
       "localizations": {
@@ -352284,125 +352281,6 @@
         }
       }
     },
-    "settings.search.alias.setting.app.telemetry": {
-      "extractionState": "manual",
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy تطبيق عام تفضيلات سلوك شريط القائمة حالة الشريط الجانبي قياس استخدام تحليلات تعطل تقارير مجهول خصوصية التطبيق"
-          }
-        },
-        "bs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy aplikacija opće postavke ponašanje dock traka menija status bočna telemetrija analitika rušenje izvještaji korištenje anonimno privatnost"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy app generelt indstillinger adfærd dock menulinje status sidepanel telemetri analyse nedbrud rapporter brug anonym privatliv"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy app allgemein einstellungen verhalten dock menüleiste status seitenleiste telemetrie analyse absturz berichte nutzung anonym datenschutz"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy aplicación general preferencias comportamiento dock barra de menú estado lateral telemetría analíticas fallos informes uso anónimo privacidad App"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy application général préférences comportement dock barre de menus état latérale télémétrie analytique plantage rapports utilisation anonyme confidentialité App"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy app generale preferenze comportamento dock barra menu stato laterale telemetria analisi rapporti utilizzo anonimo"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy テレメトリ 分析 クラッシュレポート 使用状況 匿名 プライバシー"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy 앱 일반 환경설정 동작 독 메뉴 막대 상태 사이드바 텔레메트리 분석 충돌 보고서 사용량 익명 개인정보"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy app generelt innstillinger oppførsel dock menylinje status sidepanel telemetri analyse krasj rapporter bruk anonym personvern"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy aplikacja ogólne preferencje zachowanie dock pasek menu status boczny telemetria analityka awaria raporty użycie anonimowe prywatność"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy app geral preferências comportamento dock barra de menu status lateral telemetria análises falhas relatórios uso anônimo privacidade"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy приложение общие настройки поведение док строка меню статус боковая панель телеметрия аналитика сбой отчеты использование анонимно приватность"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy แอป ทั่วไป ค่ากำหนด พฤติกรรม ด็อก แถบเมนู สถานะ แถบด้านข้าง เทเลเมทรี วิเคราะห์ ขัดข้อง รายงาน การใช้งาน นิรนาม ความเป็นส่วนตัว"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy uygulama genel tercihler davranış dock menü çubuğu durum kenar telemetri analiz çökme raporlar kullanım anonim gizlilik"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy програма загальні параметри поведінка док рядок меню статус бічна панель телеметрія аналітика збій звіти використання анонімно приватність"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy 应用 通用 偏好设置 行为 程序坞 菜单栏 状态 侧边栏 遥测 分析 崩溃 报告 使用 匿名 隐私"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "app.sendAnonymousTelemetry analytics crash reports sentry posthog usage anonymous privacy 應用程式 一般 偏好設定 行為 Dock 選單列 狀態 側邊欄 遙測 分析 當機 報告 使用 匿名 隱私 App"
-          }
-        }
-      }
-    },
     "settings.search.alias.setting.app.terminal-config": {
       "extractionState": "manual",
       "localizations": {
@@ -397126,750 +397004,6 @@
         }
       }
     },
-    "sidebar.help.feedback.attachImages": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attach Images"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "画像を添付"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이미지 첨부"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Прикріпити зображення"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附加图片"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bilder anhängen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Joindre des images"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرفاق صور"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adjuntar imágenes"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附加圖片"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.attachImages.prompt": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attach"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Прикріпити"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附加"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anhängen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Joindre"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرفاق"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adjuntar"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附加"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.attachImages.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attach Images"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "画像を添付"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이미지 첨부"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Прикріпити зображення"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附加图片"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bilder anhängen"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Joindre des images"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرفاق صور"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Adjuntar imágenes"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附加圖片"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.attachmentsHint": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Up to 10 images."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "画像は最大10枚まで添付できます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "최대 10장의 이미지."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "До 10 зображень."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最多 10 张图片。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bis zu 10 Bilder."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jusqu’à 10 images."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ما يصل إلى 10 صور."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hasta 10 imágenes."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最多 10 張圖片。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.cancel": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancel"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "キャンセル"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "취소"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Скасувати"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Annuler"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancelar"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取消"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取消"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Abbrechen"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إلغاء"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.connectionError": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Couldn't send feedback. Check your connection and try again."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "フィードバックを送信できませんでした。接続を確認して、もう一度お試しください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "피드백을 보내지 못했습니다. 연결을 확인하고 다시 시도하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Не вдалося надіслати відгук. Перевірте підключення та спробуйте ще раз."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法发送反馈。请检查网络连接后重试。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feedback konnte nicht gesendet werden. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d’envoyer les commentaires. Vérifiez votre connexion et réessayez."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر إرسال الملاحظات. تحقق من اتصالك وحاول مجدداً."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se pudieron enviar los comentarios. Comprueba la conexión e inténtalo de nuevo."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "無法傳送意見反應。請檢查您的連線並重試。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.done": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Done"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完了"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "완료"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Готово"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Erledigt"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fait"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تم"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hecho"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完畢"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完成"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.email": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your Email"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールアドレス"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이메일 주소"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ваш email"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你的邮箱"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ihre E-Mail"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Votre adresse e-mail"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "بريدك الإلكتروني"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu correo electrónico"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "您的電子郵件"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.emailPlaceholder": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "you@example.com"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "you@example.com"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "you@example.com"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "you@example.com"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.emptyMessage": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter a message before sending."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "送信する前にメッセージを入力してください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "보내기 전에 메시지를 입력하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Введіть повідомлення перед надсиланням."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送前请输入内容。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Geben Sie eine Nachricht ein, bevor Sie senden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saisissez un message avant d’envoyer."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "أدخل رسالة قبل الإرسال."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Escribe un mensaje antes de enviar."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送前請先輸入訊息。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.endpointError": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feedback is unavailable right now. Email founders@manaflow.com instead."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "現在フィードバックを送信できません。代わりに founders@manaflow.com までメールしてください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "현재 피드백을 사용할 수 없습니다. 대신 founders@manaflow.com으로 이메일을 보내주세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Відгуки зараз недоступні. Напишіть на founders@manaflow.com."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "反馈功能暂时不可用。请改为发送邮件至 founders@manaflow.com。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feedback ist zurzeit nicht verfügbar. Senden Sie stattdessen eine E-Mail an founders@manaflow.com."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Les retours ne sont pas disponibles pour le moment. Envoyez plutôt un e-mail à founders@manaflow.com."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "الملاحظات غير متوفرة الآن. يرجى مراسلة founders@manaflow.com عبر البريد الإلكتروني بدلاً من ذلك."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Los comentarios no están disponibles en este momento. Envía un correo a founders@manaflow.com en su lugar."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目前無法使用意見反應功能。請改為傳送電子郵件至 founders@manaflow.com。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.genericError": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Couldn't send feedback. Please try again."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "フィードバックを送信できませんでした。もう一度お試しください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "피드백을 보내지 못했습니다. 다시 시도하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Не вдалося надіслати відгук. Спробуйте ще раз."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法发送反馈。请重试。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feedback konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d’envoyer les commentaires. Veuillez réessayer."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر إرسال الملاحظات. يرجى المحاولة مرة أخرى."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se pudieron enviar los comentarios. Inténtalo de nuevo."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "無法傳送意見反應。請重試。"
-          }
-        }
-      }
-    },
     "sidebar.help.feedback.imageTooLarge": {
       "extractionState": "manual",
       "localizations": {
@@ -397935,981 +397069,6 @@
         }
       }
     },
-    "sidebar.help.feedback.invalidEmail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter a valid email address."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "有効なメールアドレスを入力してください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "올바른 이메일 주소를 입력하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Введіть дійсну електронну адресу."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请输入有效的邮箱地址。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Geben Sie eine gültige E-Mail-Adresse ein."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saisissez une adresse e-mail valide."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "أدخل عنوان بريد إلكتروني صالحاً."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Introduce una dirección de correo electrónico válida."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "請輸入有效的電子郵件地址。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.invalidImageSelection": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "One of the selected files could not be attached."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "選択したファイルのうち1つを添付できませんでした。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "선택한 파일 중 하나를 첨부할 수 없습니다."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Один з вибраних файлів не вдалося прикріпити."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "所选文件中有一个无法附加。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eine der ausgewählten Dateien konnte nicht angehängt werden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L’un des fichiers sélectionnés n’a pas pu être joint."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر إرفاق أحد الملفات المحددة."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se pudo adjuntar uno de los archivos seleccionados."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "無法附加其中一個選取的檔案。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.message": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Message"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メッセージ"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "메시지"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Повідомлення"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nachricht"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "رسالة"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mensaje"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "訊息"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "内容"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Message"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.messagePlaceholder": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share feedback, feature requests, or issues."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "フィードバック、機能要望、不具合をお知らせください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "피드백, 기능 요청 또는 문제를 공유하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Поділіться відгуком, пропозиціями або повідомте про проблему."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分享反馈、功能建议或问题。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Teilen Sie Feedback, Funktionsanfragen oder Probleme."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partagez vos commentaires, demandes de fonctionnalités ou problèmes."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "شاركنا ملاحظاتك، أو طلبات الميزات، أو المشاكل."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Comparte comentarios, solicitudes de funciones o problemas."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分享意見反應、功能需求或問題。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.messageTooLong": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your message is too long."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メッセージが長すぎます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "메시지가 너무 깁니다."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ваше повідомлення занадто довге."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你的内容过长。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ihre Nachricht ist zu lang."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Votre message est trop long."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "رسالتك طويلة جداً."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu mensaje es demasiado largo."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "您的訊息過長。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.note": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You can also reach us at founders@manaflow.com."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "founders@manaflow.com 宛てに直接ご連絡いただくこともできます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "founders@manaflow.com으로도 연락하실 수 있습니다."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ви також можете написати нам на founders@manaflow.com."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你也可以通过 founders@manaflow.com 联系我们。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sie können uns auch unter founders@manaflow.com erreichen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vous pouvez également nous contacter à l'adresse founders@manaflow.com."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يمكنك أيضاً التواصل معنا عبر founders@manaflow.com."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "También puedes contactarnos en founders@manaflow.com."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "您也可以透過 founders@manaflow.com 與我們聯絡。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.rateLimited": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Too many feedback attempts. Please try again later."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "フィードバックの送信回数が多すぎます。しばらくしてからもう一度お試しください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "피드백 시도가 너무 많습니다. 나중에 다시 시도하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Занадто багато спроб надсилання відгуку. Спробуйте пізніше."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "反馈提交过于频繁。请稍后重试。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zu viele Feedback-Versuche. Bitte versuchen Sie es später noch einmal."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trop de tentatives d’envoi de commentaires. Veuillez réessayer plus tard."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "محاولات إرسال ملاحظات كثيرة جداً. يرجى المحاولة مرة أخرى لاحقاً."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Demasiados intentos de envío. Inténtalo de nuevo más tarde."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "嘗試傳送意見反應的次數過多。請稍後重試。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.removeAttachment": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remove"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "削除"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "제거"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Видалити"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Entfernen"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Eliminar"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "移除"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Supprimer"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إزالة"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "移除"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.send": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "送信"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "보내기"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Надіслати"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Senden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرسال"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.successBody": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You can also reach us at founders@manaflow.com."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "founders@manaflow.com 宛てに直接ご連絡いただくこともできます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "founders@manaflow.com으로도 연락하실 수 있습니다."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ви також можете написати нам на founders@manaflow.com."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你也可以通过 founders@manaflow.com 联系我们。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sie können uns auch unter founders@manaflow.com erreichen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vous pouvez également nous contacter à l'adresse founders@manaflow.com."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يمكنك أيضاً التواصل معنا عبر founders@manaflow.com."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "También puedes contactarnos en founders@manaflow.com."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "您也可以透過 founders@manaflow.com 與我們聯絡。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.successTitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Thanks for the feedback."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "フィードバックありがとうございます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "피드백을 보내주셔서 감사합니다."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Дякуємо за відгук."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "感谢你的反馈。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vielen Dank für das Feedback."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Merci pour vos commentaires."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "شكراً على ملاحظاتك."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gracias por tus comentarios."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "感謝您的意見反應。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send Feedback"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "フィードバックを送信"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "피드백 보내기"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Надіслати відгук"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feedback senden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer des commentaires"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرسال الملاحظات"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar comentarios"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送意見反應"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送反馈"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.tooManyImages": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You can attach up to 10 images."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "画像は最大10枚まで添付できます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "최대 10장의 이미지를 첨부할 수 있습니다."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Можна прикріпити до 10 зображень."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最多可附加 10 张图片。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sie können bis zu 10 Bilder anhängen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vous pouvez joindre jusqu’à 10 images."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يمكنك إرفاق ما يصل إلى 10 صور."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Puedes adjuntar hasta 10 imágenes."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "您最多可以附加 10 張圖片。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.totalImagesTooLarge": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "These images are too large to send together. Remove a few and try again."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "これらの画像はまとめて送信するには大きすぎます。いくつか削除してもう一度お試しください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이미지가 너무 커서 함께 보낼 수 없습니다. 몇 개를 제거하고 다시 시도하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ці зображення занадто великі для надсилання разом. Видаліть кілька та спробуйте ще раз."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这些图片总体积过大，无法一起发送。请移除几张后重试。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Diese Bilder sind zu groß, um sie zusammen zu senden. Entfernen Sie einige und versuchen Sie es erneut."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ces images sont trop volumineuses pour être envoyées ensemble. Supprimez-en quelques-unes et réessayez."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "هذه الصور كبيرة جداً ليتم إرسالها معاً. يرجى إزالة بعضها والمحاولة مجدداً."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Estas imágenes son demasiado grandes para enviarse juntas. Elimina algunas e inténtalo de nuevo."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "這些圖片過大，無法同時傳送。請移除幾張圖片後重試。"
-          }
-        }
-      }
-    },
-    "sidebar.help.feedback.validationError": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check your message and attachments, then try again."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メッセージと添付ファイルを確認して、もう一度お試しください。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "메시지와 첨부 파일을 확인한 후 다시 시도하세요."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Перевірте повідомлення та вкладення, потім спробуйте ще раз."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请检查内容和附件后重试。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Überprüfen Sie Ihre Nachricht und Anhänge und versuchen Sie es dann erneut."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vérifiez votre message et vos pièces jointes, puis réessayez."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تحقق من رسالتك والمرفقات، ثم حاول مجدداً."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Comprueba tu mensaje y los archivos adjuntos, e inténtalo de nuevo."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "請檢查您的訊息與附件，然後重試。"
-          }
-        }
-      }
-    },
     "sidebar.help.githubIssues": {
       "extractionState": "manual",
       "localizations": {
@@ -398971,71 +397130,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "GitHub 议题"
-          }
-        }
-      }
-    },
-    "sidebar.help.sendFeedback": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send Feedback"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "フィードバックを送信"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "피드백 보내기"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Надіслати відгук"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Feedback senden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer des commentaires"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرسال الملاحظات"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar comentarios"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送回饋"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送反馈"
           }
         }
       }
@@ -440423,303 +438517,6 @@
         }
       }
     },
-    "statusMenu.profiling.archiveReadyFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attachment: %@"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付ファイル: %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件：%@"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anhang: %@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pièce jointe : %@"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "المرفق: %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Archivo adjunto: %@"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件：%@"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부 파일: %@"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.attachmentReadyFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d profiling file will be zipped and attached."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d profiling files will be zipped and attached."
-                }
-              }
-            }
-          }
-        },
-        "ja": {
-          "variations": {
-            "plural": {
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d個のプロファイリングファイルがZIP圧縮されて添付されます。"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans": {
-          "variations": {
-            "plural": {
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 个性能分析文件将被压缩并附加。"
-                }
-              }
-            }
-          }
-        },
-        "de": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d Profiling-Datei wird gezippt und angehängt."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d Profiling-Dateien werden gezippt und angehängt."
-                }
-              }
-            }
-          }
-        },
-        "fr": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d fichier de profilage sera compressé et joint."
-                }
-              },
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d fichiers de profilage seront compressés et joints."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d fichiers de profilage seront compressés et joints."
-                }
-              }
-            }
-          }
-        },
-        "ar": {
-          "variations": {
-            "plural": {
-              "zero": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "لن يتم ضغط أو إرفاق أي ملفات تحليل أداء (%d)."
-                }
-              },
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "سيتم ضغط ملف تحليل أداء واحد (%d) وإرفاقه."
-                }
-              },
-              "two": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "سيتم ضغط ملفي تحليل أداء (%d) وإرفاقهما."
-                }
-              },
-              "few": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "سيتم ضغط %d ملفات تحليل أداء وإرفاقها."
-                }
-              },
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "سيتم ضغط %d ملفًا لتحليل الأداء وإرفاقها."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "سيتم ضغط %d ملف لتحليل الأداء وإرفاقها."
-                }
-              }
-            }
-          }
-        },
-        "es": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Se comprimirá en ZIP y se adjuntará %d archivo de perfilado."
-                }
-              },
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Se comprimirán en ZIP y se adjuntarán %d archivos de perfilado."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Se comprimirán en ZIP y se adjuntarán %d archivos de perfilado."
-                }
-              }
-            }
-          }
-        },
-        "zh-Hant": {
-          "variations": {
-            "plural": {
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 個效能分析檔案將會壓縮並附加。"
-                }
-              }
-            }
-          }
-        },
-        "ko": {
-          "variations": {
-            "plural": {
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d개의 프로파일링 파일이 압축되어 첨부됩니다."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.attachmentWaiting": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attachment will be ready after capture."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "キャプチャ後に添付ファイルを準備します。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "采集完成后附件即可用。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anhang ist nach der Erfassung bereit."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La pièce jointe sera prête après la capture."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "سيكون المرفق جاهزاً بعد الالتقاط."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El archivo adjunto estará listo después de la captura."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件將在擷取完成後準備就緒。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "캡처가 완료되면 첨부 파일이 준비됩니다."
-          }
-        }
-      }
-    },
     "statusMenu.profiling.bodyFormat": {
       "extractionState": "manual",
       "localizations": {
@@ -441194,200 +438991,6 @@
         }
       }
     },
-    "statusMenu.profiling.emailFailed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The email could not be sent."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールを送信できませんでした。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "邮件发送失败。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die E-Mail konnte nicht gesendet werden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L'e-mail n'a pas pu être envoyé."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر إرسال البريد الإلكتروني."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se pudo enviar el correo electrónico."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "無法傳送電子郵件。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이메일을 전송하지 못했습니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.emailLabel": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your email"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールアドレス"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ihre E-Mail"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Votre email"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "البريد الإلكتروني الخاص بك"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu correo electrónico"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "您的電子郵件"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你的邮箱"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "귀하의 이메일"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.emailPlaceholder": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "you@example.com"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "you@example.com"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.emailSent": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Email sent."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールを送信しました。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "邮件已发送。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E-Mail gesendet."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E-mail envoyé."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تم إرسال البريد الإلكتروني."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Correo electrónico enviado."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "電子郵件已傳送。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이메일 전송됨."
-          }
-        }
-      }
-    },
     "statusMenu.profiling.failedBody": {
       "extractionState": "manual",
       "localizations": {
@@ -441801,65 +439404,6 @@
         }
       }
     },
-    "statusMenu.profiling.invalidEmail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter a valid email address so we can follow up."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "返信できるように有効なメールアドレスを入力してください。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请输入有效的邮箱地址，以便我们跟进。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Geben Sie eine gültige E-Mail-Adresse ein, damit wir uns bei Ihnen melden können."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Saisissez une adresse e-mail valide afin que nous puissions faire un suivi."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "أدخل عنوان بريد إلكتروني صالحاً حتى نتمكن من المتابعة."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Introduzca una dirección de correo electrónico válida para que podamos hacer un seguimiento."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "請輸入有效的電子郵件地址以便我們後續聯絡。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "확인 후 연락드릴 수 있도록 올바른 이메일 주소를 입력해 주세요."
-          }
-        }
-      }
-    },
     "statusMenu.profiling.launchFailed": {
       "extractionState": "manual",
       "localizations": {
@@ -441915,65 +439459,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "프로파일링을 시작할 수 없습니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.noteLabel": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anything else we should know?"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "補足情報"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "还有其他需要我们了解的吗？"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sollten wir sonst noch etwas wissen?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Autre chose que nous devrions savoir ?"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "هل هناك أي شيء آخر يجب أن نعرفه؟"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "¿Hay algo más que debamos saber?"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "還有其他我們應該知道的事項嗎？"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "기타 참고할 사항이 더 있나요?"
           }
         }
       }
@@ -442214,242 +439699,6 @@
         }
       }
     },
-    "statusMenu.profiling.packageFailed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Could not package the attachment."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付ファイルをパッケージ化できませんでした。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法打包附件。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der Anhang konnte nicht verpackt werden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible de créer le paquet de la pièce jointe."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر حزم المرفق."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se pudo empaquetar el archivo adjunto."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "無法打包附件。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부 파일을 패키징할 수 없습니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.packageReady": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attachment is ready to preview."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付ファイルをプレビューできます。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件已可预览。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anhang ist zur Vorschau bereit."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La pièce jointe est prête à être prévisualisée."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "المرفق جاهز للمعاينة."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El archivo adjunto está listo para la vista previa."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件已準備好進行預覽。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부 파일 미리보기가 준비되었습니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.packagingAttachment": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Packaging..."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "パッケージ化中..."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在打包..."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wird verpackt..."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Création du paquet..."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يجري الحزم..."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Empaquetando..."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在打包..."
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "패키징 중..."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.packagingAttachmentStatus": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Creating the zip attachment for preview."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "プレビュー用のzip添付ファイルを作成しています。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在创建用于预览的 zip 附件。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zip-Anhang wird für die Vorschau erstellt."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Création de la pièce jointe zip pour la prévisualisation."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يجري إنشاء مرفق zip للمعاينة."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Creando el archivo adjunto zip para la vista previa."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在建立用於預覽的 zip 附件。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "미리보기를 위한 zip 첨부 파일을 생성하는 중입니다."
-          }
-        }
-      }
-    },
     "statusMenu.profiling.permissionExplanation": {
       "extractionState": "manual",
       "localizations": {
@@ -442568,360 +439817,6 @@
         }
       }
     },
-    "statusMenu.profiling.previewArchiveNote": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The email includes a zip with traces, logs, summary.md, and system-info.txt."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールにはトレース、ログ、summary.md、system-info.txtを含むzipが添付されます。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "邮件中包含一个 zip，内含跟踪数据、日志、summary.md 和 system-info.txt。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die E-Mail enthält ein Zip-Archiv mit Traces, Protokollen, summary.md und system-info.txt."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L'e-mail comprend un fichier zip contenant les traces, les journaux, summary.md et system-info.txt."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يتضمن البريد الإلكتروني ملف zip يحتوي على تتبعات وسجلات و summary.md و system-info.txt."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El correo electrónico incluye un archivo zip con trazas, registros, summary.md y system-info.txt."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "該電子郵件包含一個包含追蹤、記錄、summary.md 和 system-info.txt 的 zip 檔案。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이메일에는 추적 정보, 로그, summary.md 및 system-info.txt가 포함된 zip 파일이 첨부되어 있습니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.previewAttachment": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Preview Attachment"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付ファイルをプレビュー"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vorschau des Anhangs"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aperçu de la pièce jointe"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "معاينة المرفق"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vista previa del archivo adjunto"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "預覽附件"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "预览附件"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부파일 미리보기"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.previewAttachmentFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attachment: %@"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付ファイル: %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件：%@"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Anhang: %@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pièce jointe : %@"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "المرفق: %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Archivo adjunto: %@"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件：%@"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부 파일: %@"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.previewEmailFormat": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your email: %@"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールアドレス: %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "你的邮箱：%@"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ihre E-Mail: %@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Votre e-mail : %@"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "بريدك الإلكتروني: %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Su correo electrónico: %@"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "您的電子郵件：%@"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "사용자 이메일: %@"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.previewLabel": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Attachment preview"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付ファイルのプレビュー"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件预览"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vorschau des Anhangs"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aperçu de la pièce jointe"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "معاينة المرفق"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vista previa del archivo adjunto"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "附件預覽"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부 파일 미리보기"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.previewRecipient": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recipient: %@"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "宛先: %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "收件人：%@"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Empfänger: %@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Destinataire : %@"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "المستلم: %@"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Destinatario: %@"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "收件人：%@"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "수신자: %@"
-          }
-        }
-      }
-    },
     "statusMenu.profiling.previewSummaryHeader": {
       "extractionState": "manual",
       "localizations": {
@@ -443036,65 +439931,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "프로파일러가 캡처 폴더 작성을 완료하면 첨부 파일 미리보기가 표시됩니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.readyToReview": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Review the attachment, add context, then send the email."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添付ファイルを確認し、補足情報を追加してからメールを送信してください。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "检查附件、补充说明，然后发送邮件。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Überprüfen Sie den Anhang, fügen Sie Kontext hinzu und senden Sie dann die E-Mail."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vérifiez la pièce jointe, ajoutez du contexte, puis envoyez l'e-mail."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "راجع المرفق، وأضف سياقاً، ثم أرسل البريد الإلكتروني."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Revise el archivo adjunto, agregue contexto y luego envíe el correo electrónico."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "檢查附件、加入背景資訊，然後傳送電子郵件。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "첨부 파일을 검토하고 내용을 추가한 후 이메일을 전송하세요."
           }
         }
       }
@@ -443278,65 +440114,6 @@
         }
       }
     },
-    "statusMenu.profiling.reviewTitle": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send a cmux profile"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmuxプロファイルを送信"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送 cmux 性能分析数据"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein cmux-Profil senden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer un profil cmux"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرسال ملف تعريف لـ cmux"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar un perfil de cmux"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送 cmux 效能設定檔"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "cmux 프로파일 전송"
-          }
-        }
-      }
-    },
     "statusMenu.profiling.running": {
       "extractionState": "manual",
       "localizations": {
@@ -443455,183 +440232,6 @@
         }
       }
     },
-    "statusMenu.profiling.sendEmail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Send Email"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールを送信"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "发送邮件"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "E-Mail senden"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoyer l'e-mail"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إرسال البريد الإلكتروني"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviar correo electrónico"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "傳送電子郵件"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이메일 보내기"
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.sendingEmail": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sending..."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "送信中..."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在发送..."
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wird gesendet..."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Envoi..."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يجري الإرسال..."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enviando..."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在傳送..."
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "보내는 중..."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.sendingEmailStatus": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Packaging the profile and sending the email through Mail."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "プロファイルをパッケージ化し、Mailからメールを送信しています。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在打包分析数据并通过「邮件」发送。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Das Profil wird verpackt und die E-Mail über Mail gesendet."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Création du paquet de profil et envoi de l'e-mail via Mail."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يجري حزم ملف التعريف وإرسال البريد الإلكتروني عبر تطبيق البريد (Mail)."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Empaquetando el perfil y enviando el correo electrónico a través de Mail."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在打包效能設定檔並透過「郵件」應用程式傳送電子郵件。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "프로파일을 패키징하고 Mail 앱을 통해 이메일을 보내는 중입니다."
-          }
-        }
-      }
-    },
     "statusMenu.profiling.starting": {
       "extractionState": "manual",
       "localizations": {
@@ -443687,242 +440287,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Instruments 시작 중..."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.submitLaunchFailed": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unable to send the email."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "メールを送信できません。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法发送邮件。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die E-Mail konnte nicht gesendet werden."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Impossible d'envoyer l'e-mail."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "تعذر إرسال البريد الإلكتروني."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No se pudo enviar el correo electrónico."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "無法傳送電子郵件。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "이메일을 보낼 수 없습니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.submitTimedOut": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail did not finish in time. Stopping the send helper so you can retry."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mailが時間内に完了しませんでした。再試行できるよう送信ヘルパーを停止しています。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「邮件」未及时完成。正在停止发送辅助程序，以便你重试。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail wurde nicht rechtzeitig beendet. Der Sende-Helfer wird gestoppt, damit Sie es erneut versuchen können."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L'application Mail n'a pas terminé à temps. Arrêt de l'assistant d'envoi pour que vous puissiez réessayer."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "لم ينتهِ تطبيق البريد (Mail) في الوقت المناسب. يجري إيقاف مساعد الإرسال لتتمكن من إعادة المحاولة."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail no finalizó a tiempo. Deteniendo el asistente de envío para que pueda volver a intentarlo."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「郵件」未及時完成。正在停止傳送小幫手，以便您重試。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail 앱이 제시간에 완료되지 않았습니다. 다시 시도할 수 있도록 전송 도우미를 중단합니다."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.submitTimedOutRetry": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The Mail helper timed out and was stopped. You can try again."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mailヘルパーがタイムアウトしたため停止しました。もう一度試せます。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「邮件」辅助程序已超时并停止。你可以重试。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Die Zeitüberschreitung für den Mail-Helfer wurde erreicht und er wurde gestoppt. Sie können es erneut versuchen."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L'assistant Mail a expiré et a été arrêté. Vous pouvez réessayer."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "انتهت مهلة مساعد البريد (Mail) وتم إيقافه. يمكنك المحاولة مرة أخرى."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "El asistente de Mail agotó el tiempo de espera y se detuvo. Puede volver a intentarlo."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「郵件」小幫手逾時並已停止。您可以再試一次。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mail 도우미가 시간 초과되어 중단되었습니다. 다시 시도해 주세요."
-          }
-        }
-      }
-    },
-    "statusMenu.profiling.submitterMissing": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The bundled profile submission helper is missing."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "同梱のプロファイル送信ヘルパーが見つかりません。"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "缺少随附的分析数据提交辅助程序。"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der mitgelieferte Helfer zur Profilübermittlung fehlt."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L'assistant de soumission de profil fourni est manquant."
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "مساعد إرسال ملف التعريف المرفق مفقود."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Falta el asistente de envío de perfiles integrado."
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "遺失隨附的效能設定檔提交小幫手。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "내장된 프로파일 전송 도우미가 없습니다."
           }
         }
       }

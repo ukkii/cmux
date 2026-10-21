@@ -121,8 +121,6 @@ def run_completion(cli: str, shell: str) -> tuple[subprocess.CompletedProcess[st
         "CMUX_CLI_LEGACY_PARSER",
     ]:
         env.pop(key, None)
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
-    env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
     # A Unix socket path is capped near 104 bytes, so bind under a short
     # directory instead of the much longer platform temp directory.

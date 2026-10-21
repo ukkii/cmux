@@ -50,9 +50,6 @@
          location = "group:CMUXMobileCore">
       </FileRef>
       <FileRef
-         location = "group:CmuxSentryTelemetry">
-      </FileRef>
-      <FileRef
          location = "group:CmuxSimulatorStreamKit">
       </FileRef>
       <FileRef
@@ -87,9 +84,6 @@
          location = "group:CmuxConversation">
       </FileRef>
       <FileRef
-         location = "group:CmuxMobileAnalytics">
-      </FileRef>
-      <FileRef
          location = "group:CmuxMobileBilling">
       </FileRef>
       <FileRef
@@ -112,9 +106,6 @@
       </FileRef>
       <FileRef
          location = "group:CmuxMobileCloudUI">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxMobileCrashReporting">
       </FileRef>
       <FileRef
          location = "group:CmuxMobileDiagnostics">
@@ -235,9 +226,6 @@
          location = "group:CmuxExtensionKit">
       </FileRef>
       <FileRef
-         location = "group:CmuxFeedback">
-      </FileRef>
-      <FileRef
          location = "group:CmuxFilePreviewCore">
       </FileRef>
       <FileRef
@@ -269,9 +257,6 @@
       </FileRef>
       <FileRef
          location = "group:CmuxPhonePush">
-      </FileRef>
-      <FileRef
-         location = "group:CmuxProductAnalytics">
       </FileRef>
       <FileRef
          location = "group:CMUXProjectModel">

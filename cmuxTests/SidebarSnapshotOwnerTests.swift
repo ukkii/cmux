@@ -75,7 +75,7 @@ struct SidebarSnapshotOwnerTests {
             sidebarUnread: SidebarUnreadModel(),
             titlebarControlsLayoutModel: TitlebarControlsLayoutModel(),
             windowId: UUID(),
-            onSendFeedback: {}, onToggleSidebar: {}, onNewTab: {},
+            onToggleSidebar: {}, onNewTab: {},
             observedWindowReference: WeakWindowReference(),
             chromeBackgroundColor: .black,
             selection: .constant(.tabs),

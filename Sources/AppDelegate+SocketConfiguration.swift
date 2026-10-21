@@ -37,14 +37,6 @@ extension AppDelegate {
             TerminalController.shared.stop(cleanupDiscoveryState: true)
             return
         }
-        let path = TerminalController.shared.activeSocketPath(
-            preferredPath: config.preferredSocketPath
-        )
-        sentryBreadcrumb("socket.listener.start", category: "socket", data: [
-            "mode": config.accessMode.rawValue,
-            "path": path,
-            "source": source,
-        ])
         TerminalController.shared.reconcileSocketConfiguration(
             config,
             routingFallbackTabManager: tabManager,
@@ -57,26 +49,6 @@ extension AppDelegate {
             TerminalController.shared.stop(cleanupDiscoveryState: true)
             return
         }
-
-        let path = TerminalController.shared.activeSocketPath(
-            preferredPath: config.preferredSocketPath
-        )
-        let health = TerminalController.shared.socketListenerHealth(expectedSocketPath: path)
-        guard !health.isHealthy else {
-            TerminalController.shared.reconcileSocketConfiguration(
-                config,
-                routingFallbackTabManager: tabManager,
-                source: source
-            )
-            return
-        }
-
-        sentryBreadcrumb("socket.listener.ensure", category: "socket", data: [
-            "mode": config.accessMode.rawValue,
-            "path": path,
-            "source": source,
-            "failureSignals": health.failureSignals.joined(separator: ","),
-        ])
         TerminalController.shared.reconcileSocketConfiguration(
             config,
             routingFallbackTabManager: tabManager,
@@ -93,11 +65,6 @@ extension AppDelegate {
         let restartPath = TerminalController.shared.activeSocketPath(
             preferredPath: config.preferredSocketPath
         )
-        sentryBreadcrumb("socket.listener.restart", category: "socket", data: [
-            "mode": config.accessMode.rawValue,
-            "path": restartPath,
-            "source": source,
-        ])
         TerminalController.shared.stop(cleanupDiscoveryState: false)
         TerminalController.shared.startSocketTransport(
             config,

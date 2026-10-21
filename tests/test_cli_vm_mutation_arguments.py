@@ -110,7 +110,7 @@ class VMMutationArgumentTests(unittest.TestCase):
     def run_command(self, verb: str, *arguments: str) -> dict:
         if self.cli:
             environment = {key: value for key, value in os.environ.items() if not key.startswith("CMUX")}
-            environment.update({"CMUX_CLI_SENTRY_DISABLED": "1", "AppleLanguages": "(en)"})
+            environment.update({"AppleLanguages": "(en)"})
             with ResizeSocket({"id": "result-vm", "snapshot_id": "result-snapshot"}) as server:
                 result = subprocess.run(
                     [self.cli, "--socket", server.path, "--json", "vm", verb, *arguments],

@@ -876,11 +876,6 @@ enum CmuxEmbeddedConfigSchema {
           "default": false,
           "description": "Move a workspace to the top and show the submitted message when sending an agent prompt."
         },
-        "sendAnonymousTelemetry": {
-          "type": "boolean",
-          "default": true,
-          "description": "Allow anonymous telemetry."
-        },
         "confirmQuit": {
           "type": "string",
           "enum": ["always", "dirty-only", "never"],
@@ -2595,7 +2590,6 @@ enum CmuxEmbeddedConfigSchema {
               "openChief",
               "commandPaletteNext",
               "commandPalettePrevious",
-              "sendFeedback",
               "showNotifications",
               "jumpToUnread",
               "jumpToLastPrompt",

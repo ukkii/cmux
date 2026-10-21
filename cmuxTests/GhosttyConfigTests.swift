@@ -1216,53 +1216,6 @@ final class GhosttyConfigTests: XCTestCase {
         )
     }
 
-    func testScrollLagCaptureRequiresSustainedLag() {
-        let cases: [(samples: Int, averageMs: Double, maxMs: Double, expected: Bool)] = [
-            (4, 18, 85, false),
-            (10, 6, 85, false),
-            (10, 18, 35, false),
-            (10, 18, 85, true),
-        ]
-        for testCase in cases {
-            XCTAssertEqual(
-                GhosttyApp.shouldCaptureScrollLagEvent(
-                    samples: testCase.samples,
-                    averageMs: testCase.averageMs,
-                    maxMs: testCase.maxMs,
-                    thresholdMs: 40,
-                    nowUptime: 1000,
-                    lastReportedUptime: nil
-                ),
-                testCase.expected
-            )
-        }
-    }
-
-    func testScrollLagCaptureRespectsCooldownWindow() {
-        XCTAssertFalse(
-            GhosttyApp.shouldCaptureScrollLagEvent(
-                samples: 12,
-                averageMs: 22,
-                maxMs: 90,
-                thresholdMs: 40,
-                nowUptime: 1200,
-                lastReportedUptime: 1005,
-                cooldown: 300
-            )
-        )
-        XCTAssertTrue(
-            GhosttyApp.shouldCaptureScrollLagEvent(
-                samples: 12,
-                averageMs: 22,
-                maxMs: 90,
-                thresholdMs: 40,
-                nowUptime: 1406,
-                lastReportedUptime: 1005,
-                cooldown: 300
-            )
-        )
-    }
-
     func testClaudeCodeIntegrationDefaultsToEnabledWhenUnset() {
         let suiteName = "cmux.tests.claude-hooks.\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suiteName) else {
@@ -1360,39 +1313,6 @@ final class GhosttyConfigTests: XCTestCase {
         XCTAssertFalse(AgentIntegrationSettingsStore(defaults: defaults).suppressesSubagentNotifications)
     }
 
-    func testTelemetryDefaultsToEnabledWhenUnset() {
-        let suiteName = "cmux.tests.telemetry.\(UUID().uuidString)"
-        guard let defaults = UserDefaults(suiteName: suiteName) else {
-            XCTFail("Failed to create isolated user defaults suite")
-            return
-        }
-        defer {
-            defaults.removePersistentDomain(forName: suiteName)
-        }
-
-        let telemetry = AppCatalogSection().sendAnonymousTelemetry
-        defaults.removeObject(forKey: telemetry.userDefaultsKey)
-        XCTAssertTrue(telemetry.value(in: defaults))
-    }
-
-    func testTelemetryRespectsStoredPreference() {
-        let suiteName = "cmux.tests.telemetry.\(UUID().uuidString)"
-        guard let defaults = UserDefaults(suiteName: suiteName) else {
-            XCTFail("Failed to create isolated user defaults suite")
-            return
-        }
-        defer {
-            defaults.removePersistentDomain(forName: suiteName)
-        }
-
-        let telemetry = AppCatalogSection().sendAnonymousTelemetry
-        defaults.set(true, forKey: telemetry.userDefaultsKey)
-        XCTAssertTrue(telemetry.value(in: defaults))
-
-        defaults.set(false, forKey: telemetry.userDefaultsKey)
-        XCTAssertFalse(telemetry.value(in: defaults))
-    }
-
     private func rgb255(_ color: NSColor) -> RGB {
         let srgb = color.usingColorSpace(.sRGB)!
         var red: CGFloat = 0
@@ -1438,7 +1358,6 @@ final class GhosttyConfigTests: XCTestCase {
         for (key, value) in overrides {
             environment[key] = value
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         process.environment = environment
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = outputPipe

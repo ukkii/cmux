@@ -8,7 +8,7 @@ import Observation
 /// build the workspace pane overlay and to decide whether terminal panes draw
 /// their own unread ring. ``TmuxOverlayExperimentSettings/target(defaults:)``
 /// costs two CFPreferences lookups per call, and those lookups were the
-/// innermost frames of the main-thread hangs Sentry groups as
+/// innermost frames of the main-thread hangs tracked as
 /// CMUXTERM-MACOS-1SKP (#15439). Reading ``target`` is a stored-property
 /// read, and views that read it update when either key changes.
 @MainActor

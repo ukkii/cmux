@@ -54,7 +54,6 @@ final class OpenCodeHookRegressionTests: XCTestCase {
         environment["HOME"] = root.appendingPathComponent("home", isDirectory: true).path
         environment["XDG_CONFIG_HOME"] = xdgConfigHome.path
         environment["PATH"] = "\(binDir.path):\(environment["PATH"] ?? "/usr/bin")"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -152,7 +151,6 @@ final class OpenCodeHookRegressionTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["OPENCODE_CONFIG_DIR"] = configDir.path
         environment["PATH"] = "\(binDir.path):\(environment["PATH"] ?? "/usr/bin")"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         let result = runProcess(executablePath: cliPath, arguments: ["hooks", "opencode", "install", "--yes"], environment: environment, timeout: 5)
 
         XCTAssertFalse(result.timedOut, result.stderr)
@@ -219,7 +217,6 @@ final class OpenCodeHookRegressionTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["OPENCODE_CONFIG_DIR"] = configDir.path
         environment["PATH"] = "\(binDir.path):\(environment["PATH"] ?? "/usr/bin")"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         let result = runProcess(executablePath: cliPath, arguments: ["hooks", "opencode", "install", "--yes"], environment: environment, timeout: 5)
         XCTAssertFalse(result.timedOut, result.stderr)
         XCTAssertEqual(result.status, 0, result.stderr)
@@ -235,7 +232,6 @@ final class OpenCodeHookRegressionTests: XCTestCase {
     func testLegacyHookAliasesAreHiddenFromHelp() throws {
         let cliPath = try bundledCLIPath()
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(executablePath: cliPath, arguments: ["help"], environment: environment, timeout: 5)
 

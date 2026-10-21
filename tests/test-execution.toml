@@ -1489,10 +1489,6 @@ path = "tests/test_swift_testing_require_not_nested.py"
 lane = "linux-guard"
 
 [[test]]
-path = "tests/test_terminal_hang_release_gate.py"
-lane = "linux-guard"
-
-[[test]]
 path = "tests/test_terminfo_bright_colors.py"
 lane = "legacy"
 

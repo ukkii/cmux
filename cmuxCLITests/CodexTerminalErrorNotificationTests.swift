@@ -41,7 +41,6 @@ struct CodexTerminalErrorNotificationTests {
         environment["CMUX_WORKSPACE_ID"] = workspaceID
         environment["CMUX_SURFACE_ID"] = surfaceID
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         // Keep this foreground error fixture independent of other Codex test
         // processes in the app-host ancestry walk.
         environment["CMUX_CODEX_HOOK_PID"] = "2"

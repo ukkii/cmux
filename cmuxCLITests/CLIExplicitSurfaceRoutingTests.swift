@@ -110,7 +110,6 @@ struct CLIExplicitSurfaceRoutingTests {
         environment["CFFIXED_USER_HOME"] = temporaryHome.path
         environment["HOME"] = temporaryHome.path
         environment["CMUX_TEST_ISOLATED_SOCKET_DISCOVERY"] = "1"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = Self.runProcess(
             executablePath: try Self.bundledCLIPath(),
@@ -814,8 +813,6 @@ struct CLIExplicitSurfaceRoutingTests {
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_WORKSPACE_ID"] = Self.callerWorkspaceId
         environment["CMUX_SURFACE_ID"] = Self.callerSurfaceId
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
         return environment
     }
 

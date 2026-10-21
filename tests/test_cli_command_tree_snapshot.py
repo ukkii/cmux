@@ -38,7 +38,6 @@ def main() -> int:
             for key, value in os.environ.items()
             if not key.startswith(("CMUX_", "CMUXD_"))
         }
-        env["CMUX_CLI_SENTRY_DISABLED"] = "1"
         env["CMUX_SOCKET_PATH"] = os.path.join(tmpdir, "absent.sock")
         env["HOME"] = home
         env["CFFIXED_USER_HOME"] = home

@@ -128,7 +128,6 @@ struct ClaudeHookSessionStoreRecoveryTests {
                 "CMUX_SURFACE_ID": surfaceID,
                 "CMUX_AGENT_HOOK_STATE_DIR": root.path,
                 "CMUX_CLAUDE_HOOK_STATE_PATH": stateURL(root).path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: """
             {"session_id":"\(sessionID)","source":"startup","hook_event_name":"SessionStart"}

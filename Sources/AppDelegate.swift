@@ -1,7 +1,6 @@
 import CmuxSSHClipboardTrust
 import CmuxCloud
 import CmuxCloudBannerCore
-import CmuxProductAnalytics
 import CmuxCloudTui
 import CmuxComputerUse
 import CmuxCloudMachines
@@ -29,13 +28,11 @@ import CoreServices
 import CoreGraphics
 import UserNotifications
 import CMUXMobileCore
-import Sentry
 import WebKit
 import Combine
 import ObjectiveC.runtime
 import Darwin
 import CmuxFoundation
-import CmuxSentryReporting
 import CmuxSidebar
 import CmuxGit
 import os
@@ -612,17 +609,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// The resolved cmux accent for chrome drawing.
     var accentColor: CmuxAccentColor { accentColorObserver.current }
     private static let reloadConfigurationMenuItemIdentifier = NSUserInterfaceItemIdentifier("com.cmux.reloadConfiguration")
-    private static let cachedIsRunningUnderXCTest = MacSentryStartupPolicy.isRunningUnderXCTest(
+    private static let cachedIsRunningUnderXCTest = XCTestEnvironment.isRunningUnderXCTest(
         environment: ProcessInfo.processInfo.environment
     )
     private var isRunningUnderXCTestCached: Bool {
         Self.cachedIsRunningUnderXCTest
     }
-    /// Bridges the Mac host's transport diagnostic ring into Sentry
-    /// (breadcrumbs, structured logs, throttled failure events with the ring
-    /// export attached). Created after `SentrySDK.start`; delivery no-ops when
-    /// the SDK is off.
-    private var transportSentryReporter: TransportSentryReporter?
     private let cmuxThemePreviewReloadScheduler = MainActorDeferredActionScheduler()
     private let connectivityInvalidationSubscriberCoordinator = ConnectivityInvalidationSubscriberCoordinator()
     let workspacePresenceController = WorkspacePresenceController()
@@ -852,7 +844,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private(set) var cloudMachinePinStore: CloudMachinePinStore?
     /// "Introducing cmux cloud", shown once from the first main window.
     private(set) lazy var cloudWelcomeWindowController = CloudWelcomeWindowController()
-    private(set) lazy var cloudActivationCoordinator = CloudActivationCoordinator(prepare: { try await CmuxTuiSurfaceProviderRegistry.shared.prepareForActivation() }, cleanup: { await CmuxTuiSurfaceProviderRegistry.shared.cancelActivationPreparation() }, analytics: .app)
+    private(set) lazy var cloudActivationCoordinator = CloudActivationCoordinator(prepare: { try await CmuxTuiSurfaceProviderRegistry.shared.prepareForActivation() }, cleanup: { await CmuxTuiSurfaceProviderRegistry.shared.cancelActivationPreparation() })
     var cloudWorkspaceCoordinator: CloudWorkspaceCoordinator?
     var cloudWorkspaceOperationController: CloudWorkspaceOperationController?
     var deviceWorkspaceCreationCoordinator: DeviceWorkspaceCreationCoordinator?
@@ -1706,20 +1698,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
         CmuxTuiSurfaceProviderRegistry.shared.start(catalog: .shared)
         let env = ProcessInfo.processInfo.environment
-        let telemetryEnabled = TelemetrySettings.enabledForCurrentLaunch
-        let sentryStartupPolicy = MacSentryStartupPolicy(
-            environment: env,
-            telemetryEnabled: telemetryEnabled
-        )
-        let isRunningUnderXCTest = sentryStartupPolicy.isRunningUnderXCTest
-        if !isRunningUnderXCTest {
-            PostHogAnalytics.shared.recordLaunchIdentity()
-        }
+        let isRunningUnderXCTest = XCTestEnvironment.isRunningUnderXCTest(environment: env)
         StartupBreadcrumbLog.append(
             "appDelegate.didFinish.begin",
             fields: [
-                "xctest": isRunningUnderXCTest ? "1" : "0",
-                "telemetry": telemetryEnabled ? "1" : "0"
+                "xctest": isRunningUnderXCTest ? "1" : "0"
             ]
         )
         AppIconLaunchState.markDidFinishLaunching()
@@ -1830,94 +1813,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
 #endif
 
-        if sentryStartupPolicy.shouldStart {
-            // Pre-warm locale before Sentry to avoid a startup data race.
-            // Locale initialization (os.locale.ensureLocale / NSLocale._preferredLanguages)
-            // on the main thread can race with Sentry's background init thread
-            // calling posix.getenv, causing a SIGSEGV ~134ms after launch.
-            // Forcing locale access here before SentrySDK.start eliminates the race.
-            // Related to: #836
-            _ = Locale.current
-            _ = NSLocale.preferredLanguages
-
-            StartupBreadcrumbLog.append("appDelegate.didFinish.sentry.begin")
-            SentrySDK.start { options in
-                options.dsn = "https://ecba1ec90ecaee02a102fba931b6d2b3@o4507547940749312.ingest.us.sentry.io/4510796264636416"
-                #if DEBUG
-                options.environment = "development"
-                options.debug = true
-                #else
-                options.environment = "production"
-                options.debug = false
-                #endif
-                options.sendDefaultPii = false
-
-                // Performance tracing is disabled. The auto-instrumented root
-                // `SentryTransaction.trace` serializes its `data` / `tags` /
-                // `description` into the payload *after* `beforeSend` runs, and
-                // the root tracer is not reachable through the public Sentry API,
-                // so those fields cannot be scrubbed. Disabling transactions
-                // removes that un-scrubbable egress path while keeping crash,
-                // error, and app-hang reporting (which are independent of the
-                // trace sample rate). cmux does not consume these performance
-                // traces today.
-                options.tracesSampleRate = 0.0
-                // Keep app-hang tracking enabled, but avoid reporting short main-thread stalls
-                // as hangs in normal user interaction flows.
-                options.appHangTimeoutInterval = 8.0
-                // Attach stack traces to all events
-                options.attachStacktrace = true
-                // Avoid recursively capturing failed requests from Sentry's own ingestion endpoint.
-                options.enableCaptureFailedRequests = false
-                // Report Objective-C exceptions that reach NSApplication's
-                // reportException: hook with their reason and throw stack. The
-                // matching executor-corruption path reaches this hook before
-                // AppKit terminates the process. Some macOS 26+ drawing paths
-                // call the class-level _crashOnException: method directly and
-                // remain outside Sentry Cocoa 9.3.0's hook; a future SDK upgrade
-                // can cover those paths too.
-                options.enableUncaughtNSExceptionReporting = true
-                // Structured logs power the transport diagnostics bridge
-                // (TransportSentryReporter on the host diagnostic ring below).
-                options.enableLogs = true
-                // Redact file paths, emails, and secrets from every outgoing
-                // event, breadcrumb, structured log, and (belt-and-suspenders,
-                // if tracing is ever re-enabled) child performance span before
-                // it leaves the device.
-                let scrubber = SentryEventScrubber()
-                options.beforeSend = { event in scrubber.scrub(event) }
-                options.beforeBreadcrumb = { breadcrumb in scrubber.scrub(breadcrumb) }
-                options.beforeSendSpan = { span in scrubber.scrub(span) }
-                options.beforeSendLog = { log in scrubber.scrub(log) }
-            }
-            // Bridge the Mac host's transport diagnostic ring into Sentry:
-            // every retained event becomes a breadcrumb + budget-limited log
-            // line, and gated failures become events carrying the ring export.
-            // The tap delivers on the ring's drain task, off the main thread.
-            let transportReporter = TransportSentryReporter(
-                role: .macHost,
-                exportRing: { await MobileHostDiagnostics.log.export() }
-            )
-            transportSentryReporter = transportReporter
-            MobileHostDiagnostics.log.setEventTap { event in
-                transportReporter.ingest(event)
-            }
-            StartupBreadcrumbLog.append("appDelegate.didFinish.sentry.complete")
-        }
-
-        if telemetryEnabled && !isRunningUnderXCTest {
-            StartupBreadcrumbLog.append("appDelegate.didFinish.posthog.begin")
-            PostHogAnalytics.shared.startIfNeeded()
-            StartupBreadcrumbLog.append("appDelegate.didFinish.posthog.complete")
-        }
-        startProductAnalytics()
-        // `DisableTelemetry` (MDM) also stops the remote feature-flag fetch: it
-        // carries the same anonymous install id, and flags then use their
-        // built-in defaults.
-        if !isRunningUnderXCTest, !ManagedDevicePolicy().isEnforced(.disableTelemetry) {
-            CmuxFeatureFlags.shared.start()
-        }
-
         let forceDuplicateLaunchObserver = env["CMUX_UI_TEST_ENABLE_DUPLICATE_LAUNCH_OBSERVER"] == "1"
 
         // UI tests frequently time out waiting for the main window if we do heavyweight
@@ -1965,7 +1860,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         installShortcutDefaultsObserver()
         if !isRunningUnderXCTest {
             GlobalSearchCoordinator.shared.start()
-            sentryStartMemoryContextRefresh()
         }
         SystemWideHotkeyController.shared.start()
         AgentHibernationController.shared.start()
@@ -2136,13 +2030,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             windows: activationWindows,
             trigger: .applicationActivation
         )
-        sentryBreadcrumb("app.didBecomeActive", category: "lifecycle", data: [
-            "tabCount": tabManager?.tabs.count ?? 0
-        ])
-        if TelemetrySettings.enabledForCurrentLaunch && !isRunningUnderXCTestCached {
-            refreshProductAnalyticsActivityContext()
-            PostHogAnalytics.shared.trackActive(reason: "didBecomeActive")
-        }
         // A Mac that slept through the reply nudge picks parked replies up here.
         PhoneReplyInboxCoordinator.shared.sweepSoon(reason: "app-activation")
         // Reconcile pairing on wake so an opted-in Mac resumes and an opted-out
@@ -2549,7 +2436,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
         ClosedItemHistoryStore.shared.flushPendingSaves()
         terminationWatchdog.arm()
-        sentryStopMemoryContextRefresh()
         // Plain quit detaches local ssh clients; explicit close already killed marked sessions.
         remoteTmuxController.detachAll()
         // Best-effort presence goodbye; unclean exits are covered by the
@@ -2636,12 +2522,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         self.newMachineSheetPresenter = newMachineSheetPresenter
         self.browserDataImportCoordinator = browserDataImportCoordinator
         self.computerUseRuntimeService = computerUseRuntimeService
-        let cloudUploader = CloudTelemetryUploader(
-            auth: auth.coordinator, baseURL: CloudTelemetryUploader.telemetryBaseURL, client: .current()
-        )
-        cloudUploader.attach(to: auth.coordinator.rateLimitTelemetry)
-        Task { await cloudUploader.resumePending() }
-        let cloudOperations = CloudOperationRecorder(uploader: cloudUploader, identity: { [weak coordinator = auth.coordinator] in
+        let cloudOperations = CloudOperationRecorder(identity: { [weak coordinator = auth.coordinator] in
             coordinator?.authenticatedSessionIdentity
         })
         self.cloudOperations = cloudOperations
@@ -2652,7 +2533,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             auth: auth.coordinator,
             checkpointRenames: SurfaceCatalog.shared.cloudRenameCoordinator,
             operations: cloudOperations,
-            telemetry: .live(),
             isCloudEnabled: { CloudMachinesFeature.offMainIsEnabled() }, isCloudAvailable: { CloudMachinesFeature.offMainIsAvailable() }
         )
         TerminalController.shared.cloudTunnel = cloudTunnel
@@ -2802,13 +2682,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return pendingCrashScanTask
         }
         let task = Task {
-            let pendingCrash = await GhosttyCrashBreadcrumb.pendingCrashFromDefaultStorage()
-            if let pendingCrash {
-                // Mirror the previous run's crash into PostHog Error Tracking
-                // so crash rate is comparable by app version (#12717).
-                PostHogAnalytics.shared.captureCrashException(pendingCrash: pendingCrash)
-            }
-            return pendingCrash
+            await GhosttyCrashBreadcrumb.pendingCrashFromDefaultStorage()
         }
         pendingCrashScanTask = task
         return task
@@ -12386,11 +12260,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             "selected=\(snapshot.selectedWorkspace)"
         )
     }
-
-    @objc func triggerSentryTestCrash(_ sender: Any?) {
-        guard SentrySDK.isEnabled else { return }
-        SentrySDK.crash()
-    }
 #endif
 
 #if DEBUG
@@ -15761,17 +15630,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
 
-        if matchConfiguredShortcut(event: event, action: .sendFeedback) {
-            guard let targetContext = preferredMainWindowContextForShortcuts(event: event),
-                  let targetWindow = targetContext.window ?? windowForMainWindowId(targetContext.windowId) else {
-                return false
-            }
-            setActiveMainWindow(targetWindow)
-            bringToFront(targetWindow)
-            NotificationCenter.default.post(name: .feedbackComposerRequested, object: targetWindow)
-            return true
-        }
-
         // Check Jump to Unread shortcut
         if matchConfiguredShortcut(event: event, action: .jumpToUnread) {
 #if DEBUG
@@ -18530,9 +18388,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         register: @escaping (CFURL) -> OSStatus = { url in
             LSRegisterURL(url, true)
         },
-        breadcrumb: @escaping (_ message: String, _ data: [String: Any]) -> Void = { message, data in
-            sentryBreadcrumb(message, category: "startup", data: data)
-        }
+        breadcrumb: @escaping (_ message: String, _ data: [String: Any]) -> Void = { _, _ in }
     ) {
         let normalizedURL = bundleURL.standardizedFileURL
         breadcrumb("launchservices.register.schedule", [
@@ -18611,7 +18467,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 )
                 app.activate(options: [.activateAllWindows])
                 // _exit: skip atexit handlers and static teardown while
-                // Ghostty and Sentry threads are still running.
+                // Ghostty threads are still running.
                 _exit(0)
             case .replaceExisting:
                 quitRequestedPids.append(String(app.processIdentifier))

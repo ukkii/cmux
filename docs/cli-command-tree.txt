@@ -571,11 +571,6 @@ command  feed tui  aliases=-
   arg  arguments  kind=argument  completion=-
 command  feed-hook  aliases=-
   arg  arguments  kind=argument  completion=-
-command  feedback  aliases=-
-  arg  --body  kind=option  completion=-
-  arg  --email  kind=option  completion=-
-  arg  --image  kind=option  completion=file()
-  arg  arguments  kind=argument  completion=-
 command  find-window  aliases=-
   arg  --content  kind=flag  completion=-
   arg  --select  kind=flag  completion=-

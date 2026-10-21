@@ -187,7 +187,7 @@ struct AgentHookDeliveryProcess: Sendable {
         let ambientEnvironment = ProcessInfo.processInfo.environment
         let ambientKeys = [
             "HOME", "LANG", "LC_ALL", "LC_CTYPE", "LOGNAME", "PATH", "SHELL", "TMPDIR", "USER",
-            "CMUX_BUNDLE_ID", "CMUX_CLI_SENTRY_DISABLED", "CMUX_SOCKET_PASSWORD", "CMUX_TAG",
+            "CMUX_BUNDLE_ID", "CMUX_SOCKET_PASSWORD", "CMUX_TAG",
         ]
         var environment: [String: String] = [:]
         for key in ambientKeys {

@@ -1216,9 +1216,8 @@ jobs:
     # other trusted mini (cmuxs-mac-mini-6) builds team dev builds as the same
     # user, so it keeps seeding but never builds the shipped app. Its
     # job-started hook admits only main's own push and schedule jobs. Not the
-    # pull request pool: this job holds the ci-cache-writer R2 keys and the
-    # Sentry token, and its app is what build-sign-notarize-nightly signs and
-    # ships. runner_label_policy.py holds both variables to those shapes.
+    # pull request pool: this job holds the ci-cache-writer R2 keys, and its
+    # app is what build-sign-notarize-nightly signs and ships. runner_label_policy.py holds both variables to those shapes.
     # ci-owned-pool-rescue.yml watches the run (owned_pool_rescue.py,
     # NIGHTLY_WORKFLOW_PATH): when the mini does not take the job within its
     # budget, or refuses it at job start, the failed jobs are re-run, and
@@ -1584,15 +1583,6 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 1
-
-      - name: Upload dSYMs to Sentry
-        if: needs.decide.outputs.build_only != 'true'
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: manaflow
-          SENTRY_PROJECT: cmuxterm-macos
-        # Retried, and only a warning when Sentry stays down: a nightly is never lost to symbolication.
-        run: ./scripts/upload-sentry-dsyms.sh build-universal/Build/Products/Release/
 
   # Runs beside build-nightly-app. Deepening the shallow clone to find the
   # newest published cmux-tui commit took 1.5 to 11 minutes after the Xcode

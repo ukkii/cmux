@@ -11,7 +11,6 @@ extension MobileHostService {
     /// gate. The phone compares this independently maintained host inventory with
     /// its own required-method inventory before exercising representative RPCs.
     nonisolated static let irohReleaseGateRPCMethods: [String] = [
-        "dogfood.feedback.submit",
         "feed.exit_plan.reply",
         "feed.list",
         "feed.text",
@@ -167,13 +166,6 @@ extension MobileHostService {
     /// full status) reads this so the lists cannot drift; iOS gates features
     /// like rename/pin/read-state/close/move/group actions on the entries
     /// present here.
-    ///
-    /// This also advertises `dogfood.v1`, the agent feedback round-trip
-    /// (`dogfood.feedback.submit`). It is advertised on every build type so the
-    /// privileged Send Feedback path (offered only to `@manaflow.ai` users on an
-    /// active connection) works on Release (beta/prod) too; the sink itself is
-    /// still gated by the same-account Stack-auth check the rest of the mobile
-    /// data plane enforces.
     nonisolated static var mobileHostCapabilities: [String] {
         mobileHostCapabilities(
             includingWorkspaceChanges: CmuxFeatureFlags.offMainEffectiveValue(
@@ -288,7 +280,6 @@ extension MobileHostService {
             "chat.artifact.v1",
             "chat.artifact.folders.v1",
             "chat.artifact.gallery.v1",
-            "dogfood.v1",
             // The workspace list carries group sections (group_id per workspace +
             // a top-level groups array) and the host accepts
             // workspace.group.collapse/expand from mobile. iOS feature-detects

@@ -468,7 +468,6 @@ def test_package_lane_reads_the_job_package_list_from_the_workflow() -> None:
         "CmuxCloudTunnelCore",
         "CMUXDebugLog",
         "CmuxExtensionKit",
-        "CmuxFeedback",
         "CmuxLiveEval",
         "CmuxPanes",
         "CmuxPhonePush",
@@ -573,11 +572,7 @@ def test_terminal_sources_the_hang_jobs_build_run_the_diagnostics() -> None:
         "cmuxTests/TerminalPortalReconciliationReentrancyTests.swift",
         "tests/run_terminal_portal_reconciliation_tests.sh",
         "Packages/Shared/CMUXMobileCore/Sources/CMUXMobileCore/TerminalWorkInterval.swift",
-        "Packages/Shared/CmuxSentryTelemetry/Sources/CmuxSentryTelemetry/TerminalWorkSentryContext.swift",
-        "cmux.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
         "scripts/select-ci-xcode.sh",
-        "scripts/terminal-hang-release-gate.py",
-        "tests/test_terminal_hang_release_gate.py",
         ".github/workflows/terminal-hang-diagnostics.yml",
     ):
         assert runs_hang_diagnostics(path), path

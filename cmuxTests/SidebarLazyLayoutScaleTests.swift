@@ -167,7 +167,6 @@ final class SidebarLazyLayoutScaleTests {
             sidebarUnread: unread,
             titlebarControlsLayoutModel: TitlebarControlsLayoutModel(),
             windowId: UUID(),
-            onSendFeedback: {},
             onToggleSidebar: {},
             onNewTab: {},
             observedWindowReference: WeakWindowReference(),

@@ -374,7 +374,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
             "CMUX_WORKSPACE_ID": context.workspaceId,
             "CMUX_SURFACE_ID": context.surfaceId,
             "CMUX_AGENT_HOOK_STATE_DIR": context.root.path,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
             "CMUX_AMP_PID": String(pid),
             "CMUX_AGENT_LAUNCH_KIND": "amp",
             "CMUX_AGENT_LAUNCH_EXECUTABLE": executable,
