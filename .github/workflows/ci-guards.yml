@@ -887,7 +887,6 @@ jobs:
         if: ${{ matrix.group == 'release-notary' }}
         run: |
           python3 tests/test_ci_release_per_arch_stable.py
-          python3 tests/test_compose_stable_appcast.py
 
       - name: Validate Homebrew cask macOS dependency syntax
         if: ${{ matrix.group == 'release-notary' }}
@@ -1247,10 +1246,6 @@ jobs:
         if: ${{ matrix.group == 'release-notary' }}
         run: python3 tests/test_nightly_release_notes.py
 
-      - name: Validate nightly Sparkle key selection
-        if: ${{ matrix.group == 'release-notary' }}
-        run: bash ./tests/test_nightly_sparkle_key.sh
-
       - name: Validate nightly signing admission and its shadow mode
         if: ${{ matrix.group == 'release-notary' }}
         run: |
@@ -1296,14 +1291,6 @@ jobs:
       - name: Validate accepted nightly DMG artifact aliases
         if: ${{ matrix.group == 'release-notary' }}
         run: python3 tests/test_nightly_artifact_alias.py
-
-      - name: Validate Sparkle delta finalization
-        if: ${{ matrix.group == 'release-notary' }}
-        run: ./tests/test_finalize_sparkle_deltas.sh
-
-      - name: Validate previous nightly build fetch
-        if: ${{ matrix.group == 'release-notary' }}
-        run: ./tests/test_fetch_previous_nightly_dmgs.sh
 
       - name: Validate Computer Use helper notarization behavior
         if: ${{ matrix.group == 'release-notary' }}
@@ -1358,17 +1345,9 @@ jobs:
         if: ${{ matrix.group == 'release-ios' }}
         run: ./tests/test_ci_release_ios_screenshots_decoupled.sh
 
-      - name: Validate Sparkle monotonic guard modes
-        if: ${{ matrix.group == 'release-notary' }}
-        run: ./tests/test_sparkle_build_monotonic_modes.sh
-
       - name: Validate release tunnel extension identifiers
         if: ${{ matrix.group == 'release-ios' }}
         run: ./tests/test_ci_release_tunnel_identifiers.sh
-
-      - name: Validate Sparkle appcast generation without previous archives
-        if: ${{ matrix.group == 'release-notary' }}
-        run: ./tests/test_sparkle_generate_appcast_no_deltas.sh
 
       - name: Validate markdown viewer asset compression
         if: ${{ matrix.group == 'release-notary' }}

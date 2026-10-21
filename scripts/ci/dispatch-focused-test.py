@@ -962,7 +962,7 @@ def main() -> int:
         description="Run one suite or method on an exact pushed commit. "
         "This focused result does not replace the full CI merge checks.",
         epilog="Examples: scripts/run-e2e.sh cmuxTests/RemoteTmuxMirrorPaneInputMappingTests --wait; "
-        "scripts/run-e2e.sh UpdatePillUITests/testFoo --ref my-branch --no-video",
+        "scripts/run-e2e.sh SidebarHelpMenuUITests/testFoo --ref my-branch --no-video",
     )
     parser.add_argument(
         "test_filter",

@@ -161,7 +161,6 @@ select_packages() {
     CmuxTerminalCore
     CmuxTerminalImport
     CmuxTerminalPrediction
-    CmuxUpdater
     CmuxWorkspaces
     CMUXAgentLaunch
     CmuxAgentJournal
@@ -185,7 +184,6 @@ select_packages() {
     CmuxSwiftRender
     CmuxSwiftRenderUI
     CmuxTestSupport
-    CmuxUpdaterUI
     CmuxWindowing
     CmuxTextActions
   )

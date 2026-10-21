@@ -21,9 +21,7 @@ import CmuxSettings
 import CmuxSettingsUI
 import CmuxSudoBroker
 import CmuxSudoBrokerUI
-import CmuxUpdater
 import CmuxWorkspaces
-import CmuxUpdaterUI
 import SwiftUI
 import Bonsplit
 import CMUXAgentLaunch
@@ -977,7 +975,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var browserAddressBarFocusObserver: NSObjectProtocol?
     private var browserAddressBarBlurObserver: NSObjectProtocol?
     private var browserWebViewFirstResponderObserver: NSObjectProtocol?
-    let updateLog = UpdateLogStore()
     let focusLog = FocusLogStore()
     /// Process-wide identity of the workspace currently being sidebar-dragged in
     /// any window. Owned here (the composition root) and injected into every
@@ -991,15 +988,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     let sidebarDragStateRegistry = SidebarDragStateRegistry()
     var debugFocusedTerminalKeyRepairObserverForTesting: ((NSWindow, NSEvent, NSResponder?) -> Void)?
     #endif
-    private lazy var updateController = UpdateController(
-        log: updateLog,
-        // `DisableAutoUpdate` (MDM): the updater never starts and manual checks
-        // are suppressed while forced; `managedAutoUpdateAllowsCheck()` explains.
-        isDisabledByPolicy: { ManagedDevicePolicy().isEnforced(.disableAutoUpdate) }
-    )
     private let titlebarControlsLayoutModel = TitlebarControlsLayoutModel()
     private lazy var titlebarAccessoryController = UpdateTitlebarAccessoryController(
-        updateLog: updateLog,
         settingsRuntime: settingsRuntime,
         layoutModel: titlebarControlsLayoutModel
     )
@@ -1406,9 +1396,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     private var preconfirmedMainWindowCloses: Set<ObjectIdentifier> = []
     // Avoid showing the quit warning twice after confirmation.
     private var isQuitWarningConfirmed = false
-    /// Set when Sparkle is about to relaunch to finish an update, so the terminate it
-    /// requests next skips the quit confirmation the user already gave by installing.
-    private var isRelaunchingForUpdate = false
     // One-shot guard for deferred terminate replies.
     private var didReplyToTerminate = false
     // True while owned asynchronous cleanup controls the terminate reply.
@@ -1444,10 +1431,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// Owns the per-window command-palette state.
     let commandPaletteWindowStore = CommandPaletteWindowStore()
     private let mainThreadHangWatchdog: MainThreadHangWatchdog
-
-    var updateViewModel: UpdateStateModel {
-        updateController.model
-    }
 
 #if DEBUG
     private func pointerString(_ object: AnyObject?) -> String {
@@ -1966,8 +1949,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             configureUserNotifications()
             installMenuBarVisibilityObserver()
             syncApplicationPresentationPreferences()
-            updateController.actionDelegate = self
-            updateController.startUpdaterIfNeeded()
         }
         titlebarAccessoryController.start()
         windowDecorationsController.start()
@@ -2000,25 +1981,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         scheduleInitialMainWindowBootstrap(debugSource: "didFinishLaunching")
         StartupBreadcrumbLog.append("appDelegate.didFinish.complete")
 #if DEBUG
-        UpdateTestSupport(model: updateController.model, log: updateLog).applyIfNeeded()
-        if env["CMUX_UI_TEST_MODE"] == "1" {
-            let trigger = env["CMUX_UI_TEST_TRIGGER_UPDATE_CHECK"] ?? "<nil>"
-            let feed = env["CMUX_UI_TEST_FEED_URL"] ?? "<nil>"
-            updateLog.append("ui test env: trigger=\(trigger) feed=\(feed)")
-        }
-        if env["CMUX_UI_TEST_TRIGGER_UPDATE_CHECK"] == "1" {
-            updateLog.append("ui test trigger update check detected")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                guard let self else { return }
-                let windowIds = NSApp.windows.map { $0.identifier?.rawValue ?? "<nil>" }
-                updateLog.append("ui test windows: count=\(NSApp.windows.count) ids=\(windowIds.joined(separator: ","))")
-                if UpdateTestSupport(model: self.updateController.model, log: updateLog).performMockFeedCheckIfNeeded() {
-                    return
-                }
-                self.checkForUpdates(nil)
-            }
-        }
-
         // In UI tests, `WindowGroup` occasionally fails to materialize a window quickly on the VM.
         // If there are no windows shortly after launch, force-create one so XCUITest can proceed.
         if isRunningUnderXCTest {
@@ -2222,9 +2184,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if !shouldTerminate {
             didReplyToTerminate = false
             isAwaitingTerminateCleanup = false
-            // Sparkle's relaunch notice does not guarantee the quit; a later Cmd+Q
-            // is a user quit again and must reach the confirmation.
-            isRelaunchingForUpdate = false
         }
     }
 
@@ -2480,7 +2439,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let buildFlavor = BuildFlavor.current
         let quitConfirmationStore = QuitConfirmationStore(defaults: .standard)
         let confirmQuitMode = quitConfirmationStore.confirmQuitMode
-        let quitReason: QuitRequestReason = isRelaunchingForUpdate ? .updateRelaunch : Self.currentQuitRequestReason()
+        let quitReason: QuitRequestReason = Self.currentQuitRequestReason()
         let shouldEvaluateDirtyWorkspaces = Self.shouldEvaluateQuitConfirmationDirtyWorkspaces(
             isQuitWarningConfirmed: isQuitWarningConfirmed,
             buildFlavor: buildFlavor,
@@ -2550,7 +2509,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         switch reason {
         case .user: return "user"
         case .sessionEnd: return "sessionEnd"
-        case .updateRelaunch: return "updateRelaunch"
         }
     }
 
@@ -2636,16 +2594,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if Self.shouldSaveSessionSnapshotOnApplicationResign(isTerminatingApp: isTerminatingApp) {
             saveSessionSnapshotAfterLoadingProcessDetectedIndexes(includeScrollback: false)
         }
-    }
-
-    func persistSessionForUpdateRelaunch() {
-        isTerminatingApp = true
-        mainWindowLifecycleCoordinator.cancelAllWindowlessRouteFreezeTasks()
-        _ = saveSessionSnapshotUsingCachedProcessDetectedIndexes(
-            includeScrollback: true,
-            removeWhenEmpty: false
-        )
-        ClosedItemHistoryStore.shared.flushPendingSaves()
     }
 
     func configure(
@@ -10774,7 +10722,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 #endif
 
         let root = ContentView(
-            updateViewModel: updateViewModel,
             windowId: windowId,
             titlebarControlsLayoutModel: titlebarControlsLayoutModel,
             devicesModel: devicesRegistry.map { DevicesPanelViewModel(registry: $0, windowID: windowId) }
@@ -10989,18 +10936,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return windowId
     }
 
-    @objc func checkForUpdates(_ sender: Any?) {
-        guard managedAutoUpdateAllowsCheck() else { return }
-        updateController.model.setOverrideState(nil)
-        updateController.checkForUpdates()
-    }
-
-    func checkForUpdatesInCustomUI() {
-        guard managedAutoUpdateAllowsCheck() else { return }
-        updateController.model.setOverrideState(nil)
-        updateController.checkForUpdatesInCustomUI()
-    }
-
     func openWelcomeWorkspace() {
         guard let context = preferredMainWindowContextForWorkspaceCreation(event: nil, debugSource: "welcome") else {
             return
@@ -11028,16 +10963,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 UserDefaults.standard.set(true, forKey: AccountCatalogSection().welcomeShown.userDefaultsKey)
             }
         })
-    }
-
-    @objc func applyUpdateIfAvailable(_ sender: Any?) {
-        updateController.model.setOverrideState(nil)
-        updateController.attemptUpdate() // re-resolve to the latest version at install time (#6366)
-    }
-
-    @objc func attemptUpdate(_ sender: Any?) {
-        updateController.model.setOverrideState(nil)
-        updateController.attemptUpdate()
     }
 
     func isCmuxCLIInstalledInPATH() -> Bool {
@@ -11163,9 +11088,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             },
             onToggleSleepyMode: {
                 SleepyModeController.shared.toggle()
-            },
-            onCheckForUpdates: { [weak self] in
-                self?.checkForUpdates(nil)
             },
             onOpenPreferences: { [weak self] in
                 self?.openPreferencesWindow(debugSource: "menuBarExtra")
@@ -11459,46 +11381,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
     }
 
-    #if DEBUG
-    @objc func showUpdatePill(_ sender: Any?) {
-        updateViewModel.debugOverrideText = nil
-        updateController.model.setOverrideState(.installing(.init(isAutoUpdate: true, retryTerminatingApplication: {}, dismiss: {})))
-    }
-
-    @objc func showUpdatePillLongNightly(_ sender: Any?) {
-        updateViewModel.debugOverrideText = "Update Available: 0.32.0-nightly+20260216.abc1234"
-        updateController.model.setOverrideState(.notFound(.init(acknowledgement: {})))
-    }
-
-    @objc func showUpdatePillLoading(_ sender: Any?) {
-        updateViewModel.debugOverrideText = nil
-        updateController.model.setOverrideState(.checking(.init(cancel: {})))
-    }
-
-    @objc func hideUpdatePill(_ sender: Any?) {
-        updateViewModel.debugOverrideText = nil
-        updateController.model.setOverrideState(.idle)
-    }
-
-    @objc func clearUpdatePillOverride(_ sender: Any?) {
-        updateViewModel.debugOverrideText = nil
-        updateController.model.setOverrideState(nil)
-    }
-#endif
-
-    @objc func copyUpdateLogs(_ sender: Any?) {
-        let logText = updateLog.snapshot()
-        let payload: String
-        if logText.isEmpty {
-            payload = "No update logs captured.\nLog file: \(updateLog.logPath())"
-        } else {
-            payload = logText + "\nLog file: \(updateLog.logPath())"
-        }
-        GhosttyApp.terminalPasteboard.writeString(
-            payload,
-            to: .general
-        )
-    }
     @objc func copyFocusLogs(_ sender: Any?) {
         let logText = focusLog.snapshot()
         let payload: String
@@ -18611,8 +18493,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        // User-initiated update checks are always allowed; other items are unconditionally valid
-        // (this preserves the prior UpdateController.validateMenuItem behavior).
+        // All menu items routed through AppDelegate are unconditionally valid.
         true
     }
 
@@ -20937,40 +20818,6 @@ private extension NSWindow {
         return hitWebView === webView
     }
 
-}
-
-// MARK: - CmuxUpdater seams
-
-/// Conforms the composition root to updater host actions, retry, and relaunch seams.
-/// `checkForUpdatesInCustomUI()` is satisfied by the main `AppDelegate` declaration.
-extension AppDelegate: UpdateActionDelegate, UpdateActionsHost {
-    func updaterRequestsRetryCheckForUpdates() {
-        checkForUpdates(nil)
-    }
-
-    func updaterWillRelaunchApplication() {
-        isRelaunchingForUpdate = true
-        persistSessionForUpdateRelaunch()
-        NSApp.invalidateRestorableState()
-        for window in NSApp.windows {
-            window.invalidateRestorableState()
-        }
-    }
-
-    func attemptUpdate() {
-        attemptUpdate(nil)
-    }
-
-    func copyUpdateDetails(_ text: String) -> Bool {
-        GhosttyApp.terminalPasteboard.writeString(
-            text,
-            to: .general
-        )
-    }
-
-    var updateLogPath: String {
-        updateLog.logPath()
-    }
 }
 
 // MARK: - CmuxAppKitSupportUI seam conformance

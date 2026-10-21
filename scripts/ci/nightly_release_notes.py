@@ -204,8 +204,10 @@ def main() -> int:
     parser.add_argument("--branch", required=True)
     parser.add_argument("--details", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--appcasts", type=Path, required=True)
-    parser.add_argument("--build", required=True)
+    # Optional: Sparkle appcasts are no longer published, so the summaries are
+    # written only when a caller still passes a directory of feeds.
+    parser.add_argument("--appcasts", type=Path)
+    parser.add_argument("--build")
     args = parser.parse_args()
     if not re.fullmatch(r"[\w.-]+/[\w.-]+", args.repo) or not re.fullmatch(r"[0-9a-f]{40}", args.head):
         raise ValueError("Expected owner/repo and a full built SHA")
@@ -219,7 +221,10 @@ def main() -> int:
     body = markdown + "\n## Downloads\n\n" + args.details.read_text()
     args.out.write_text(body)
     args.out.with_suffix(".published.md").write_text(f"<!-- cmux-published-sha: {args.head} -->\n" + body)
-    update_appcasts(args.appcasts, args.build, plain)
+    if args.appcasts is not None:
+        if not args.build:
+            raise ValueError("--appcasts requires --build")
+        update_appcasts(args.appcasts, args.build, plain)
     print(f"Prepared nightly notes for {len(prs)} merged PRs; baseline {base or 'unavailable'}")
     return 0
 

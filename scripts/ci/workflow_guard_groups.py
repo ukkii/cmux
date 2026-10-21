@@ -137,8 +137,6 @@ PATH_OWNERS = {
     # (ci) reads every workflow_run trigger and the tool's job-name match.
     ".github/workflows/nightly-sign.yml": frozenset(("ci", "release-notary")),
     "scripts/ci/nightly_sign_admit.py": frozenset(("ci", "release-notary")),
-    "scripts/ci/drop-previous-nightlies-with-other-sparkle-key.sh": frozenset(("release-notary",)),
-    "scripts/ci/nightly-sparkle-key.sh": frozenset(("release-notary",)),
     "scripts/ci/product_input_identity.py": frozenset(("preflight",)),
     "scripts/ci/ci_health_report.py": frozenset(("ci",)),
     "scripts/ci/queue_janitor.py": frozenset(("ci",)),

@@ -23,36 +23,6 @@ final class SidebarHelpMenuUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    func testHelpMenuCheckForUpdatesTriggersSidebarUpdatePill() {
-        let app = XCUIApplication.cmuxTestApplication()
-        app.launchEnvironment["CMUX_UI_TEST_MODE"] = "1"
-        app.launchEnvironment["CMUX_UI_TEST_FEED_URL"] = "https://cmux.test/appcast.xml"
-        app.launchEnvironment["CMUX_UI_TEST_FEED_MODE"] = "available"
-        app.launchEnvironment["CMUX_UI_TEST_UPDATE_VERSION"] = "9.9.9"
-        app.launchEnvironment["CMUX_UI_TEST_AUTO_ALLOW_PERMISSION"] = "1"
-        launchAndActivate(app)
-
-        XCTAssertTrue(waitForWindowCount(atLeast: 1, app: app, timeout: 6.0))
-
-        let helpButton = requireElement(
-            candidates: helpButtonCandidates(in: app),
-            timeout: 6.0,
-            description: "sidebar help button"
-        )
-        helpButton.click()
-
-        let checkForUpdatesItem = requireElement(
-            candidates: helpMenuItemCandidates(in: app, identifier: "SidebarHelpMenuOptionCheckForUpdates", title: "Check for Updates"),
-            timeout: 3.0,
-            description: "Check for Updates help menu item"
-        )
-        checkForUpdatesItem.click()
-
-        let updatePill = app.buttons["UpdatePill"]
-        XCTAssertTrue(updatePill.waitForExistence(timeout: 6.0))
-        XCTAssertEqual(updatePill.label, "Update Available: 9.9.9")
-    }
-
     func testHelpMenuSendFeedbackOpensComposerSheet() {
         let app = XCUIApplication.cmuxTestApplication()
         app.launchEnvironment["CMUX_UI_TEST_MODE"] = "1"
@@ -504,44 +474,6 @@ final class CommandPaletteAllSurfacesUITests: XCTestCase {
             },
             "Expected the stale command row to disappear after deleting the command prefix. snapshot=\(switcherSnapshot)"
         )
-    }
-
-    func testCmdShiftPCheckQueryPrefersCheckForUpdatesBeforeAttemptUpdate() throws {
-        let app = XCUIApplication.cmuxTestApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
-        app.launchEnvironment["CMUX_UI_TEST_MODE"] = "1"
-        launchAndActivate(app)
-
-        XCTAssertTrue(
-            sidebarHelpPollUntil(timeout: 8.0) {
-                app.windows.count >= 1
-            },
-            "Expected the main window to be visible"
-        )
-
-        openCommandPaletteCommands(app: app)
-        let searchField = app.textFields["CommandPaletteSearchField"]
-        searchField.typeText("check")
-
-        // Row identifiers are "CommandPaletteResultRow.<index>.<commandId>".
-        let row0 = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier BEGINSWITH %@", "CommandPaletteResultRow.0."))
-            .firstMatch
-        let row1 = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier BEGINSWITH %@", "CommandPaletteResultRow.1."))
-            .firstMatch
-
-        XCTAssertTrue(
-            sidebarHelpPollUntil(timeout: 5.0) {
-                row0.exists &&
-                    row1.exists &&
-                    row0.identifier == "CommandPaletteResultRow.0.palette.checkForUpdates" &&
-                    row1.identifier == "CommandPaletteResultRow.1.palette.attemptUpdate"
-            },
-            "Expected the check query to rank Check for Updates before Attempt Update. row0=\(row0.identifier) row1=\(row1.identifier)"
-        )
-        XCTAssertEqual(row0.identifier, "CommandPaletteResultRow.0.palette.checkForUpdates")
-        XCTAssertEqual(row1.identifier, "CommandPaletteResultRow.1.palette.attemptUpdate")
     }
 
     func testCmdPSearchCanIncludeSurfacesFromOtherWorkspacesWhenEnabled() throws {

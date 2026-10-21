@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-
+# The only pre-tag check was the Sparkle build-number monotonic guard, which was
+# removed together with the auto-updater. The script stays as a stable hook for
+# the release commands that call it.
 echo "Running release pre-tag checks..."
-"$ROOT_DIR/tests/test_ci_sparkle_build_monotonic.sh"
 echo "Release pre-tag checks passed."

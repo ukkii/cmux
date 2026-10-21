@@ -2,7 +2,6 @@ import Testing
 import AppKit
 import Combine
 import CmuxNotifications
-import CmuxUpdater
 import CoreGraphics
 import Observation
 import SwiftUI
@@ -264,7 +263,7 @@ final class WorkspaceContentViewVisibilityTests {
         fileExplorerState.setVisible(false)
         let notificationStore = TerminalNotificationStore.shared
         let counts = MinimalModeBodyProbeCounts()
-        let root = ContentView(updateViewModel: UpdateStateModel(), windowId: UUID())
+        let root = ContentView(windowId: UUID())
             .environmentObject(tabManager)
             .environmentObject(notificationStore)
             .environmentObject(SidebarState())
@@ -377,7 +376,6 @@ final class WorkspaceContentViewVisibilityTests {
         let unread = SidebarUnreadModel()
         let counts = MinimalModeBodyProbeCounts()
         let root = ContentView(
-            updateViewModel: UpdateStateModel(),
             windowId: UUID(),
             sidebarUnread: unread
         )

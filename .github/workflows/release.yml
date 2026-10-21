@@ -30,7 +30,7 @@ jobs:
     # repository secrets. The App Store Connect upload path inside the called
     # workflow is gated to workflow_dispatch from main and is unreachable from
     # a release run, so `secrets: inherit` would only have exposed the signing,
-    # notarization, Sparkle and R2 secrets to a UI-test job.
+    # notarization and R2 secrets to a UI-test job.
     permissions:
       contents: read
     uses: ./.github/workflows/ios-screenshots.yml
@@ -145,15 +145,6 @@ jobs:
           persist-credentials: false
           submodules: recursive
 
-      - name: Validate Sparkle build number is monotonic
-        # A tag push is about to publish, so a stale build number must fail.
-        # A non-tag workflow_dispatch is the built-in dry run: it publishes
-        # nothing and normally runs from a branch that has not been bumped yet,
-        # so the same condition only warns there.
-        env:
-          CMUX_SPARKLE_MONOTONIC_MODE: ${{ startsWith(github.ref, 'refs/tags/') && 'enforce' || 'warn' }}
-        run: ./tests/test_ci_sparkle_build_monotonic.sh
-
       - name: Guard immutable release assets
         id: guard_release_assets
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -234,8 +225,7 @@ jobs:
             if (shouldSkipBuildAndUpload) {
               // A failure between upload and publish left a complete staged
               // draft. A rebuild would produce different signed bytes, so never
-              // rebuild: publish this draft by id and upload its own appcast to
-              // R2. A published release stays a no-op, so a rerun never
+              // rebuild: publish this draft by id. A published release stays a no-op, so a rerun never
               // republishes a release someone demoted.
               core.notice(
                 `Release ${tag} is a staged draft (id ${release.id}) with every immutable asset ` +
@@ -303,19 +293,6 @@ jobs:
       - name: Sanitize Swift package cache
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         run: python3 scripts/ci/sanitize-xcode-source-packages-cache.py .spm-cache
-
-      - name: Derive Sparkle public key from private key
-        if: steps.guard_release_assets.outputs.skip_all != 'true'
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
-            echo "Missing SPARKLE_PRIVATE_KEY secret" >&2
-            exit 1
-          fi
-          DERIVED_PUBLIC_KEY=$(swift scripts/derive_sparkle_public_key.swift "$SPARKLE_PRIVATE_KEY")
-          echo "Derived Sparkle public key: $DERIVED_PUBLIC_KEY"
-          echo "SPARKLE_PUBLIC_KEY=$DERIVED_PUBLIC_KEY" >> "$GITHUB_ENV"
 
       - name: Set up Go for the Cloud tunnel extension and SSH daemon
         if: steps.guard_release_assets.outputs.skip_all != 'true'
@@ -429,20 +406,6 @@ jobs:
           set -euo pipefail
           HELPER_BINARY="build-universal/Build/Products/Release/cmux.app/Contents/Resources/bin/ghostty"
           [ -x "$HELPER_BINARY" ] || { echo "Ghostty theme picker helper not found at $HELPER_BINARY" >&2; exit 1; }
-
-      - name: Inject Sparkle keys into Info.plist
-        if: steps.guard_release_assets.outputs.skip_all != 'true'
-        run: |
-          APP_PLIST="build-universal/Build/Products/Release/cmux.app/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$APP_PLIST" >/dev/null 2>&1 || true
-          /usr/libexec/PlistBuddy -c "Delete :SUFeedURL" "$APP_PLIST" >/dev/null 2>&1 || true
-          echo "Adding SUPublicEDKey to Info.plist..."
-          /usr/libexec/PlistBuddy -c "Add :SUPublicEDKey string ${SPARKLE_PUBLIC_KEY}" "$APP_PLIST"
-          echo "Adding SUFeedURL to Info.plist..."
-          /usr/libexec/PlistBuddy -c "Add :SUFeedURL string https://github.com/manaflow-ai/cmux/releases/latest/download/appcast.xml" "$APP_PLIST"
-          echo "Verifying:"
-          /usr/libexec/PlistBuddy -c "Print :SUPublicEDKey" "$APP_PLIST"
-          /usr/libexec/PlistBuddy -c "Print :SUFeedURL" "$APP_PLIST"
 
       - name: Embed release provisioning profile
         if: steps.guard_release_assets.outputs.skip_all != 'true'
@@ -876,38 +839,6 @@ jobs:
           SENTRY_CLI="$(./scripts/ensure-sentry-cli.sh)"
           "$SENTRY_CLI" debug-files upload --include-sources build-universal/Build/Products/Release/
 
-      - name: Generate Sparkle appcast
-        if: steps.guard_release_assets.outputs.skip_all != 'true'
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
-            echo "Missing SPARKLE_PRIVATE_KEY secret" >&2
-            exit 1
-          fi
-          set -euo pipefail
-          ./scripts/sparkle_generate_appcast.sh cmux-macos.dmg "$GITHUB_REF_NAME" appcast-universal.xml
-          ./scripts/sparkle_generate_appcast.sh cmux-macos-arm64.dmg "$GITHUB_REF_NAME" appcast-arm64.xml
-          ./scripts/sparkle_generate_appcast.sh cmux-macos-x86_64.dmg "$GITHUB_REF_NAME" appcast-x86_64.xml
-          # Thin installs read appcast-<arch>.xml (the updater rewrites the
-          # legacy feed URL at runtime). Older installs read appcast.xml, which
-          # carries all three items in the order that moves each one onto its
-          # architecture in a single update; see the script for the contract.
-          python3 scripts/ci/compose_stable_appcast.py --universal appcast-universal.xml --arm64 appcast-arm64.xml --x86_64 appcast-x86_64.xml --out appcast.xml
-          # macOS /bin/bash 3.2 can report "unbound variable" from a script with
-          # an EXIT trap and still exit 0; dry run 34227505375 (2026-09-08)
-          # uploaded a DMG with no appcast that way. Every feed must exist, carry
-          # an EdDSA signature and point at its DMG before anything uploads it.
-          test -s appcast.xml
-          grep -q 'sparkle:edSignature' appcast.xml
-          grep -q 'cmux-macos.dmg' appcast.xml
-          test -s appcast-arm64.xml
-          grep -q 'sparkle:edSignature' appcast-arm64.xml
-          grep -q 'cmux-macos-arm64.dmg' appcast-arm64.xml
-          test -s appcast-x86_64.xml
-          grep -q 'sparkle:edSignature' appcast-x86_64.xml
-          grep -q 'cmux-macos-x86_64.dmg' appcast-x86_64.xml
-
       - name: Upload build artifacts (dry-run)
         if: steps.guard_release_assets.outputs.skip_upload != 'true' && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -917,9 +848,6 @@ jobs:
             cmux-macos.dmg
             cmux-macos-arm64.dmg
             cmux-macos-x86_64.dmg
-            appcast.xml
-            appcast-arm64.xml
-            appcast-x86_64.xml
             remote-daemon-assets/cmuxd-remote-*
           if-no-files-found: error
 
@@ -935,13 +863,9 @@ jobs:
             --immutable cmux-macos.dmg \
             --immutable cmux-macos-arm64.dmg \
             --immutable cmux-macos-x86_64.dmg \
-            --immutable 'remote-daemon-assets/cmuxd-remote-*' \
-            --feed appcast-arm64.xml \
-            --feed appcast-x86_64.xml \
-            --feed appcast.xml
+            --immutable 'remote-daemon-assets/cmuxd-remote-*'
 
-      # Thin installs read releases/latest/download/appcast-<arch>.xml, so only
-      # the highest stable version may become latest. A backport tag (for
+      # Only the highest stable version may become latest. A backport tag (for
       # example v0.62.1 after v0.63.1) is published without taking it over.
       - name: Decide whether this release is latest
         id: latest_release
@@ -958,19 +882,6 @@ jobs:
             echo "$GITHUB_REF_NAME is older than $highest; publishing without marking it latest"
             echo "make_latest=false" >> "$GITHUB_OUTPUT"
           fi
-
-      # A rerun whose guard found a complete staged release builds nothing, so
-      # take the appcasts the R2 step uploads from that release itself. They
-      # were signed for exactly the DMGs on the release.
-      - name: Download the staged appcasts for a resumed release
-        if: steps.guard_release_assets.outputs.resume_release_id != '' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RESUME_RELEASE_ID: ${{ steps.guard_release_assets.outputs.resume_release_id }}
-        run: |
-          python3 scripts/ci/finalize-release.py download \
-            --repo "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME" --release-id "$RESUME_RELEASE_ID" \
-            --asset appcast-arm64.xml --asset appcast-x86_64.xml --asset appcast.xml --dest .
 
       # Publish the exact release the upload step staged (or the guard found),
       # by id. A tag lookup cannot see drafts: softprops/action-gh-release made
@@ -1004,51 +915,6 @@ jobs:
           python3 scripts/ci/finalize-release.py publish \
             --repo "$GITHUB_REPOSITORY" --tag "$GITHUB_REF_NAME" --release-id "$RELEASE_ID" \
             --generate-notes --prerelease false --make-latest "$MAKE_LATEST" "${expect[@]}"
-
-      - name: Upload release appcast to R2
-        if: (steps.guard_release_assets.outputs.skip_upload != 'true' || steps.guard_release_assets.outputs.resume_release_id != '') && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        env:
-          GH_TOKEN: ${{ github.token }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-          R2_ENDPOINT: "https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
-        run: |
-          set -euo pipefail
-
-          # Guard: only upload if this tag is the highest semver release.
-          # Prevents a backport tag (e.g. v0.62.1 after v0.63.1) from
-          # overwriting the stable appcast with an older version.
-          LATEST=$(gh release list --exclude-drafts --exclude-pre-releases \
-            --json tagName -q '.[].tagName' | sort -V | tail -1)
-          if [ -n "$LATEST" ] && [ "$LATEST" != "$GITHUB_REF_NAME" ]; then
-            echo "Skipping R2 stable upload: $GITHUB_REF_NAME is not the latest release ($LATEST)"
-            exit 0
-          fi
-
-          # Upload after GitHub Release publish so the appcast never references
-          # a DMG that doesn't exist yet. R2 PutObject is atomic, so the appcast
-          # is either the old version or the new one, never missing. The
-          # per-architecture feeds go first: the legacy feed moves installs onto
-          # thin builds that then read them.
-          for arch in arm64 x86_64; do
-            python3 scripts/ci/upload-r2-object.py \
-              --file "appcast-$arch.xml" \
-              --endpoint-url "$R2_ENDPOINT" \
-              --bucket cmux-binaries \
-              --key stable/appcast-$arch.xml \
-              --content-type "application/xml" \
-              --cache-control "no-cache, no-store, must-revalidate"
-          done
-          python3 scripts/ci/upload-r2-object.py \
-            --file appcast.xml \
-            --endpoint-url "$R2_ENDPOINT" \
-            --bucket cmux-binaries \
-            --key stable/appcast.xml \
-            --content-type "application/xml" \
-            --cache-control "no-cache, no-store, must-revalidate"
-
-          echo "R2 appcast upload complete: https://files.cmux.com/stable/appcast.xml"
 
       - name: Cleanup keychain
         if: always()

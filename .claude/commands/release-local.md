@@ -24,7 +24,7 @@ Follow [release.md](release.md) "Shared prep" (version, changelog, contributors,
    ./scripts/build-sign-upload.sh vX.Y.Z
    ```
 
-   The script does GhosttyKit build, xcodebuild, Sparkle key injection, codesigning, notarization of app and DMG, appcast generation, GitHub release upload of `cmux-macos.dmg` and `appcast.xml`, homebrew cask update, cleanup, and `say "cmux release complete"` on success. Pass `--allow-overwrite` only to replace existing assets on the same tag during an emergency reroll. If it fails, run `say "cmux release failed"`.
+   The script does GhosttyKit build, xcodebuild, codesigning, notarization of app and DMG, GitHub release upload of `cmux-macos.dmg`, homebrew cask update, cleanup, and `say "cmux release complete"` on success. Pass `--allow-overwrite` only to replace existing assets on the same tag during an emergency reroll. If it fails, run `say "cmux release failed"`.
 
 4. **Verify and land the homebrew cask.**
 

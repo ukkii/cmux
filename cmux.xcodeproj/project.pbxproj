@@ -1764,8 +1764,6 @@
 		44909912C73D2B3DB8C715F4 /* CmuxTuiSurfaceProviderTests+LinkCancellation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C629AFC3F73DD0690975630 /* CmuxTuiSurfaceProviderTests+LinkCancellation.swift */; };
 		2C636EB7DCD3184EE9E94E31 /* CmuxTuiSurfaceProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC427A4C642EBC36E600FA7F /* CmuxTuiSurfaceProviderTests.swift */; };
 		7A0CE1000000000000000049 /* cmuxTunnel.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = 7A0CE1000000000000000026 /* cmuxTunnel.systemextension */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		CDFEED0300000000CDFEED03 /* CmuxUpdater in Frameworks */ = {isa = PBXBuildFile; productRef = CDFEED0200000000CDFEED02 /* CmuxUpdater */; };
-		CDFEED0600000000CDFEED06 /* CmuxUpdaterUI in Frameworks */ = {isa = PBXBuildFile; productRef = CDFEED0500000000CDFEED05 /* CmuxUpdaterUI */; };
 		9520A0029520A0029520A002 /* CmuxVaultAgentRegistration+Hermes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9520B0029520B0029520B002 /* CmuxVaultAgentRegistration+Hermes.swift */; };
 		858200000000000000000006 /* CmuxVaultAgentRegistration+RegisteredResumeKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 858200000000000000000005 /* CmuxVaultAgentRegistration+RegisteredResumeKind.swift */; };
 		9520A0059520A0059520A005 /* CmuxVaultAgentRegistry+ProcessMatching.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9520B0059520B0059520B005 /* CmuxVaultAgentRegistry+ProcessMatching.swift */; };
@@ -3698,7 +3696,6 @@
 		F87920000000000000000001 /* SocketReloadConfigurationWaiterAdmission.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87920000000000000000002 /* SocketReloadConfigurationWaiterAdmission.swift */; };
 		F87920000000000000000003 /* SocketReloadConfigurationWaiterLease.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87920000000000000000004 /* SocketReloadConfigurationWaiterLease.swift */; };
 		93300001A1B2C3D4E5F60718 /* SocketTerminalBindingRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93300002A1B2C3D4E5F60718 /* SocketTerminalBindingRegressionTests.swift */; };
-		A5001230 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A5001231 /* Sparkle */; };
 		A6AC72050000000000000001 /* SpinnerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6AC72050000000000000002 /* SpinnerCard.swift */; };
 		A6AC72090000000000000001 /* SpinnerEnergy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6AC72090000000000000002 /* SpinnerEnergy.swift */; };
 		5B11E5A100000000000000A1 /* SpinnerGalleryDebugWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B11E5A100000000000000A2 /* SpinnerGalleryDebugWindowController.swift */; };
@@ -4352,9 +4349,8 @@
 		197D3DA9292D64327F43E992 /* UITestSocketCommandScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBDC58D3DAF8CE9754EC3D37 /* UITestSocketCommandScript.swift */; };
 		CF67431916D254CC833A68CB /* UITestSocketCommandScriptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D963CCA7BBBC39762B304F /* UITestSocketCommandScriptTests.swift */; };
 		E7F100000000000000000001 /* UITestSocketSanityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F100000000000000000002 /* UITestSocketSanityCoordinator.swift */; };
-		A500120D /* UpdateLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001223 /* UpdateLogStore.swift */; };
+		A500120D /* FocusLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001223 /* FocusLogStore.swift */; };
 		F2000000A1B2C3D4E5F60718 /* UpdatePillReleaseVisibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000001A1B2C3D4E5F60718 /* UpdatePillReleaseVisibilityTests.swift */; };
-		C0B4D9B0A1B2C3D4E5F60718 /* UpdatePillUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0B4D9B1A1B2C3D4E5F60718 /* UpdatePillUITests.swift */; };
 		A5001208 /* UpdateTitlebarAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001218 /* UpdateTitlebarAccessory.swift */; };
 		9E333A705D5EA232771DA203 /* UpgradeAnalyticsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA13D9C82962402EAA0FABC1 /* UpgradeAnalyticsTests.swift */; };
 		944FADDCC0FC5D78EB85E584 /* UpgradePromptImpression.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0312C285F7C7C82024BF62 /* UpgradePromptImpression.swift */; };
@@ -8995,9 +8991,8 @@
 		FBDC58D3DAF8CE9754EC3D37 /* UITestSocketCommandScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debug/UITests/UITestSocketCommandScript.swift; sourceTree = "<group>"; };
 		99D963CCA7BBBC39762B304F /* UITestSocketCommandScriptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITestSocketCommandScriptTests.swift"; sourceTree = "<group>"; };
 		E7F100000000000000000002 /* UITestSocketSanityCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Debug/UITests/UITestSocketSanityCoordinator.swift"; sourceTree = "<group>"; };
-		A5001223 /* UpdateLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Update/UpdateLogStore.swift; sourceTree = "<group>"; };
+		A5001223 /* FocusLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Update/FocusLogStore.swift; sourceTree = "<group>"; };
 		F2000001A1B2C3D4E5F60718 /* UpdatePillReleaseVisibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdatePillReleaseVisibilityTests.swift; sourceTree = "<group>"; };
-		C0B4D9B1A1B2C3D4E5F60718 /* UpdatePillUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdatePillUITests.swift; sourceTree = "<group>"; };
 		A5001218 /* UpdateTitlebarAccessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Update/UpdateTitlebarAccessory.swift; sourceTree = "<group>"; };
 		BA13D9C82962402EAA0FABC1 /* UpgradeAnalyticsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UpgradeAnalyticsTests.swift"; sourceTree = "<group>"; };
 		6E0312C285F7C7C82024BF62 /* UpgradePromptImpression.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradePromptImpression.swift; sourceTree = "<group>"; };
@@ -9486,8 +9481,6 @@
 				A1329A000000000000000102 /* CmuxTerminalSizing in Frameworks */,
 				CFF12E0000000000000000A3 /* CmuxTestSupport in Frameworks */,
 				A5FB1A13 /* CmuxTextActions in Frameworks */,
-				CDFEED0300000000CDFEED03 /* CmuxUpdater in Frameworks */,
-				CDFEED0600000000CDFEED06 /* CmuxUpdaterUI in Frameworks */,
 				5E55200000000000000000B3 /* CmuxWindowing in Frameworks */,
 				A13296000000000000000102 /* CmuxWorkspacePresence in Frameworks */,
 				E3B7A3000000000000000103 /* CmuxWorkspaces in Frameworks */,
@@ -9497,7 +9490,6 @@
 				C41EF457DD8F7DC1AD41FBD3 /* MessagesLabHome in Frameworks */,
 				C41EF7BA6B59F227A33EF2FA /* MessagesLabSidebar in Frameworks */,
 				A5001270 /* PostHog in Frameworks */,
-				A5001230 /* Sparkle in Frameworks */,
 				F20F85FC5900550685FA33AD /* StackAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -9809,7 +9801,6 @@
 				C13BE417A8C24EE79F00A101 /* BrowserNativeHoverUITests.swift */,
 				133720000000000000000001 /* BrowserNativeClickUITests.swift */,
 				8478A0000000000000000001 /* BrowserRecoveryHTTPServer.swift */,
-				C0B4D9B1A1B2C3D4E5F60718 /* UpdatePillUITests.swift */,
 				A78C42010000000000000002 /* XCUIApplication+CmuxTestApplication.swift */,
 				D10000000000000000A00011 /* SettingsUITestSupport.swift */,
 				D10000000000000000B00001 /* ControlSocketReadinessUITestSupport.swift */,
@@ -11970,7 +11961,7 @@
 				D10786DB0000000000000004 /* DeferredBrowserPanelView.swift */,
 				A5001415 /* PanelContentView.swift */,
 				811B03E4004A4D1FB6650158 /* TerminalPanelUnavailableView.swift */,
-				A5001223 /* UpdateLogStore.swift */,
+				A5001223 /* FocusLogStore.swift */,
 				D7769000000000000000000C /* NotificationPopoverHoverTrackingRepresentable.swift */,
 				D7769000000000000000000E /* NotificationPopoverHoverTrackingView.swift */,
 				D77690000000000000000004 /* NotificationPopoverRow.swift */,
@@ -14385,7 +14376,6 @@
 				A13296000000000000000101 /* CmuxWorkspacePresence */,
 				A1329A000000000000000101 /* CmuxTerminalSizing */,
 				A1329B000000000000000101 /* CmuxTerminalSharing */,
-				A5001231 /* Sparkle */,
 				A5001271 /* PostHog */,
 				A5001261 /* Bonsplit */,
 				A5001291 /* MarkdownUI */,
@@ -14433,8 +14423,6 @@
 				CD0CFE5200000000CD0CFE52 /* CmuxSettings */,
 				CFF12E0000000000000000A2 /* CmuxTestSupport */,
 				CD0CFE5500000000CD0CFE55 /* CmuxSettingsUI */,
-				CDFEED0200000000CDFEED02 /* CmuxUpdater */,
-				CDFEED0500000000CDFEED05 /* CmuxUpdaterUI */,
 				CF00F00000000000000000A2 /* CmuxFoundation */,
 				D0F7A0000000000000000002 /* CmuxMemoryPressure */,
 				C01E00AA00000000000000A2 /* CmuxSyntaxHighlighting */,
@@ -14680,7 +14668,6 @@
 				A1329A000000000000000100 /* XCLocalSwiftPackageReference "CmuxTerminalSizing" */,
 				A1329B000000000000000100 /* XCLocalSwiftPackageReference "CmuxTerminalSharing" */,
 				C1A900000000000000000006 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
-				A5001232 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				A5001252 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				A5001272 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				A5001292 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
@@ -14728,8 +14715,6 @@
 				CFF12E0000000000000000A1 /* XCLocalSwiftPackageReference "CmuxTestSupport" */,
 				CD0CFE5400000000CD0CFE54 /* XCLocalSwiftPackageReference "CmuxSettingsUI" */,
 				800100000000000000000204 /* XCLocalSwiftPackageReference "CmuxHive" */,
-				CDFEED0100000000CDFEED01 /* XCLocalSwiftPackageReference "CmuxUpdater" */,
-				CDFEED0400000000CDFEED04 /* XCLocalSwiftPackageReference "CmuxUpdaterUI" */,
 				CF00F00000000000000000A1 /* XCLocalSwiftPackageReference "CmuxFoundation" */,
 				D0F7A0000000000000000001 /* XCLocalSwiftPackageReference "CmuxMemoryPressure" */,
 				C01E00AA00000000000000A1 /* XCLocalSwiftPackageReference "CmuxSyntaxHighlighting" */,
@@ -17593,7 +17578,7 @@
 				A5001501 /* UITestRecorder.swift in Sources */,
 				197D3DA9292D64327F43E992 /* UITestSocketCommandScript.swift in Sources */,
 			E7F100000000000000000001 /* UITestSocketSanityCoordinator.swift in Sources */,
-				A500120D /* UpdateLogStore.swift in Sources */,
+				A500120D /* FocusLogStore.swift in Sources */,
 				A5001208 /* UpdateTitlebarAccessory.swift in Sources */,
 				944FADDCC0FC5D78EB85E584 /* UpgradePromptImpression.swift in Sources */,
 				0D5183AD0EC5E5C47A7E6E91 /* UserDefaults+CloudTreeExpansionPersistence.swift in Sources */,
@@ -18243,7 +18228,6 @@
 				B82090010000000000000001 /* TCCUsageDescriptionUITests.swift in Sources */,
 				C2577000A1B2C3D4E5F60718 /* TerminalCmdClickUITests.swift in Sources */,
 				D12797000000000000000002 /* TerminalLightAppearanceUITests.swift in Sources */,
-				C0B4D9B0A1B2C3D4E5F60718 /* UpdatePillUITests.swift in Sources */,
 				4FEA4BE14382A28C15F2C399 /* VaultRefreshUITests.swift in Sources */,
 				E6FA9084A1B2C3D4E5F60718 /* WorkspaceDescriptionUITests.swift in Sources */,
 				F0F0A001A1B2C3D4E5F60718 /* WorkspaceSidebarScrollUITests.swift in Sources */,
@@ -19815,7 +19799,6 @@
 					"-Xllvm",
 					"-global-isel=0",
 				);
-				SPARKLE_PUBLIC_KEY = "avjcgKibf1FTvhIjLBxhd+0HSpsXU4D0IGlVk8cgqRc=";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_ENABLE_BATCH_MODE = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "cmux-Bridging-Header.h";
@@ -19863,7 +19846,6 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cmuxterm.app;
 				PRODUCT_NAME = cmux;
-				SPARKLE_PUBLIC_KEY = "avjcgKibf1FTvhIjLBxhd+0HSpsXU4D0IGlVk8cgqRc=";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "cmux-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -20383,14 +20365,6 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/macOS/CmuxSettingsUI;
 		};
-		CDFEED0100000000CDFEED01 /* XCLocalSwiftPackageReference "CmuxUpdater" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/macOS/CmuxUpdater;
-		};
-		CDFEED0400000000CDFEED04 /* XCLocalSwiftPackageReference "CmuxUpdaterUI" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/macOS/CmuxUpdaterUI;
-		};
 		CC0DE00000000000000000A1 /* XCLocalSwiftPackageReference "CmuxCore" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/macOS/CmuxCore;
@@ -20484,14 +20458,6 @@
 			requirement = {
 				kind = exactVersion;
 				version = 1.8.2;
-			};
-		};
-		A5001232 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.9.0;
 			};
 		};
 		A5001252 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
@@ -20801,16 +20767,6 @@
 			package = CD0CFE5400000000CD0CFE54 /* XCLocalSwiftPackageReference "CmuxSettingsUI" */;
 			productName = CmuxSettingsUI;
 		};
-		CDFEED0200000000CDFEED02 /* CmuxUpdater */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CDFEED0100000000CDFEED01 /* XCLocalSwiftPackageReference "CmuxUpdater" */;
-			productName = CmuxUpdater;
-		};
-		CDFEED0500000000CDFEED05 /* CmuxUpdaterUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CDFEED0400000000CDFEED04 /* XCLocalSwiftPackageReference "CmuxUpdaterUI" */;
-			productName = CmuxUpdaterUI;
-		};
 		CC0DE00000000000000000A2 /* CmuxCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CC0DE00000000000000000A1 /* XCLocalSwiftPackageReference "CmuxCore" */;
@@ -20895,11 +20851,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CE57E10000000000000000A1 /* XCLocalSwiftPackageReference "CmuxSentryTelemetry" */;
 			productName = CmuxSentryReporting;
-		};
-		A5001231 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A5001232 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
 		};
 		5E2701040000000000000002 /* CmuxFoundation */ = {
 			isa = XCSwiftPackageProductDependency;

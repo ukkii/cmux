@@ -25,7 +25,7 @@ class NightlyArtifactAliasTests(unittest.TestCase):
         wait_steps = {
             step["name"]: step for step in workflow["jobs"]["wait-and-staple"]["steps"]
         }
-        generate = wait_steps["Generate verified Sparkle feed"]["run"]
+        generate = wait_steps["Record verified DMG digest"]["run"]
         self.assertNotIn(
             'cp "verified/$IMMUTABLE_NAME" "verified/$ALIAS_NAME"',
             generate,
@@ -55,8 +55,6 @@ class NightlyArtifactAliasTests(unittest.TestCase):
                 payload = f"signed-and-stapled-{variant}".encode()
                 immutable.write_bytes(payload)
                 payloads[variant] = payload
-                feed = "appcast.xml" if variant == "universal" else f"appcast-{variant}.xml"
-                (folder / feed).write_text("feed\n", encoding="utf-8")
                 tested = root / "tested" / f"launch-tested-{variant}-TEST"
                 tested.mkdir(parents=True)
                 (tested / f"tested-{variant}.sha256").write_text(

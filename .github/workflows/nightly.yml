@@ -8,7 +8,7 @@ run-name: ${{ inputs.promote_nightly_next_sha && format('Promote nightly-next to
 # (bundle id com.cmuxterm.app.nightly, GitHub release `nightly`, feed
 # files.cmux.com/nightly). A push to an `rc/**` branch publishes cmux RC
 # (com.cmuxterm.app.rc, release `rc`, feed files.cmux.com/rc). The two channels
-# install side by side with each other and with stable, and each Sparkle feed
+# install side by side with each other and with stable, and each release
 # only ever advances within its own channel. Everything channel-specific is
 # resolved once in `decide`; every later job reads it from there.
 on:
@@ -30,7 +30,7 @@ on:
         default: false
         type: boolean
       fast:
-        description: Build one arm64 dogfood DMG without Intel or Sparkle delta work
+        description: Build one arm64 dogfood DMG without Intel work
         required: false
         default: false
         type: boolean
@@ -93,7 +93,7 @@ concurrency:
   # a newer run may replace only a pending run. An in-flight nightly must always
   # finish so a 42-minute macOS build is not discarded by the next push.
   # Main NIGHTLY and nightly-next install as the same app, so their publishing
-  # runs must share one group. This keeps the run-derived Sparkle build number
+  # runs must share one group. This keeps the run-derived build number
   # ordered across both feeds; the nightly-next floor check otherwise rejects
   # an older run that finishes after a newer main publication.
   # Keep scheduled and manually requested cache seeds in different groups. A
@@ -181,9 +181,7 @@ jobs:
             const fastBuild = !buildOnly && process.env.FAST_BUILD === 'true';
             // Nightly ships one universal DMG for downloads plus one thin DMG per
             // architecture for updates. Browsers cannot tell Apple silicon from
-            // Intel, so `cmux-nightly-macos.dmg` and the legacy `appcast.xml`
-            // feed stay universal; the app's feed resolver moves every install
-            // onto its architecture's feed at the first update check.
+            // Intel, so `cmux-nightly-macos.dmg` stays universal.
             // A manually dispatched fast build is a branch-dogfood artifact only.
             // It deliberately produces one Apple silicon DMG and never publishes
             // to the shared NIGHTLY release or feed.
@@ -1891,8 +1889,6 @@ jobs:
     runs-on: ${{ github.repository_owner != 'manaflow-ai' && 'macos-26' || (needs.decide.outputs.fast_build == 'true' && 'macos-26' || 'macos-26') }}
     # Start the standalone helper submission early so
     # Apple's first wait overlaps useful work; finish it before the final DMG.
-    # Sparkle delta generation runs after the full publication in a separate
-    # best-effort lane, so it cannot delay the first update users can install.
     # Apple may leave the independently submitted Computer Use helper in its
     # queue for close to an hour before the final DMG can be created. Keep the
     # runner lease bounded, but leave enough room for the helper wait and the
@@ -1997,21 +1993,6 @@ jobs:
           chmod +x "$wrapper_dir/create-dmg"
           echo "$wrapper_dir" >> "$GITHUB_PATH"
 
-      - name: Derive Sparkle public key from private key
-        env:
-          # scripts/ci/nightly-sparkle-key.sh picks the key per channel and
-          # NIGHTLY_SPARKLE_KEY; unset keeps the shared key.
-          NIGHTLY_SPARKLE_KEY: ${{ vars.NIGHTLY_SPARKLE_KEY }}
-          CHANNEL: ${{ needs.decide.outputs.channel }}
-          SHARED_SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-          NIGHTLY_SPARKLE_PRIVATE_KEY: ${{ secrets.NIGHTLY_SPARKLE_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          SPARKLE_PRIVATE_KEY="$(./scripts/ci/nightly-sparkle-key.sh)"
-          DERIVED_PUBLIC_KEY=$(swift scripts/derive_sparkle_public_key.swift "$SPARKLE_PRIVATE_KEY")
-          echo "Derived Sparkle public key: $DERIVED_PUBLIC_KEY"
-          echo "SPARKLE_PUBLIC_KEY=$DERIVED_PUBLIC_KEY" >> "$GITHUB_ENV"
-
       - name: Inject nightly identities and metadata
         run: |
           set -euo pipefail
@@ -2023,26 +2004,16 @@ jobs:
 
           NIGHTLY_DMG_IMMUTABLE="${CHANNEL_DMG_PREFIX}-${NIGHTLY_VARIANT}-${NIGHTLY_BUILD}.dmg"
           NIGHTLY_DMG_RELEASE="${CHANNEL_DMG_PREFIX}-${NIGHTLY_VARIANT}.dmg"
-          # Thin variants get their own feed. The universal variant keeps the legacy
-          # feed name; the app's feed resolver rewrites it to the per-architecture
-          # feed at runtime, which is how older installs migrate.
-          if [ "$NIGHTLY_VARIANT" = "universal" ]; then
-            NIGHTLY_APPCAST="appcast.xml"
-          else
-            NIGHTLY_APPCAST="appcast-${NIGHTLY_VARIANT}.xml"
-          fi
           {
             echo "NIGHTLY_BUILD=${NIGHTLY_BUILD}"
             echo "NIGHTLY_MARKETING_VERSION=${NIGHTLY_MARKETING_VERSION}"
             echo "NIGHTLY_DMG_IMMUTABLE=${NIGHTLY_DMG_IMMUTABLE}"
             echo "NIGHTLY_DMG_RELEASE=${NIGHTLY_DMG_RELEASE}"
-            echo "NIGHTLY_APPCAST=${NIGHTLY_APPCAST}"
           } >> "$GITHUB_ENV"
 
           prepare_variant() {
             local app_dir="$1"
             local bundle_id="$2"
-            local feed_url="$3"
             local app_plist="$app_dir/cmux.app/Contents/Info.plist"
 
             /usr/libexec/PlistBuddy -c "Set :CFBundleName ${CHANNEL_APP_NAME}" "$app_plist"
@@ -2055,10 +2026,6 @@ jobs:
               exit 1
             fi
             /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:1:CFBundleURLSchemes:0 ${CHANNEL_URL_SCHEME}" "$app_plist"
-            /usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$app_plist" >/dev/null 2>&1 || true
-            /usr/libexec/PlistBuddy -c "Delete :SUFeedURL" "$app_plist" >/dev/null 2>&1 || true
-            /usr/libexec/PlistBuddy -c "Add :SUPublicEDKey string ${SPARKLE_PUBLIC_KEY}" "$app_plist"
-            /usr/libexec/PlistBuddy -c "Add :SUFeedURL string ${feed_url}" "$app_plist"
             /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${NIGHTLY_MARKETING_VERSION}" "$app_plist"
             /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${NIGHTLY_BUILD}" "$app_plist"
             /usr/libexec/PlistBuddy -c "Delete :CMUXCommit" "$app_plist" >/dev/null 2>&1 || true
@@ -2080,13 +2047,11 @@ jobs:
 
           prepare_variant \
             "$APP_DIR" \
-            "$CHANNEL_BUNDLE_ID" \
-            "${CHANNEL_FEED_BASE}/${NIGHTLY_APPCAST}"
+            "$CHANNEL_BUNDLE_ID"
 
           echo "Channel: ${CHANNEL}"
           echo "App name: ${CHANNEL_APP_NAME}"
           echo "Variant: ${NIGHTLY_VARIANT}"
-          echo "Feed: ${CHANNEL_FEED_BASE}/${NIGHTLY_APPCAST}"
           echo "Bundle ID: ${CHANNEL_BUNDLE_ID}"
           echo "Marketing version: ${NIGHTLY_MARKETING_VERSION}"
           echo "Build number: ${NIGHTLY_BUILD}"
@@ -2514,25 +2479,6 @@ jobs:
         if: needs.decide.outputs.fast_build != 'true' && needs.decide.outputs.should_publish != 'true'
         run: syspolicy_check distribution "$CHANNEL_APP_PATH"
 
-      - name: Generate Sparkle appcasts (nightly)
-        if: needs.decide.outputs.fast_build != 'true' && needs.decide.outputs.should_publish != 'true'
-        env:
-          NIGHTLY_SPARKLE_KEY: ${{ vars.NIGHTLY_SPARKLE_KEY }}
-          CHANNEL: ${{ needs.decide.outputs.channel }}
-          SHARED_SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-          NIGHTLY_SPARKLE_PRIVATE_KEY: ${{ secrets.NIGHTLY_SPARKLE_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          SPARKLE_PRIVATE_KEY="$(./scripts/ci/nightly-sparkle-key.sh)"
-          export SPARKLE_PRIVATE_KEY
-          SPARKLE_DELTA_NAME_PREFIX="${CHANNEL_DMG_PREFIX}-${NIGHTLY_VARIANT}-" \
-            ./scripts/sparkle_generate_appcast.sh "$NIGHTLY_DMG_IMMUTABLE" "$CHANNEL_RELEASE_TAG" "$NIGHTLY_APPCAST"
-          ls -l "$NIGHTLY_DMG_IMMUTABLE" "$NIGHTLY_DMG_RELEASE" "$NIGHTLY_APPCAST"
-          if grep -q 'sparkle:deltas' "$NIGHTLY_APPCAST"; then
-            echo "ERROR: first publication appcasts must contain full archives only" >&2
-            exit 1
-          fi
-
       - name: Upload nightly variant artifacts
         if: needs.decide.outputs.fast_build != 'true' && needs.decide.outputs.should_publish != 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -2540,8 +2486,6 @@ jobs:
           name: cmux-nightly-variant-${{ matrix.variant }}
           path: |
             ${{ needs.decide.outputs.dmg_prefix }}-*.dmg
-            ${{ needs.decide.outputs.dmg_prefix }}-*.delta
-            appcast*.xml
           if-no-files-found: error
           retention-days: 3
 
@@ -2790,21 +2734,15 @@ jobs:
           ls -l
           for variant in arm64 x86_64; do
             [ -f "${CHANNEL_DMG_PREFIX}-${variant}.dmg" ] || { echo "missing ${CHANNEL_DMG_PREFIX}-${variant}.dmg" >&2; exit 1; }
-            [ -f "appcast-${variant}.xml" ] || { echo "missing appcast-${variant}.xml" >&2; exit 1; }
           done
-          # `cmux-nightly-macos.dmg` and `appcast.xml` are the download and feed
-          # every pre-existing link and install uses. They stay universal: the
-          # universal variant generates appcast.xml itself, and installs move to
-          # their architecture's feed on the next update check.
+          # `cmux-nightly-macos.dmg` is the download every pre-existing link
+          # uses. It stays universal.
           [ "$NIGHTLY_LEGACY_VARIANT" = "universal" ] || { echo "unexpected legacy variant: $NIGHTLY_LEGACY_VARIANT" >&2; exit 1; }
           [ -f "${CHANNEL_DMG_PREFIX}-universal.dmg" ] || { echo "universal variant DMG missing" >&2; exit 1; }
-          [ -f appcast.xml ] || { echo "universal variant appcast.xml missing" >&2; exit 1; }
           cp "${CHANNEL_DMG_PREFIX}-universal.dmg" "${CHANNEL_DMG_PREFIX}.dmg"
-          # Compatibility feed for nightlies older than the unified appcast.
-          cp appcast.xml appcast-universal.xml
           ls -l
 
-      - name: Prepare nightly release notes and appcast summaries
+      - name: Prepare nightly release notes
         if: needs.decide.outputs.should_publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -2818,9 +2756,9 @@ jobs:
           Automated ${CHANNEL} build for \`${NOTES_HEAD:0:7}\` from \`${NOTES_BRANCH}\`.
           Published commit: \`${NOTES_HEAD}\`.
           **${NOTES_APP_NAME}** ships one app per architecture (bundle ID \`${NOTES_BUNDLE_ID}\`):
-          - [Apple silicon: ${CHANNEL_DMG_PREFIX}-arm64.dmg](https://github.com/${GITHUB_REPOSITORY}/releases/download/${CHANNEL_RELEASE_TAG}/${CHANNEL_DMG_PREFIX}-arm64.dmg), feed \`appcast-arm64.xml\`
-          - [Intel: ${CHANNEL_DMG_PREFIX}-x86_64.dmg](https://github.com/${GITHUB_REPOSITORY}/releases/download/${CHANNEL_RELEASE_TAG}/${CHANNEL_DMG_PREFIX}-x86_64.dmg), feed \`appcast-x86_64.xml\`
-          - [Universal (any Mac): ${CHANNEL_DMG_PREFIX}.dmg](https://github.com/${GITHUB_REPOSITORY}/releases/download/${CHANNEL_RELEASE_TAG}/${CHANNEL_DMG_PREFIX}.dmg), feed \`appcast.xml\`; the app switches to its architecture's feed on the first update check
+          - [Apple silicon: ${CHANNEL_DMG_PREFIX}-arm64.dmg](https://github.com/${GITHUB_REPOSITORY}/releases/download/${CHANNEL_RELEASE_TAG}/${CHANNEL_DMG_PREFIX}-arm64.dmg)
+          - [Intel: ${CHANNEL_DMG_PREFIX}-x86_64.dmg](https://github.com/${GITHUB_REPOSITORY}/releases/download/${CHANNEL_RELEASE_TAG}/${CHANNEL_DMG_PREFIX}-x86_64.dmg)
+          - [Universal (any Mac): ${CHANNEL_DMG_PREFIX}.dmg](https://github.com/${GITHUB_REPOSITORY}/releases/download/${CHANNEL_RELEASE_TAG}/${CHANNEL_DMG_PREFIX}.dmg)
           EOF
           # Read the live completed publication under the channel writer lock,
           # rather than the decide job's baseline from before the build started.
@@ -2829,8 +2767,7 @@ jobs:
           python3 scripts/ci/nightly_release_notes.py \
             --repo "$GITHUB_REPOSITORY" --tag "$CHANNEL_RELEASE_TAG" \
             --head "$NOTES_HEAD" --branch "$NOTES_BRANCH" \
-            --details nightly-downloads.md --out nightly-notes.md \
-            --appcasts nightly-out --build "$NIGHTLY_BUILD"
+            --details nightly-downloads.md --out nightly-notes.md
 
       - name: Upload branch nightly artifacts
         if: needs.decide.outputs.should_publish != 'true'
@@ -2839,8 +2776,6 @@ jobs:
           name: cmux-nightly-${{ needs.decide.outputs.short_sha }}
           path: |
             nightly-out/${{ needs.decide.outputs.dmg_prefix }}*.dmg
-            nightly-out/${{ needs.decide.outputs.dmg_prefix }}*.delta
-            nightly-out/appcast*.xml
             nightly-out/cmuxd-remote-*
           if-no-files-found: error
 
@@ -2880,12 +2815,7 @@ jobs:
             --alias "nightly-out/${CHANNEL_DMG_PREFIX}-x86_64.dmg" \
             --alias "nightly-out/${CHANNEL_DMG_PREFIX}-universal.dmg" \
             --alias "nightly-out/${CHANNEL_DMG_PREFIX}.dmg" \
-            --github-output "$GITHUB_OUTPUT" \
-            --replace-feeds \
-            --feed nightly-out/appcast-arm64.xml \
-            --feed nightly-out/appcast-x86_64.xml \
-            --feed nightly-out/appcast-universal.xml \
-            --feed nightly-out/appcast.xml
+            --github-output "$GITHUB_OUTPUT"
 
       - name: Publish verified nightly release metadata
         if: needs.decide.outputs.should_publish == 'true'
@@ -2906,33 +2836,8 @@ jobs:
             --name "$RELEASE_NAME" --body-file nightly-notes.md \
             --prerelease true --make-latest false "${expect[@]}"
 
-      - name: Upload nightly appcasts to R2
-        if: needs.decide.outputs.should_publish == 'true'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-          R2_ENDPOINT: "https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
-        run: |
-          set -euo pipefail
-          # Upload after the GitHub Release publish so no appcast references a
-          # DMG that doesn't exist yet. R2 PutObject is atomic, so each appcast is
-          # either the old version or the new one, never missing. Thin feeds go
-          # first: the app rewrites the legacy feed URL to a thin feed, so those
-          # must already be current when the legacy feed changes.
-          for appcast in appcast-arm64.xml appcast-x86_64.xml appcast-universal.xml appcast.xml; do
-            python3 scripts/ci/upload-r2-object.py \
-              --file "nightly-out/$appcast" \
-              --endpoint-url "$R2_ENDPOINT" \
-              --bucket cmux-binaries \
-              --key "${CHANNEL_RELEASE_TAG}/$appcast" \
-              --content-type "application/xml" \
-              --cache-control "no-cache, no-store, must-revalidate"
-            echo "R2 appcast upload complete: ${CHANNEL_FEED_BASE}/$appcast"
-          done
-
-      # The marker is written only after immutable assets, aliases, release
-      # metadata, and every appcast have succeeded. A rerun can therefore use
+      # The marker is written only after immutable assets, aliases, and release
+      # metadata have succeeded. A rerun can therefore use
       # it as an idempotency record without mistaking a partial publication for
       # a complete one.
       - name: Record verified nightly publication
@@ -3014,196 +2919,16 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "tag_status=stale" >> "$GITHUB_OUTPUT"
-            echo "::warning::Published assets, release metadata, and appcasts are live; the $CHANNEL_RELEASE_TAG tag marker is stale because its final update failed."
+            echo "::warning::Published assets and release metadata are live; the $CHANNEL_RELEASE_TAG tag marker is stale because its final update failed."
             {
               echo "### Published, tag marker stale"
               echo ""
-              echo "Assets, release metadata, and appcasts for \`$HEAD_SHA\` are published, but \`$CHANNEL_RELEASE_TAG\` was not advanced. The next eligible publication will retry the marker without republishing this commit."
+              echo "Assets and release metadata for \`$HEAD_SHA\` are published, but \`$CHANNEL_RELEASE_TAG\` was not advanced. The next eligible publication will retry the marker without republishing this commit."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  generate-nightly-deltas:
-    # Delta work is deliberately downstream of the first publication. A slow
-    # BinaryDelta process therefore cannot extend the user's wait for a full
-    # DMG and signed appcast.
-    environment: release
-    needs: [decide, build-nightly-app, publish-nightly]
-    if: always() && needs.decide.outputs.should_publish == 'true' && needs.decide.outputs.fast_build != 'true' && needs.publish-nightly.result == 'success'
-    permissions:
-      contents: read
-      actions: read
-    runs-on: macos-26
-    strategy:
-      fail-fast: false
-      matrix:
-        variant: ${{ fromJSON(needs.decide.outputs.variants) }}
-    timeout-minutes: 45
-    env:
-      NIGHTLY_VARIANT: ${{ matrix.variant }}
-      NIGHTLY_BUILD: ${{ needs.build-nightly-app.outputs.daemon_build }}
-      CHANNEL: ${{ needs.decide.outputs.channel }}
-      CHANNEL_DMG_PREFIX: ${{ needs.decide.outputs.dmg_prefix }}
-      CHANNEL_RELEASE_TAG: ${{ needs.decide.outputs.release_tag }}
-      NIGHTLY_SPARKLE_KEY: ${{ vars.NIGHTLY_SPARKLE_KEY }}
-      SHARED_SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-      NIGHTLY_SPARKLE_PRIVATE_KEY: ${{ secrets.NIGHTLY_SPARKLE_PRIVATE_KEY }}
-    steps:
-      - name: Checkout build ref
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-          ref: ${{ needs.decide.outputs.head_sha }}
-
-      - name: Select Xcode
-        run: ./scripts/select-ci-xcode.sh
-
-      - name: Download published variant
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: cmux-nightly-variant-${{ matrix.variant }}
-          path: nightly-delta/input
-
-      - name: Fetch one previous track archive
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          python3 scripts/ci/fetch-previous-nightly-dmgs.py \
-            --repo manaflow-ai/cmux \
-            --release-tag "$CHANNEL_RELEASE_TAG" \
-            --name-prefix "${CHANNEL_DMG_PREFIX}-" \
-            --variant "$NIGHTLY_VARIANT" \
-            --exclude-build "$NIGHTLY_BUILD" \
-            --count 1 \
-            --out nightly-delta/previous
-
-      - name: Generate one from-version delta and revised appcast
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          mkdir -p nightly-delta/output
-          dmg="nightly-delta/input/${CHANNEL_DMG_PREFIX}-${NIGHTLY_VARIANT}-${NIGHTLY_BUILD}.dmg"
-          feed="appcast.xml"
-          if [ "$NIGHTLY_VARIANT" != "universal" ]; then
-            feed="appcast-${NIGHTLY_VARIANT}.xml"
-          fi
-          test -s "$dmg"
-          if ! compgen -G 'nightly-delta/previous/*.dmg' >/dev/null; then
-            echo "No previous $NIGHTLY_VARIANT archive; retaining the full-only appcast"
-            cp "nightly-delta/input/$feed" "nightly-delta/output/$feed"
-            exit 0
-          fi
-          SPARKLE_PRIVATE_KEY="$(./scripts/ci/nightly-sparkle-key.sh)"
-          export SPARKLE_PRIVATE_KEY
-          SPARKLE_PUBLIC_KEY="$(swift scripts/derive_sparkle_public_key.swift "$SPARKLE_PRIVATE_KEY")"
-          export SPARKLE_PUBLIC_KEY
-          ./scripts/ci/drop-previous-nightlies-with-other-sparkle-key.sh \
-            nightly-delta/previous "$SPARKLE_PUBLIC_KEY"
-          SPARKLE_PREVIOUS_ARCHIVES_DIR=nightly-delta/previous \
-          SPARKLE_MAXIMUM_DELTAS=1 \
-          SPARKLE_DELTA_NAME_PREFIX="${CHANNEL_DMG_PREFIX}-${NIGHTLY_VARIANT}-" \
-            ./scripts/sparkle_generate_appcast.sh \
-              "$dmg" "$CHANNEL_RELEASE_TAG" "nightly-delta/output/$feed"
-          ls -l nightly-delta/output
-
-      - name: Upload delta result
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: cmux-nightly-deltas-${{ matrix.variant }}
-          path: nightly-delta/output/*
-          if-no-files-found: error
-          retention-days: 3
-
-  republish-nightly-deltas:
-    # This job is intentionally outside publish-nightly's concurrency group:
-    # a newer run may publish its full feed immediately, and the tag guard below
-    # prevents an older delta from overwriting it.
-    needs: [decide, build-nightly-app, publish-nightly, generate-nightly-deltas]
-    if: always() && needs.decide.outputs.should_publish == 'true' && needs.decide.outputs.fast_build != 'true' && needs.publish-nightly.result == 'success'
-    environment: release
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-      actions: read
-    env:
-      CHANNEL_RELEASE_TAG: ${{ needs.decide.outputs.release_tag }}
-      CHANNEL_FEED_BASE: ${{ needs.decide.outputs.feed_base }}
-      NIGHTLY_BUILD: ${{ needs.build-nightly-app.outputs.daemon_build }}
-      CHANNEL_DMG_PREFIX: ${{ needs.decide.outputs.dmg_prefix }}
-    steps:
-      - name: Checkout build ref
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-          ref: ${{ needs.decide.outputs.head_sha }}
-
-      - name: Download delta results
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          pattern: cmux-nightly-deltas-*
-          path: nightly-deltas
-          merge-multiple: true
-
-      - name: Republish deltas and revised appcasts
-        id: republish
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/commits/$CHANNEL_RELEASE_TAG" --jq .sha)"
-          if [ "$current_sha" != "${{ needs.decide.outputs.head_sha }}" ]; then
-            echo "Skipping stale delta result: $CHANNEL_RELEASE_TAG is at $current_sha"
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          deltas=()
-          for delta in nightly-deltas/*.delta; do
-            [ -f "$delta" ] || continue
-            deltas+=(--immutable "$delta")
-          done
-          if [ "${#deltas[@]}" -eq 0 ]; then
-            echo "No Sparkle deltas were generated; full appcasts remain current"
-            echo "publish=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          feeds=()
-          for feed in nightly-deltas/appcast*.xml; do
-            [ -f "$feed" ] || continue
-            feeds+=(--feed "$feed")
-          done
-          [ "${#feeds[@]}" -gt 0 ]
-          python3 scripts/ci/publish-release-assets.py \
-            --repo "$GITHUB_REPOSITORY" --tag "$CHANNEL_RELEASE_TAG" \
-            "${deltas[@]}" --replace-feeds "${feeds[@]}"
-          echo "publish=true" >> "$GITHUB_OUTPUT"
-
-      - name: Upload revised appcasts to R2
-        if: steps.republish.outputs.publish == 'true'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-          R2_ENDPOINT: "https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
-        run: |
-          set -euo pipefail
-          for feed in nightly-deltas/appcast*.xml; do
-            [ -f "$feed" ] || continue
-            name="$(basename "$feed")"
-            python3 scripts/ci/upload-r2-object.py \
-              --file "$feed" \
-              --endpoint-url "$R2_ENDPOINT" \
-              --bucket cmux-binaries \
-              --key "${CHANNEL_RELEASE_TAG}/$name" \
-              --content-type "application/xml" \
-              --cache-control "no-cache, no-store, must-revalidate"
-          done
-
-  # Keep one open issue per failed publication boundary. A stale channel tag
-  # leaves the assets, release metadata, and feeds available, so the incident
-  # must say that explicitly instead of claiming installs stopped updating.
   report-nightly-failure:
-    needs: [decide, build-nightly-ghostty-cli-helper, build-nightly-app, resolve-nightly-cmux-tui-client, prepare-nightly-variant, build-sign-notarize-nightly, verify-signed-nightly, publish-nightly, generate-nightly-deltas, republish-nightly-deltas]
+    needs: [decide, build-nightly-ghostty-cli-helper, build-nightly-app, resolve-nightly-cmux-tui-client, prepare-nightly-variant, build-sign-notarize-nightly, verify-signed-nightly, publish-nightly]
     if: always() && needs.decide.outputs.should_publish == 'true' && (contains(needs.*.result, 'failure') || needs.publish-nightly.outputs.tag_status == 'stale')
     runs-on: ubuntu-24.04
     permissions:
@@ -3231,7 +2956,7 @@ jobs:
             const failed = Object.entries(results).filter(([, v]) => v.result === 'failure').map(([k]) => k);
             const tagStale = process.env.TAG_STATUS === 'stale';
             const publicationLine = tagStale
-              ? `${appName} published, tag marker stale for ${process.env.HEAD_SHA} (${refName}). Assets, release metadata, and appcasts are available; only the channel completion marker failed to advance.`
+              ? `${appName} published, tag marker stale for ${process.env.HEAD_SHA} (${refName}). Assets and release metadata are available; only the channel completion marker failed to advance.`
               : `${appName} run ${runUrl} failed on ${process.env.HEAD_SHA} (${refName}) in: ${failed.join(', ')}.`;
             const failedLine = failed.length > 0 ? `Failed jobs: ${failed.join(', ')}.` : 'The tag marker update failed after publication completed.';
             const body = `${publicationLine}\n\n${failedLine}\n\nThe next successful publication will update this incident. Run: ${runUrl}`;
@@ -3249,8 +2974,8 @@ jobs:
             }
 
   close-nightly-failure-issue:
-    needs: [decide, publish-nightly, generate-nightly-deltas, republish-nightly-deltas]
-    if: needs.decide.outputs.should_publish == 'true' && needs.publish-nightly.result == 'success' && needs.publish-nightly.outputs.tag_status == 'updated' && (needs.generate-nightly-deltas.result == 'success' || needs.generate-nightly-deltas.result == 'skipped') && (needs.republish-nightly-deltas.result == 'success' || needs.republish-nightly-deltas.result == 'skipped')
+    needs: [decide, publish-nightly]
+    if: needs.decide.outputs.should_publish == 'true' && needs.publish-nightly.result == 'success' && needs.publish-nightly.outputs.tag_status == 'updated'
     runs-on: ubuntu-24.04
     permissions:
       contents: read

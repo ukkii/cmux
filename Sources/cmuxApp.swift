@@ -8,8 +8,6 @@ import CmuxSettings
 import CmuxSettingsUI
 import CmuxWorkspaces
 import CmuxTestSupport
-import CmuxUpdater
-import CmuxUpdaterUI
 import SwiftUI
 import Observation
 import Darwin
@@ -501,11 +499,6 @@ struct cmuxApp: App {
                 .cmuxFontMagnificationEnvironment()
                 .cmuxAppearanceColorScheme(appearanceMode)
                 .onAppear {
-#if DEBUG
-                    if ProcessInfo.processInfo.environment["CMUX_UI_TEST_MODE"] == "1" {
-                        AppDelegate.shared?.updateLog.append("ui test: cmuxApp onAppear")
-                    }
-#endif
                     bootstrapMainWindowScene()
                 }
                 .onChange(of: appearanceMode) { _ in
@@ -562,10 +555,6 @@ struct cmuxApp: App {
                 Button(String(localized: "menu.app.about", defaultValue: "About cmux")) {
                     showAboutPanel()
                 }
-                Button(String(localized: "menu.app.checkForUpdates", defaultValue: "Check for Updates…")) {
-                    appDelegate.checkForUpdates(nil)
-                }
-                InstallUpdateMenuItem(model: appDelegate.updateViewModel, actions: appDelegate)
             }
 
             CommandGroup(replacing: .appTermination) {
@@ -573,33 +562,6 @@ struct cmuxApp: App {
                     AppDelegate.requestApplicationTermination()
                 }
             }
-
-#if DEBUG
-            CommandMenu("Update Pill") {
-                Button("Show Update Pill") {
-                    appDelegate.showUpdatePill(nil)
-                }
-                Button("Show Long Nightly Pill") {
-                    appDelegate.showUpdatePillLongNightly(nil)
-                }
-                Button("Show Loading State") {
-                    appDelegate.showUpdatePillLoading(nil)
-                }
-                Menu("Show Update Error…") {
-                    ForEach(DebugUpdateErrorScenario.allCases, id: \.self) { scenario in
-                        Button(scenario.menuTitle) {
-                            appDelegate.updateViewModel.debugShowUpdateError(scenario)
-                        }
-                    }
-                }
-                Button("Hide Update Pill") {
-                    appDelegate.hideUpdatePill(nil)
-                }
-                Button("Automatic Update Pill") {
-                    appDelegate.clearUpdatePillOverride(nil)
-                }
-            }
-#endif
 
             CommandMenu(String(localized: "menu.notifications.title", defaultValue: "Notifications")) {
                 let snapshot = notificationMenuSnapshot
@@ -868,9 +830,6 @@ struct cmuxApp: App {
 
                 Divider()
 
-                Button(String(localized: "menu.updateLogs.copyUpdateLogs", defaultValue: "Copy Update Logs")) {
-                    appDelegate.copyUpdateLogs(nil)
-                }
                 Button(String(localized: "menu.updateLogs.copyFocusLogs", defaultValue: "Copy Focus Logs")) {
                     appDelegate.copyFocusLogs(nil)
                 }

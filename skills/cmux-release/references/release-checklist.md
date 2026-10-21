@@ -14,7 +14,6 @@ The PR Changelog lines are drafts. Edit them for tone and merge related lines, b
 
 ## Failure triage
 
-- `release-pretag-guard.sh` fails on a non-monotonic build number: run `./scripts/bump-version.sh`, commit the bump, retry.
 - Release automation fails **before** signing: inspect workflow configuration and version metadata.
 - Release automation fails **during** signing or notarization: inspect secret availability and Apple account status.
 - A Nightly run that created the notarization recovery artifacts but timed out or failed while waiting for Apple is resumable. Use the **Continue nightly notarization** workflow with the exact source run ID, run attempt, head SHA, and published branch; do not rebuild or dispatch a second Nightly run. The recovery workflow validates the saved submission IDs and polls Apple from a Linux worker, then publishes the existing DMG when notarization completes:
@@ -29,4 +28,4 @@ The PR Changelog lines are drafts. Edit them for tone and merge related lines, b
 
 ## Asset rename
 
-If `cmux-macos.dmg` is ever renamed, update every surface that assumes the `releases/latest/download/cmux-macos.dmg` path (README, website, updater feed, Homebrew formula). The thin DMGs and the per-arch feeds have their own surfaces: `UpdateFeedResolver` (`appcast-<arch>.xml`), `UpdateManualDownloadRecovery` (`cmux-macos-<arch>.dmg`), `scripts/release_asset_guard.js` and `scripts/ci/compose_stable_appcast.py`.
+If `cmux-macos.dmg` is ever renamed, update every surface that assumes the `releases/latest/download/cmux-macos.dmg` path (README, website, Homebrew formula). The thin DMGs have their own surface: `scripts/release_asset_guard.js`.

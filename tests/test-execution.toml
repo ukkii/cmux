@@ -1449,10 +1449,6 @@ path = "tests/test_remote_daemon_release_verification.py"
 lane = "linux-guard"
 
 [[test]]
-path = "tests/test_repair_nightly_appcast_content_types.py"
-lane = "linux-guard"
-
-[[test]]
 path = "tests/test_shell_histfile_ghostty_zdotdir_regression.py"
 lane = "legacy"
 
@@ -1895,10 +1891,6 @@ lane = "linux-guard"
 
 [[test]]
 path = "tests/test_ci_release_per_arch_stable.py"
-lane = "linux-guard"
-
-[[test]]
-path = "tests/test_compose_stable_appcast.py"
 lane = "linux-guard"
 
 [[test]]

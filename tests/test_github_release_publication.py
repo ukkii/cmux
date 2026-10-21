@@ -276,7 +276,6 @@ class PublicationTests(unittest.TestCase):
         for name in ("nightly.yml", "release.yml"):
             text = (ROOT / ".github/workflows" / name).read_text()
             self.assertTrue("scripts/ci/publish-release-assets.py" in text, name)
-            self.assertIn("--feed", text)
 
     def test_replacement_names_are_preserved_by_github(self):
         # GitHub normalizes leading-dot release asset names, so replacement
@@ -301,7 +300,7 @@ class PublicationTests(unittest.TestCase):
         self.assertIn('--github-output "$GITHUB_OUTPUT"', text[upload:finalize])
         # v0.65.2: a tag lookup cannot see drafts, so the publish action made a
         # second release and published it with 0 assets. Publish the staged id.
-        step = text[finalize:text.index("- name: Upload release appcast to R2")]
+        step = text[finalize:text.index("- name: Cleanup keychain")]
         self.assertNotIn("softprops/action-gh-release", step)
         self.assertIn("RELEASE_ID: ${{ steps.upload_release.outputs.release_id", step)
         self.assertIn('finalize-release.py publish', step)
@@ -314,7 +313,7 @@ class PublicationTests(unittest.TestCase):
         # failed with "Latest release cannot be draft or prerelease".
         text = (ROOT / ".github/workflows/release.yml").read_text()
         finalize = text.index("- name: Publish verified release")
-        step = text[finalize:text.index("- name: Upload release appcast to R2")]
+        step = text[finalize:text.index("- name: Cleanup keychain")]
         self.assertIn("--prerelease false", step)
 
 
