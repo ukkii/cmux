@@ -1,0 +1,8 @@
+# Extended regexes that must not reappear in shipped code after an upstream merge.
+# scripts/merge-upstream.sh greps added lines in Sources/, CLI/, Packages/, Resources/ and daemon/.
+import (Sparkle|CmuxUpdater|CmuxUpdaterUI|PostHog|Sentry|CmuxSentryReporting|CmuxSentryScrubbing|CmuxProductAnalytics|CmuxFeedback)\b
+import (CmuxCloud[A-Za-z]*|CmuxMobileHost|CmuxPhonePush|CmuxHive|CmuxTerminalSharing|CmuxTerminalSizing|CmuxIrohTransport|CmuxIrxTransport|IrohLib|CmuxWorkspacePresence|CmuxSimulatorStreamKit)\b
+import (CmuxAuthRuntime|CMUXAuthCore|StackAuth|CmuxAPIClient|CmuxClientConfig|WireGuardKit)\b
+posthog\.com|ingest\.(us\.|de\.)?sentry\.io|sentry_dsn|phc_[A-Za-z0-9]{10,}
+cmux\.com/api/
+SUFeedURL|appcast\.xml
