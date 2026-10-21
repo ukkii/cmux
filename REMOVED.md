@@ -203,3 +203,27 @@ What users see:
   `schemas/cmux.schema.json`.
 - The one-time terminal welcome banner still shows once and keeps its "already shown"
   state.
+
+## Repository cleanup
+
+The repository now holds only what the macOS app build and its local tooling need.
+
+- **iOS app:** `ios/`, `Packages/iOS/` and the iOS-only shared packages (`CmuxSyncStore`,
+  `CmuxTerminalClient`) are deleted, with the iOS entries in `cmux.xcworkspace`, the App
+  Store workflow config (`.asc/`), iOS/iPhone/mobile scripts and their tests.
+- **Server and web:** `web/` (website, API and Cloud backend, BUSL-licensed), `services/`,
+  `vault/`, `cmux-tui/` (SSH-TUI and Cloud client) and the control-plane schemas are deleted.
+- **Workers:** `workers/ci-artifacts`, `fleet-artifacts`, `iroh-v2` and `presence` are
+  deleted. `workers/cmux-paste-text` stays: the app build compiles it.
+- **Upstream CI:** all upstream GitHub Actions workflows, actions and runner config, the
+  fleet/testbox/merge-gate scripts, most of `scripts/ci/` and the tests of that
+  infrastructure are deleted. `.github/workflows/fork-ci.yml` runs the portable static
+  checks (`scripts/verify-local.py --all`, `plutil -lint`) on GitHub-hosted macOS runners
+  with no secrets. `scripts/reload.sh` no longer has `--prod-auth`, `--credentials-file`,
+  `--auth-profile` or `--expected-account`; tagged launches need no credentials. The
+  `homebrew-cmux` submodule and review-bot configs (CodeRabbit, Greptile) are removed.
+- **Docs:** Cloud, iroh, presence, mobile, CodeRouter, PostHog/Sentry and fleet CI docs are
+  deleted; the MDM policy doc, `THIRD_PARTY_LICENSES.md` and the Chief prompt no longer
+  describe removed features.
+- **Translated READMEs:** the 20 `README.*.md` translations described upstream's product
+  and pricing and are deleted. `README.md` describes this fork and how to build it.

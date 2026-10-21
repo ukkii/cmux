@@ -6,7 +6,7 @@ import CmuxHomeCore
 /// compact card on an incoming bubble (`QuestionCardRow.kind`):
 ///
 ///     MACHINE
-///     Create a cloud machine for api?
+///     Which agent should fix the login flake?
 ///     ( 8 GB ✓ )  ( 4 GB )  ( 16 GB )
 ///     4 vCPU · 2 of 3 machines on Pro                 ← the chosen option's detail (cost line)
 ///                                         [ Create ]   ← the asker's submit label, tinted

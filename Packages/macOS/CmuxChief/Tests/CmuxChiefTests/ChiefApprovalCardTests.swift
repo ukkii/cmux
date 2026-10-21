@@ -154,8 +154,8 @@ import Testing
         // cmux groups that run commands, type or answer for the user
         ("cmux send --workspace workspace:2 hi", nil),
         ("cmux send-key --workspace workspace:2 enter", nil),
-        // `vm exec` gets a rule for its one machine (ChiefAllowRules.vmExecRule).
-        ("cmux vm exec brave-otter -- id", ["cmux", "vm", "exec", "brave-otter"]),
+        // This fork has no cmux Cloud: `vm exec` gets no rule either.
+        ("cmux vm exec brave-otter -- id", nil),
         ("cmux vm run brave-otter id", nil),
         ("cmux vm ls", nil),
         ("cmux vm new --detach", nil),

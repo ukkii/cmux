@@ -70,44 +70,29 @@ import Testing
         #expect(await owner.pendingQuestion(in: conversation) == nil)
     }
 
-    // MARK: Always Allow for one machine's vm exec
+    // MARK: No Always Allow for vm exec
 
-    @Test func vmExecGetsAnAlwaysAllowRuleForItsMachineOnly() throws {
-        #expect(ChiefAllowRules.prefix(for: "cmux vm exec chief-dogfood-1 -- pwd") == ["cmux", "vm", "exec", "chief-dogfood-1"])
-        #expect(ChiefAllowRules.prefix(for: "cmux vm exec --timeout 600 vm-794a -- git clone --depth 1 https://x/y work/y")
-            == ["cmux", "vm", "exec", "vm-794a"])
-        #expect(ChiefAllowRules.prefix(for: "cmux cloud exec vm-794a -- id") == ["cmux", "vm", "exec", "vm-794a"])
-        #expect(ChiefToolPolicy.approvalOptions(command: "cmux vm exec vm-794a -- sh -c 'HOME=/home/cmux codex login status'")
-            == ["Allow", "Deny", "always:cmux vm exec vm-794a"])
-        // No rule for another vm verb, a forged machine, an unknown flag, or a remote cmux call.
+    /// This fork has no cmux Cloud, so `cmux vm|cloud exec` never gets an Always Allow rule,
+    /// and a rule for it stored on disk by an older build is not honored.
+    @Test func vmExecGetsNoAlwaysAllowRule() throws {
         for command in [
-            "cmux vm rm vm-794a", "cmux vm exec -- id", "cmux vm exec --force vm-794a -- id", "cmux vm exec 'a b' -- id",
-            "cmux vm exec vm-794a -- cmux vm rm other", "cmux vm exec vm-794a extra -- id",
+            "cmux vm exec chief-dogfood-1 -- pwd", "cmux vm exec --timeout 600 vm-794a -- git clone https://x/y work/y",
+            "cmux cloud exec vm-794a -- id", "cmux vm rm vm-794a",
         ] {
             #expect(ChiefAllowRules.prefix(for: command) == nil, "\(command)")
         }
+        #expect(ChiefToolPolicy.approvalOptions(command: "cmux vm exec vm-794a -- pwd") == ["Allow", "Deny"])
 
-        let rules = ChiefAllowRules()
-        #expect(try rules.add(command: "cmux vm exec vm-794a -- pwd") == ["cmux", "vm", "exec", "vm-794a"])
-        #expect(rules.allows(["cmux", "vm", "exec", "vm-794a", "--", "rm", "-rf", "work/old"]))
-        #expect(rules.allows(["cmux", "vm", "exec", "--timeout", "600", "vm-794a", "--", "git", "clone", "u", "work/x"]))
-        #expect(!rules.allows(["cmux", "vm", "exec", "other-machine", "--", "pwd"]))
-        #expect(!rules.allows(["cmux", "vm", "rm", "vm-794a"]))
-        #expect(!rules.allows(["cmux", "vm", "pause", "vm-794a"]))
-        #expect(!rules.allows(["cmux", "vm", "exec", "vm-794a", "--", "sh", "-c", "cmux vm rm other"]))
-    }
-
-    @Test func aMachineRuleSurvivesTheRulesFile() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("chief-rules-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: root) }
         let home = ChiefHome(root: root)
-        let writer = ChiefAllowRules()
-        writer.load(home)
-        try writer.add(rule: ["cmux", "vm", "exec", "vm-794a"])
+        try FileManager.default.createDirectory(at: home.stateDirectory, withIntermediateDirectories: true)
+        try Data(#"{"rules":[["cmux","vm","exec","vm-794a"]]}"#.utf8)
+            .write(to: home.stateDirectory.appendingPathComponent("allow-rules.json"))
         let reader = ChiefAllowRules()
         reader.load(home)
-        #expect(reader.all == [["cmux", "vm", "exec", "vm-794a"]])
-        #expect(reader.allows(["cmux", "vm", "exec", "vm-794a", "--", "pwd"]))
+        #expect(reader.all.isEmpty)
+        #expect(!reader.allows(["cmux", "vm", "exec", "vm-794a", "--", "pwd"]))
     }
 
     // MARK: Sign-in result
@@ -139,24 +124,14 @@ import Testing
 
     // MARK: Prompt
 
-    @Test func thePromptTeachesTheMachineHomeSignInStopAndLargePushes() {
-        let prompt = ChiefSystemPrompt(context: ChiefPromptContext()).build()
-        for rule in [
-            "/home/cmux", "Never probe for the home", "one `cmux vm exec <machine> -- pwd`",
-            "HOME=/home/cmux codex login status", "HOME=/home/cmux claude auth status --text", "\"needs_sign_in\"",
-            "Do not launch the agent", "Sign in with Device Code", "cmux ai-accounts upload codex", "run it only after they say yes",
-            "/home/cmux/work/<slug>", "does not promise a writable current directory", "Never push `/Users/cmux/manaflow/cmuxterm-hq`",
-            "cd /home/cmux/work/<slug>",
-            "cmux vm pause <machine>", "Stop cloud machine <name> (<machine>)", "--allow-large", "Prefer a clone",
-            "cmux vm open <machine>:desktop", "cua-driver doctor", "cua-driver list-tools", "cua-driver call <tool> [JSON args]",
-            "gently offer the cmux Pro upgrade",
+    @Test func thePromptTeachesNoCloudMachines() {
+        for prompt in [
+            ChiefSystemPrompt(context: ChiefPromptContext()).build(),
+            ChiefSystemPrompt(context: ChiefPromptContext(dangerouslySkipPermissions: true)).build(),
         ] {
-            #expect(prompt.contains(rule), "missing \(rule)")
+            for rule in ["cmux vm", "/home/cmux", "cmux ai-accounts upload", "cmux Pro", "cmux-result"] {
+                #expect(!prompt.contains(rule), "unexpected \(rule)")
+            }
         }
-        #expect(!prompt.contains("Not signed in: start it anyway"))
-        #expect(prompt.contains("Use plain `exec codex` or `exec claude`"))
-        #expect(!prompt.contains("exec codex --yolo '<task>'"))
-        let optedIn = ChiefSystemPrompt(context: ChiefPromptContext(dangerouslySkipPermissions: true)).build()
-        #expect(optedIn.contains("add `--yolo` only when it is appropriate"))
     }
 }

@@ -224,6 +224,10 @@ def workspace_package_roots(
     *,
     ref: str | None = None,
 ) -> set[str]:
+    # This fork removed the iOS app; a workspace that no longer exists in the
+    # checkout contributes no package roots, at the merge base either.
+    if not Path(workspace_file).exists():
+        return set()
     text = (
         file_text_at(ref, workspace_file)
         if ref is not None

@@ -1,0 +1,32 @@
+# Fast, portable checks for this fork. They need no secrets, no self-hosted
+# runners, no submodules and no Xcode build: only the static recipe from
+# scripts/verify-local.py (string catalogs, Xcode project normalization, test
+# wiring, workspace package groups, generated policy files and linters).
+name: fork-ci
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-checks:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          persist-credentials: false
+
+      - name: Lint Xcode project plist
+        run: plutil -lint cmux.xcodeproj/project.pbxproj
+
+      - name: Static checks (scripts/verify-local.py)
+        run: python3 scripts/verify-local.py --all

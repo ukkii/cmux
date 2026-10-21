@@ -51,7 +51,7 @@ CHECK_INPUTS = {
     "xcstrings": ("*.xcstrings",),
     "localization": ("*.xcstrings", "scripts/localization-allowed-omissions.json",
                      "scripts/localization-plurals.json"),
-    "localization-defaults": ("*.xcstrings", "Sources/*", "Packages/*", "CLI/*", "ios/*", "TunnelExtension/*",
+    "localization-defaults": ("*.xcstrings", "Sources/*", "Packages/*", "CLI/*", "TunnelExtension/*",
                               "scripts/localization_catalog.py", "scripts/localize_changes.py",
                               "scripts/localization-default-mismatches.json"),
     "project-tests": ("scripts/normalize-pbxproj.py", "scripts/check-pbxproj-group-membership.py"),
@@ -76,7 +76,7 @@ CHECK_INPUTS = {
     "remote-tmux-waits-tests": ("scripts/lint-remote-tmux-no-polling.sh",),
     "remote-tmux-waits": ("Sources/*RemoteTmux*", "Packages/*RemoteTmux*",
                           "scripts/remote-tmux-polling-baseline.txt"),
-    "feature-flags": ("web/*", "Sources/*", "Packages/*", "ios/*", "CLI/*",
+    "feature-flags": ("Sources/*", "Packages/*", "CLI/*",
                       "scripts/retired-feature-flags.txt"),
 }
 

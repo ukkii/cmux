@@ -26,7 +26,7 @@ import Testing
         let prompt = ChiefSystemPrompt(context: context()).build()
         #expect(prompt.hasPrefix("You are Chief, Ada's chief of staff inside cmux"))
         #expect(prompt.hasSuffix("Ada runs the backend team.\n\n- Likes terse replies.\n"))
-        let order = ["# Voice", "# Your tools", "# Coding agents", "# Cloud machines", "# Settings", "# Memory",
+        let order = ["# Voice", "# Your tools", "# Coding agents", "# Cards", "# Settings", "# Memory",
                      "# Environment", "# Workspaces when this conversation started", "# What you remember",
                      "# Ada's instructions for you", "# Ada\n"]
         let positions = order.map { prompt.range(of: $0)?.lowerBound }
@@ -75,26 +75,14 @@ import Testing
             "cmux workspace close workspace:N", "cmux read-screen --workspace workspace:N", "cmux send-key",
             "cmux set-status <key>", "cmux set-progress", "cmux notify --title", "cmux agent message workspace:N",
             "cmux sidebar-state --workspace", "cmux current --json",
-            "cmux vm new --detach", "cmux vm wait <machine> --wake", "cmux vm push <machine> <local-dir> work/<slug>",
-            "cmux vm workspace new <machine> --name \"<short title>\" --no-open --json", "cmux vm tree <machine> --json",
-            "cmux vm terminal send <machine> <term>", "--keys enter", "cmux vm terminal read <machine> <term>",
-            "cmux vm terminal wait <machine> <term> --pattern",
             "cmux settings path", "cmux config set", "cmux config doctor", "cmux reload-config",
             "cmux chief memory add", "cmux chief memory list", "cmux chief memory forget <id>",
         ] {
             #expect(prompt.contains(command), "missing \(command)")
         }
-        // Rules from the Cloud dispatch playbook.
-        #expect(prompt.contains("never reuse one"))
-        // Code reaches a machine by a clone there when it can; a push is small, sized first and asked about past 1 GB.
-        for rule in [
-            "cmux vm exec --timeout 600 <machine> -- git clone --depth 1 --branch <branch> <url> /home/cmux/work/<slug>",
-            "du -sh <dir>", "--exclude .build --exclude DerivedData --exclude node_modules --exclude target",
-            "never push more than about 1 GB without asking", "Use the absolute `/home/cmux/work/<slug>` destination",
-        ] {
-            #expect(prompt.contains(rule), "missing \(rule)")
-        }
-        #expect(prompt.contains("`--here`"))
+        // This fork has no cmux Cloud: the prompt must not teach `cmux vm`.
+        #expect(!prompt.contains("cmux vm"))
+        #expect(!prompt.contains("cmux Cloud") && !prompt.contains("Cloud machine"))
     }
 
     @Test func teachesQuietBatchedJSONReadsAndShortReplies() {

@@ -1,17 +1,14 @@
 # cmux Review Bot Rules
 
-These rules are the shared source of truth for Greptile and CodeRabbit custom review behavior.
+These rules are review guidance for human and agent reviewers of this fork. Upstream wired them into Greptile and CodeRabbit; this fork does not configure those bots.
 
 The rule files are intentionally short and focused. Each one defines one class of issue, concrete failure cases, allowed cases, and the expected reporting shape. Keep new rules narrow enough that a reviewer can apply the rule to a full PR diff without turning it into a broad style guide.
-
-Greptile is configured to publish a GitHub status check and inline findings. CodeRabbit is configured with assertive review, request-changes workflow, and error-mode custom pre-merge checks so unresolved findings can block merge through CodeRabbit's review flow.
 
 Current rules:
 
 - `algorithmic-complexity.md`
 - `browser-automation-webkit-waits-off-main.md`
 - `cache-substitution-correctness.md`
-- `cloud-persistent-session-and-early-input.md`
 - `full-internationalization.md`
 - `hot-path-allocating-formatting.md`
 - `no-ambient-global-state.md`
@@ -32,8 +29,6 @@ Current rules:
 - `swift-logging.md`
 - `swiftui-state-layout.md`
 - `user-facing-errors.md`
-- `readme-site-feature-parity.md`
-- `landing-page-registry-parity.md`
 - `remote-relay-authorization.md`
 
 Open source repository note: review bots should apply the configuration from the base branch. A PR that edits these rules should not be able to weaken its own review.

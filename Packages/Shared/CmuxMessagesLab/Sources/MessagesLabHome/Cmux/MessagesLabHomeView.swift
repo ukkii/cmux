@@ -208,18 +208,6 @@ public final class MessagesLabHomeView: NSView {
         get { projection.onRefusal }
         set { projection.onRefusal = newValue }
     }
-    /// cmux-classic: a Chief Cloud result card's Open Workspace: the host opens machine
-    /// workspace `workspace` (`ws_…`) of `machine` as a local workspace.
-    public var onOpenCloudWorkspace: (_ machine: String, _ workspace: String) -> Void {
-        get { projection.onOpenCloudWorkspace }
-        set { projection.onOpenCloudWorkspace = newValue }
-    }
-    /// cmux-classic: a Chief Cloud result card's Open Desktop: the host opens the
-    /// machine's interactive display in cmux for inspection or control.
-    public var onOpenCloudDesktop: (_ machine: String) -> Void {
-        get { projection.onOpenCloudDesktop }
-        set { projection.onOpenCloudDesktop = newValue }
-    }
 
     /// cmux-classic: a failed turn's Try Again: run the last message again, then call the
     /// completion with whether that started (ChiefNoticeRows.swift).

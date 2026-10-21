@@ -145,13 +145,9 @@ import Testing
 
     /// The prompt's example blocks are valid blocks (a model copying them gets cards).
     @Test func promptExamplesParse() {
-        let events = run(ChiefSystemPrompt.cloud, chunk: 64)
+        let events = run(ChiefSystemPrompt.cards, chunk: 64)
         #expect(events.filter { if case .question = $0 { return true }; return false }.count == 1)
-        #expect(events.filter { if case .result = $0 { return true }; return false }.count == 1)
-        for rule in ["cmux vm new --detach --name", "cmux vm wait <machine> --wake", "limits.memoryOptionsMb",
-                     "cmux vm workspace open <machine> <ws>", "\"status\": \"working\""] {
-            #expect(ChiefSystemPrompt.cloud.contains(rule), "missing \(rule)")
-        }
+        #expect(events.filter { if case .result = $0 { return true }; return false }.isEmpty)
     }
 
     // MARK: Provisioning commands

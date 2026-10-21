@@ -144,35 +144,25 @@ enum ChiefToolPolicy {
     /// each command's `--help`. A call runs without asking when its words
     /// start with one of these exactly (no global options before it) and no
     /// later word trips ``cmuxWordAsks(_:)``. Commands that print secrets
-    /// (`workspace env`, `vm env ls --show`) or write on a flag
+    /// (`workspace env`) or write on a flag
     /// (`agent inbox --mark-read`, `workspace status set`) are left out.
-    static let cmuxReadOnlyCommands: [[String]] = {
-        var commands: [[String]] = [
-            ["tree"], ["identify"], ["current"], ["current-window"], ["current-workspace"],
-            ["list-windows"], ["list-workspaces"], ["list-panes"], ["list-pane-surfaces"], ["list-panels"],
-            ["list-status"], ["list-notifications"], ["list-log"], ["list-buffers"],
-            ["read-screen"], ["read-selection"], ["capture-pane"], ["sidebar-state"], ["surface-health"],
-            ["top"], ["memory"], ["version"], ["ping"], ["capabilities"], ["socket-status"], ["browser-status"],
-            ["help"], ["docs"], ["guide"],
-            ["workspace", "list"], ["todo", "list"], ["auth", "status"],
-            ["settings", "path"], ["settings", "docs"],
-            ["config", "get"], ["config", "path"], ["config", "paths"], ["config", "docs"],
-            ["config", "check"], ["config", "validate"],
-            ["chief", "status"], ["chief", "read"], ["chief", "conversations"], ["chief", "home"],
-            ["chief", "memory", "list"], ["chief", "memory", "path"],
-            // A saved fact shows in the transcript as "Chief will remember · Undo"
-            // and passes the secret filter and size cap, so it needs no card.
-            ["chief", "memory", "add"],
-        ]
-        for vm in ["vm", "cloud"] {
-            commands += [
-                [vm, "ls"], [vm, "status"], [vm, "tree"], [vm, "stats"], [vm, "self"], [vm, "wait"],
-                [vm, "terminal", "read"], [vm, "terminal", "wait"], [vm, "terminal", "wait-exit"],
-                [vm, "terminal", "output"],
-            ]
-        }
-        return commands
-    }()
+    static let cmuxReadOnlyCommands: [[String]] = [
+        ["tree"], ["identify"], ["current"], ["current-window"], ["current-workspace"],
+        ["list-windows"], ["list-workspaces"], ["list-panes"], ["list-pane-surfaces"], ["list-panels"],
+        ["list-status"], ["list-notifications"], ["list-log"], ["list-buffers"],
+        ["read-screen"], ["read-selection"], ["capture-pane"], ["sidebar-state"], ["surface-health"],
+        ["top"], ["memory"], ["version"], ["ping"], ["capabilities"], ["socket-status"], ["browser-status"],
+        ["help"], ["docs"], ["guide"],
+        ["workspace", "list"], ["todo", "list"],
+        ["settings", "path"], ["settings", "docs"],
+        ["config", "get"], ["config", "path"], ["config", "paths"], ["config", "docs"],
+        ["config", "check"], ["config", "validate"],
+        ["chief", "status"], ["chief", "read"], ["chief", "conversations"], ["chief", "home"],
+        ["chief", "memory", "list"], ["chief", "memory", "path"],
+        // A saved fact shows in the transcript as "Chief will remember · Undo"
+        // and passes the secret filter and size cap, so it needs no card.
+        ["chief", "memory", "add"],
+    ]
 
     private static let plainReadOnlyPrograms: Set<String> = [
         "ls", "pwd", "cat", "head", "tail", "wc", "which", "jq", "grep", "cut", "tr", "column",

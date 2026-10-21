@@ -302,7 +302,6 @@ extension CMUXCLI {
         settings [open [target]|path|docs|<target>]
         config <doctor|check|validate|path|paths|docs|documentation|reload>
         shortcuts
-        feedback [--email <email> --body <text> [--image <path> ...]]
         feed tui|clear
         themes [list|set|clear]
         import [<terminal>] [--dry-run] [--yes] [--path <file>] [--json]
