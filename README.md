@@ -75,6 +75,23 @@ socket and settings domain. Do not build with bare `xcodebuild`; always go throu
 `scripts/reload.sh --tag <name>`. Before a native build, `python3 scripts/verify-local.py`
 runs the fast static checks; [CONTRIBUTING.md](CONTRIBUTING.md) has more detail.
 
+## Install
+
+There are no published releases. Build a Release app and install it over
+`/Applications/cmux.app`:
+
+```bash
+brew install go zig@0.16      # Go bundles cmuxd-remote, Zig builds the ghostty CLI helper
+./scripts/build-release-local.sh   # -> build/release/cmux.app
+# Quit cmux, then from another terminal (e.g. Terminal.app):
+./scripts/install-local.sh
+```
+
+The app keeps the stock bundle id `com.cmuxterm.app`, so settings, sessions and
+granted permissions carry over. It is signed ad hoc (no Apple team), so macOS may ask
+again for folder, accessibility or automation access on first launch. The previous app
+is kept as `/Applications/cmux.app.previous`. To update, pull and run both scripts again.
+
 ## Documentation
 
 - [Configuration](docs/configuration.md) and [customizing the look](docs/customizing-appearance.md)
