@@ -30,7 +30,7 @@ extension SurfaceCatalog {
     }
 
     func validateOwnership(of resources: [SurfaceResourceID], at destination: SurfaceDestination) throws {
-        guard let workspace = Workspace.liveWorkspace(id: destination.workspaceID) else {
+        guard let workspace = resolveWorkspace(destination.workspaceID) else {
             throw SurfaceCatalogError.destinationNotFound(destination.workspaceID.uuidString)
         }
         if let rejection = ownershipRejection(for: resources, policy: workspace.surfaceOwnershipPolicy) {
@@ -78,7 +78,7 @@ extension SurfaceCatalog {
             return dock.machineOwningSurface(panelID) ?? resource.machine
         }
         if let projection = projection(forPanel: panelID),
-           let workspace = Workspace.liveWorkspace(id: projection.workspaceID),
+           let workspace = resolveWorkspace(projection.workspaceID),
            let machine = workspace.machineOwningSurface(panelID, catalog: self) {
             return machine
         }

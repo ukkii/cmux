@@ -9,8 +9,9 @@ import Foundation
 ///
 /// `SurfaceCatalog.validateOwnership` refuses to project, materialize or restore into a
 /// workspace it cannot resolve, so a made-up workspace ID fails with `destinationNotFound`.
-/// Register every local workspace a test names; tests that need the catalog to
-/// resolve them also register their tab manager with `withAppRegistration`.
+/// Register every local workspace a test names, then build its catalog with
+/// `SurfaceCatalog(live:)`; tests that use `SurfaceCatalog.shared` also register their
+/// tab manager with `withAppRegistration`.
 @MainActor
 final class LiveWorkspaceFixture {
     private var workspacesByID: [UUID: Workspace] = [:]
@@ -66,13 +67,18 @@ extension LiveWorkspaceFixture {
 }
 
 extension SurfaceCatalog {
-    /// A catalog for tests that register their local destinations in `live`.
-    ///
-    /// The catalog resolves live destinations through `Workspace.liveWorkspace`, so
-    /// `live` only keeps the fixture's workspaces alive for the test's duration.
+    /// A catalog whose local destinations resolve through `live`, falling back to the
+    /// app's live workspace registry the way the production catalog does.
     @MainActor
     convenience init(live: LiveWorkspaceFixture) {
-        _ = live
         self.init()
+        resolveWorkspaces(from: live)
+    }
+
+    /// Resolves local destinations through `live` first, then through the app's
+    /// live workspace registry the way the production catalog does.
+    @MainActor
+    func resolveWorkspaces(from live: LiveWorkspaceFixture) {
+        resolveWorkspace = { [live] id in live[id] ?? Workspace.liveWorkspace(id: id) }
     }
 }

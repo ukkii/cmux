@@ -402,7 +402,8 @@ struct RightSidebarModeShortcutMatcherTests {
             #expect(matcher.modeShortcut(for: event, allowingAction: { _ in true }) == nil)
         }
 
-        #expect(initialLookupCount == 6)
+        // One lookup per right-sidebar mode shortcut (the Machines mode was removed).
+        #expect(initialLookupCount == 5)
         #expect(shortcutLookupCount == initialLookupCount)
         #expect(layoutLookupCount == 0)
     }
@@ -418,11 +419,11 @@ struct RightSidebarModeShortcutMatcherTests {
             layoutCharacterProvider: { _, _ in nil }
         )
 
-        #expect(shortcutLookupCount == 6)
+        #expect(shortcutLookupCount == 5)
         matcher.reload()
-        #expect(shortcutLookupCount == 12)
+        #expect(shortcutLookupCount == 10)
         _ = matcher.modeShortcut(for: makeKeyEvent(characters: "x", modifiers: []), allowingAction: { _ in true })
-        #expect(shortcutLookupCount == 12)
+        #expect(shortcutLookupCount == 10)
     }
 
     private func makeKeyEvent(

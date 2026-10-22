@@ -4056,6 +4056,148 @@ final class CLINotifyProcessIntegrationRegressionTests: XCTestCase {
         XCTAssertFalse(result.stderr.contains("Socket"), result.stderr)
     }
 
+    func testSSHForwardAgentFlagPropagatesCallerAgentSocket() throws {
+        let agentSocketPath = try makeExistingAgentSocketPath()
+        let run = try runMockedSSH(
+            arguments: ["--forward-agent"],
+            environmentOverrides: ["SSH_AUTH_SOCK": agentSocketPath]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+        let initialEnv = try XCTUnwrap(createParams["initial_env"] as? [String: String])
+
+        XCTAssertTrue(sshOptions.contains("ForwardAgent=yes"), "ssh_options: \(sshOptions)")
+        XCTAssertEqual(initialEnv["SSH_AUTH_SOCK"], agentSocketPath)
+        XCTAssertEqual(configureParams["ssh_auth_sock"] as? String, agentSocketPath)
+    }
+
+    func testSSHForwardAgentOptionPropagatesCallerAgentSocket() throws {
+        let agentSocketPath = try makeExistingAgentSocketPath()
+        let run = try runMockedSSH(
+            arguments: ["--ssh-option", "ForwardAgent=yes"],
+            environmentOverrides: ["SSH_AUTH_SOCK": agentSocketPath]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+        let initialEnv = try XCTUnwrap(createParams["initial_env"] as? [String: String])
+
+        XCTAssertTrue(sshOptions.contains("ForwardAgent=yes"), "ssh_options: \(sshOptions)")
+        XCTAssertEqual(initialEnv["SSH_AUTH_SOCK"], agentSocketPath)
+        XCTAssertEqual(configureParams["ssh_auth_sock"] as? String, agentSocketPath)
+    }
+
+    func testSSHForwardAgentRepeatedOptionUsesLastValue() throws {
+        let run = try runMockedSSH(
+            arguments: [
+                "--ssh-option", "ForwardAgent=yes",
+                "--ssh-option", "ForwardAgent=no",
+            ],
+            environmentOverrides: [
+                "SSH_AUTH_SOCK": "/tmp/cmux-test-agent-\(UUID().uuidString).sock",
+            ]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+
+        XCTAssertEqual(sshOptions.filter { $0.hasPrefix("ForwardAgent=") }, [
+            "ForwardAgent=yes",
+            "ForwardAgent=no",
+        ])
+        XCTAssertNil(createParams["initial_env"])
+        XCTAssertNil(configureParams["ssh_auth_sock"])
+    }
+
+    func testSSHPreservesCallerAgentSocketForOpenSSHConfigResolution() throws {
+        let agentSocketPath = try makeExistingAgentSocketPath()
+        let run = try runMockedSSH(
+            arguments: [],
+            environmentOverrides: [
+                "SSH_AUTH_SOCK": agentSocketPath,
+            ]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let initialEnv = try XCTUnwrap(createParams["initial_env"] as? [String: String])
+
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+        XCTAssertFalse(sshOptions.contains { $0.lowercased().hasPrefix("forwardagent") })
+        XCTAssertEqual(initialEnv["SSH_AUTH_SOCK"], agentSocketPath)
+        XCTAssertEqual(configureParams["ssh_auth_sock"] as? String, agentSocketPath)
+    }
+
+    func testSSHForwardAgentLiteralSocketPathPropagatesSocketPath() throws {
+        let agentSocketPath = try makeExistingAgentSocketPath()
+        let run = try runMockedSSH(
+            arguments: ["--ssh-option", "ForwardAgent=\(agentSocketPath)"]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+        let initialEnv = try XCTUnwrap(createParams["initial_env"] as? [String: String])
+
+        XCTAssertTrue(sshOptions.contains("ForwardAgent=\(agentSocketPath)"), "ssh_options: \(sshOptions)")
+        XCTAssertEqual(initialEnv["SSH_AUTH_SOCK"], agentSocketPath)
+        XCTAssertEqual(configureParams["ssh_auth_sock"] as? String, agentSocketPath)
+    }
+
+    func testSSHForwardAgentTildeSocketPathExpandsSocketPath() throws {
+        let homeURL = try makeTemporaryDirectory(prefix: "cmux-ssh-home")
+        let tildeSocketPath = "~/.ssh/cmux-test-agent.sock"
+        let expandedSocketURL = homeURL.appendingPathComponent(".ssh/cmux-test-agent.sock")
+        try createExistingFile(at: expandedSocketURL)
+        let run = try runMockedSSH(
+            arguments: ["--ssh-option", "ForwardAgent=\(tildeSocketPath)"],
+            environmentOverrides: [
+                "HOME": homeURL.path,
+            ]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+        let initialEnv = try XCTUnwrap(createParams["initial_env"] as? [String: String])
+
+        XCTAssertTrue(sshOptions.contains("ForwardAgent=\(tildeSocketPath)"), "ssh_options: \(sshOptions)")
+        XCTAssertEqual(initialEnv["SSH_AUTH_SOCK"], expandedSocketURL.path)
+        XCTAssertEqual(configureParams["ssh_auth_sock"] as? String, expandedSocketURL.path)
+    }
+
+    func testSSHForwardAgentAskDoesNotPropagateInvalidSocketPath() throws {
+        let run = try runMockedSSH(
+            arguments: ["--ssh-option", "ForwardAgent=ask"],
+            environmentOverrides: [
+                "SSH_AUTH_SOCK": "/tmp/cmux-test-agent-\(UUID().uuidString).sock",
+            ]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+
+        XCTAssertTrue(sshOptions.contains("ForwardAgent=ask"), "ssh_options: \(sshOptions)")
+        XCTAssertNil(createParams["initial_env"])
+        XCTAssertNil(configureParams["ssh_auth_sock"])
+    }
+
+    func testSSHNoForwardAgentFlagOverridesConfig() throws {
+        let agentSocketPath = try makeExistingAgentSocketPath()
+        let run = try runMockedSSH(
+            arguments: ["--no-forward-agent"],
+            environmentOverrides: [
+                "SSH_AUTH_SOCK": agentSocketPath,
+            ]
+        )
+        let createParams = try XCTUnwrap(params(for: "workspace.create", in: run.requests))
+        let configureParams = try XCTUnwrap(params(for: "workspace.remote.configure", in: run.requests))
+        let sshOptions = try XCTUnwrap(configureParams["ssh_options"] as? [String])
+        let initialEnv = try XCTUnwrap(createParams["initial_env"] as? [String: String])
+
+        XCTAssertTrue(sshOptions.contains("ForwardAgent=no"), "ssh_options: \(sshOptions)")
+        XCTAssertEqual(initialEnv["SSH_AUTH_SOCK"], agentSocketPath)
+        XCTAssertEqual(configureParams["ssh_auth_sock"] as? String, agentSocketPath)
+    }
+
     func testSSHPTYAttachBridgeErrorClearsLocalStateBeforeReady() throws {
         let cliPath = try bundledCLIPath()
         let socketPath = makeSocketPath("sshpty")
@@ -9926,6 +10068,117 @@ final class CLINotifyProcessIntegrationRegressionTests: XCTestCase {
         let stdout: String
         let workspaceId: String
         let surfaceId: String
+    }
+    /// Runs `cmux ssh` against a mock app socket. Every session uses the classic
+    /// cmuxd-remote flow: `workspace.create` followed by `workspace.remote.configure`.
+    private func runMockedSSH(
+        arguments sshArguments: [String],
+        jsonOutput: Bool = false,
+        omitWorkspaceCreateSurfaceID: Bool = false,
+        environmentOverrides: [String: String] = [:],
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> MockedSSHRun {
+        let cliPath = try bundledCLIPath()
+        let socketPath = makeSocketPath("ssh")
+        let homeURL = try makeTemporaryDirectory(prefix: "cmux-ssh-home")
+        let listenerFD = try bindUnixSocket(at: socketPath)
+        let state = MockSocketServerState()
+        let workspaceId = "11111111-1111-1111-1111-111111111111"
+        let surfaceId = "33333333-3333-3333-3333-333333333333"
+        let windowId = "22222222-2222-2222-2222-222222222222"
+
+        defer {
+            Darwin.close(listenerFD)
+            unlink(socketPath)
+        }
+
+        startDetachedMockServer(listenerFD: listenerFD, state: state) { line in
+            guard let payload = self.jsonObject(line),
+                  let id = payload["id"] as? String,
+                  let method = payload["method"] as? String else {
+                return self.malformedRequestResponse(raw: line)
+            }
+
+            switch method {
+            case "workspace.create":
+                var result: [String: Any] = [
+                    "workspace_id": workspaceId,
+                    "window_id": windowId,
+                ]
+                if !omitWorkspaceCreateSurfaceID {
+                    result["surface_id"] = surfaceId
+                }
+                return self.v2Response(
+                    id: id,
+                    ok: true,
+                    result: result
+                )
+            case "surface.list":
+                return self.v2Response(
+                    id: id,
+                    ok: true,
+                    result: [
+                        "surfaces": [
+                            [
+                                "id": surfaceId,
+                                "ref": "surface:1",
+                                "index": 1,
+                                "focused": true,
+                            ],
+                        ],
+                    ]
+                )
+            case "workspace.remote.configure":
+                return self.v2Response(
+                    id: id,
+                    ok: true,
+                    result: ["remote": ["state": "connected"]]
+                )
+            default:
+                return self.v2Response(
+                    id: id,
+                    ok: false,
+                    error: ["code": "unexpected_method", "message": "Unexpected method \(method)"]
+                )
+            }
+        }
+
+        var environment = ProcessInfo.processInfo.environment
+        for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
+            environment.removeValue(forKey: key)
+        }
+        environment["CMUX_SOCKET_PATH"] = socketPath
+        environment["HOME"] = homeURL.path
+        for (key, value) in environmentOverrides {
+            environment[key] = value
+        }
+
+        let commandArguments = jsonOutput
+            ? ["--json", "--id-format", "uuids", "ssh", "example.test", "--no-focus"] + sshArguments
+            : ["ssh", "example.test", "--no-focus"] + sshArguments
+        let result = runProcess(
+            executablePath: cliPath,
+            arguments: commandArguments,
+            environment: environment,
+            timeout: 5
+        )
+
+        let sawConfigureRequest = waitForMockSocketCommand(in: state) { line in
+            line.contains(#""method":"workspace.remote.configure""#)
+        }
+        XCTAssertTrue(sawConfigureRequest, "Expected workspace.remote.configure, saw \(state.snapshot())", file: file, line: line)
+        XCTAssertFalse(result.timedOut, result.stderr, file: file, line: line)
+        XCTAssertEqual(result.status, 0, result.stderr, file: file, line: line)
+        XCTAssertTrue(result.stderr.isEmpty, result.stderr, file: file, line: line)
+
+        let requests = state.snapshot().compactMap { jsonObject($0) }
+        return MockedSSHRun(
+            requests: requests,
+            stdout: result.stdout,
+            workspaceId: workspaceId,
+            surfaceId: surfaceId
+        )
     }
     private func makeExistingAgentSocketPath() throws -> String {
         let directory = try makeTemporaryDirectory(prefix: "cmux-agent")

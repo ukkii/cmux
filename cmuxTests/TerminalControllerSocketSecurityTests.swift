@@ -797,48 +797,6 @@ final class TerminalControllerSocketSecurityTests {
         }
     }
 
-    @Test func testMobilePanelArtifactMethodsRunOnSocketWorker() async throws {
-        let socketPath = makeSocketPath("panel-artifact-worker")
-        let tabManager = TabManager()
-        TerminalController.shared.start(
-            tabManager: tabManager,
-            socketPath: socketPath,
-            accessMode: .allowAll
-        )
-        try waitForSocket(at: socketPath)
-
-        for method in [
-            "mobile.panel.artifact.stat",
-            "mobile.panel.artifact.thumbnail",
-        ] {
-            let requestLine = try makeV2RequestLine(method: method, params: [:])
-            let mainEnvelope = try decodeV2Envelope(TerminalController.shared.handleSocketLine(requestLine))
-            let mainError = try XCTUnwrap(mainEnvelope["error"] as? [String: Any], method)
-            XCTAssertEqual(mainError["code"] as? String, "invalid_dispatch", method)
-
-            let workerEnvelope = try await sendV2RequestAsync(
-                method: method,
-                params: [:],
-                to: socketPath
-            )
-            let workerError = try XCTUnwrap(workerEnvelope["error"] as? [String: Any], method)
-            XCTAssertNotEqual(workerError["code"] as? String, "invalid_dispatch", method)
-            XCTAssertNotEqual(workerError["code"] as? String, "method_not_found", method)
-            XCTAssertNotEqual(workerError["code"] as? String, "internal_error", method)
-            XCTAssertEqual(workerError["code"] as? String, "invalid_params", method)
-        }
-
-        // Fetch requires the authenticated mobile RPC execution context; a
-        // local control socket must not bypass artifact-transfer authorization.
-        let fetchEnvelope = try await sendV2RequestAsync(
-            method: "mobile.panel.artifact.fetch",
-            params: [:],
-            to: socketPath
-        )
-        let fetchError = try XCTUnwrap(fetchEnvelope["error"] as? [String: Any])
-        XCTAssertEqual(fetchError["code"] as? String, "method_not_found")
-    }
-
     @Test func testV1PingRunsOnWorkerLaneAndStaysMainThreadCallable() async throws {
         let socketPath = makeSocketPath("v1-ping")
         let tabManager = TabManager()

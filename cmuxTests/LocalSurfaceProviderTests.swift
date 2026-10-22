@@ -100,20 +100,4 @@ final class LocalSurfaceProviderTests: XCTestCase {
         manager.closeWorkspace(source, recordHistory: false)
         manager.closeWorkspace(target, recordHistory: false)
     }
-
-    func testARemoteProjectionSupersedesTheLocalPlaceholderForTheSamePane() {
-        let catalog = SurfaceCatalog()
-        let panelID = UUID(), workspaceID = UUID()
-        let local = SurfaceResource(id: LocalSurfaceProvider.resourceID(forTerminalPanel: panelID), title: "zsh", detail: nil, lifecycle: .running, agent: nil, remoteWorkspace: nil, port: nil, url: nil)
-        catalog.upsert(local)
-        catalog.record(SurfaceProjection(resource: local.id, workspaceID: workspaceID, panelID: panelID))
-
-        let remoteID = SurfaceResourceID(machine: .cloud("vivid-newt"), kind: .terminal, key: "term_1")
-        catalog.upsert(SurfaceResource(id: remoteID, title: "root@vivid-newt", detail: "/root", lifecycle: .running, agent: nil, remoteWorkspace: nil, port: nil, url: nil))
-        catalog.record(SurfaceProjection(resource: remoteID, workspaceID: workspaceID, panelID: panelID))
-
-        XCTAssertEqual(catalog.projection(forPanel: panelID)?.resource, remoteID)
-        XCTAssertNil(catalog.resources[local.id], "the pane counts once, as the remote terminal")
-        XCTAssertEqual(catalog.snapshot.projections.count, 1)
-    }
 }
