@@ -25,8 +25,6 @@ from pathlib import Path
 ALIASES = {
     "cloud": "vm",
     "remote": "remotes",
-    "login": "auth login",
-    "logout": "auth logout",
     "open-browser": "browser open",
     "navigate": "browser navigate",
     "browser-back": "browser back",

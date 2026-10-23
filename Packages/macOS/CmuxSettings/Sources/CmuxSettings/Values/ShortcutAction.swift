@@ -9,7 +9,6 @@ import Foundation
 public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCodable {
     // MARK: App
     case openSettings
-    case openTeamPicker
     case reloadConfiguration
     case showHideAllWindows
     case globalSearch
@@ -27,8 +26,6 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case newTab
     case newLocalWorkspace
     case newBrowserWorkspace
-    case newCloudWorkspace
-    case newCloudMachine
     case saveLayoutTemplate
     case openFolder
     case reopenPreviousSession
@@ -54,7 +51,6 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case switchRightSidebarToSessions
     case switchRightSidebarToFeed
     case switchRightSidebarToDock
-    case switchRightSidebarToMachines
     case triggerFlash
 
     // MARK: Navigation
@@ -122,8 +118,6 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case sendCtrlFToTerminal
     /// Pastes the path of the newest screenshot into the focused terminal.
     case pasteLastScreenshot
-    /// Makes the focused shared terminal's grid follow this Mac's window.
-    case sizeTerminalToMyWindow
     /// Clears the focused terminal's visible screen while preserving scrollback.
     case clearScreenKeepScrollback
 
@@ -319,8 +313,7 @@ extension ShortcutAction {
     public var defaultFocusWhenClause: ShortcutWhenClause {
         switch self {
         case .switchRightSidebarToFiles, .switchRightSidebarToFind,
-             .switchRightSidebarToSessions, .switchRightSidebarToFeed, .switchRightSidebarToDock,
-             .switchRightSidebarToMachines:
+             .switchRightSidebarToSessions, .switchRightSidebarToFeed, .switchRightSidebarToDock:
             return .atom(.sidebarFocus)
         case .fileExplorerOpenSelection, .fileExplorerOpenSelectionFinderAlias:
             return .atom(.sidebarFocus)
@@ -328,7 +321,7 @@ extension ShortcutAction {
             return .key(ShortcutContextKnownKey.commandPaletteVisible.rawValue)
         case .renameTab, .renameWorkspace:
             return .and(.not(.atom(.browserFocus)), .not(.atom(.sidebarFocus)))
-        case .sendCtrlFToTerminal, .pasteLastScreenshot, .sizeTerminalToMyWindow, .clearScreenKeepScrollback:
+        case .sendCtrlFToTerminal, .pasteLastScreenshot, .clearScreenKeepScrollback:
             return .and(.not(.atom(.browserFocus)), .not(.atom(.sidebarFocus)))
         case .focusHistoryBack, .focusHistoryForward:
             return .not(.atom(.browserFocus))

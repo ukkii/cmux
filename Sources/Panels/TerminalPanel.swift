@@ -1,4 +1,3 @@
-import CmuxCloud
 import Foundation
 import CmuxTerminalCore
 import Combine
@@ -111,21 +110,10 @@ final class TerminalPanel: Panel, ObservableObject {
     /// Set by the owning workspace while `agentWakeFailure` is shown.
     var onRequestAgentWakeRetry: (() -> Void)?
     var onDismissAgentWakeFailure: (() -> Void)?
-    /// A native cloud pane's live attachment state (nil for local terminals).
-    /// Written only by the owning cloud session; the view shows it.
-    var cloudAttachment: CloudTerminalAttachmentStatus?
-    var deviceAttachment: DeviceTerminalAttachmentStatus?
 
     var onRequestWorkspacePaneFlash: ((WorkspaceAttentionFlashReason) -> Void)?
     var onRequestAgentHibernationResume: ((Bool) -> Bool)?
     var onRequestAgentHibernationTerminationRetry: (() -> Void)?
-    /// Optional owner hook for a manual mirror that becomes the active pane.
-    /// Ordinary terminals leave this unset.
-    var onTerminalFocus: (() -> Void)?
-    /// Optional input hook owned by a manual-mirror session. Workspace routing
-    /// composes this hook into its current owner callback so a panel that moves
-    /// between workspaces keeps its Cloud input behavior.
-    var onManualMirrorExplicitInput: (() -> Void)?
 
     private var cancellables = Set<AnyCancellable>()
     /// Shared monotonic gate for AppKit and workspace-overlay flash renderers.
@@ -373,7 +361,6 @@ final class TerminalPanel: Panel, ObservableObject {
     }
 
     func terminalDidBecomeFocused() {
-        onTerminalFocus?()
         guard isTextBoxActive else { return }
         shouldFocusTextBoxWhenAvailable = false
         shouldOpenTextBoxFilePickerWhenAvailable = false

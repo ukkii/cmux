@@ -23,9 +23,6 @@ enum ChiefStrings {
     static var firstRunHeadline: String {
         String(localized: "chief.firstRun.headline", defaultValue: "What should we do?")
     }
-    static var firstRunCloudMachine: String {
-        String(localized: "chief.firstRun.prompt.cloudMachine", defaultValue: "Set up a cloud machine")
-    }
     static var firstRunCodexAgents: String {
         String(localized: "chief.firstRun.prompt.codexAgents", defaultValue: "Send 3 Codex agents on these issues")
     }
@@ -253,16 +250,6 @@ enum ChiefStrings {
 
     static var unanswered: String {
         String(localized: "chief.send.unanswered", defaultValue: "A change may not have gone through.")
-    }
-
-    /// A Cloud result card's Open Workspace failed; `machine` is the machine id.
-    static func cloudOpenFailed(_ machine: String) -> String {
-        String(localized: "chief.cloud.openFailed", defaultValue: "Couldn’t open the workspace on \(machine).")
-    }
-
-    /// The notice shown when the Cloud result card cannot open its live display.
-    static func cloudDesktopOpenFailed(_ machine: String) -> String {
-        String(localized: "chief.cloud.desktopOpenFailed", defaultValue: "Couldn’t open the desktop on \(machine).")
     }
 
     /// A send refused after it left the composer.

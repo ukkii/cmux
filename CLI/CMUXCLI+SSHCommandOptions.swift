@@ -28,14 +28,9 @@ extension CMUXCLI {
         let terminalTransport: WorkspaceRemoteTerminalTransport
         let terminalProfile: WorkspaceRemoteTerminalProfile
         let agentSocketPath: String?
-        let passwordCredential: String?
         let localSocketPath: String
         let remoteRelayPort: Int
         let pinWorkspaceToTop: Bool
-        let daemonWebSocketEndpoint: VMDaemonWebSocketEndpoint?
-        /// True when the remote is a cloud VM with cmuxd-remote pre-baked in the image.
-        /// Set by `cmux vm new/shell/attach`; false for plain `cmux ssh`.
-        let skipDaemonBootstrap: Bool
 
         /// Explicit TTY flags, or cmux's forced-PTY default when no caller
         /// `RequestTTY` option controls the interactive session.
@@ -63,12 +58,9 @@ extension CMUXCLI {
             terminalTransport: WorkspaceRemoteTerminalTransport = .ssh,
             terminalProfile: WorkspaceRemoteTerminalProfile = .shell,
             agentSocketPath: String? = nil,
-            passwordCredential: String? = nil,
             localSocketPath: String,
             remoteRelayPort: Int,
-            pinWorkspaceToTop: Bool = false,
-            daemonWebSocketEndpoint: VMDaemonWebSocketEndpoint? = nil,
-            skipDaemonBootstrap: Bool = false
+            pinWorkspaceToTop: Bool = false
         ) {
             self.destination = destination
             self.displayDestination = displayDestination ?? destination
@@ -83,12 +75,9 @@ extension CMUXCLI {
             self.terminalTransport = terminalTransport
             self.terminalProfile = terminalProfile
             self.agentSocketPath = agentSocketPath
-            self.passwordCredential = passwordCredential
             self.localSocketPath = localSocketPath
             self.remoteRelayPort = remoteRelayPort
             self.pinWorkspaceToTop = pinWorkspaceToTop
-            self.daemonWebSocketEndpoint = daemonWebSocketEndpoint
-            self.skipDaemonBootstrap = skipDaemonBootstrap
         }
     }
 }

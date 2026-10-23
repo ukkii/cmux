@@ -160,13 +160,11 @@ final class WorkspaceActivityReorderControllerTests: XCTestCase {
         var effects = TerminalNotificationPolicyEffects()
         effects.reorderWorkspace = true
         let localMoves = Counter()
-        let cloudRaises = Counter()
         func apply() {
             effects.applySidebarOrdering(
                 defaults: defaults,
                 workspaceId: fixture.bottom.id,
                 controller: fixture.controller,
-                raiseCloudRow: { cloudRaises.value += 1 },
                 moveLocalWorkspace: { localMoves.value += 1 }
             )
         }
@@ -174,21 +172,18 @@ final class WorkspaceActivityReorderControllerTests: XCTestCase {
         UserDefaultsSettingsClient(defaults: defaults).set(.off, for: key)
         apply()
         XCTAssertEqual(localMoves.value, 0)
-        XCTAssertEqual(cloudRaises.value, 0)
 
         // The legacy mode moves immediately, even while the sidebar is hovered.
         interacting = true
         UserDefaultsSettingsClient(defaults: defaults).set(.notifications, for: key)
         apply()
         XCTAssertEqual(localMoves.value, 1)
-        XCTAssertEqual(cloudRaises.value, 1)
 
-        // Agent-activity mode raises the Cloud row at once and routes the
-        // local move through the gate, which defers it while hovered.
+        // Agent-activity mode routes the local move through the gate, which
+        // defers it while hovered.
         let before = fixture.manager.tabs.map(\.id)
         UserDefaultsSettingsClient(defaults: defaults).set(.agentActivity, for: key)
         apply()
-        XCTAssertEqual(cloudRaises.value, 2)
         XCTAssertEqual(localMoves.value, 1)
         XCTAssertEqual(fixture.manager.tabs.map(\.id), before)
         interacting = false

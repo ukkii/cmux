@@ -20,31 +20,12 @@ extension SessionRemoteWorkspaceSnapshot {
         let normalizedDestination = destination.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedDestination.isEmpty,
               !normalizedDestination.isOptionLikeSSHDestination else { return nil }
-        let normalizedManagedCloudVMID = WorkspaceRemoteConfiguration.normalizedOptionalValue(managedCloudVMID)
-        if transport == .websocket {
-            guard let normalizedManagedCloudVMID else { return nil }
-            return WorkspaceRemoteConfiguration(
-                transport: .websocket,
-                terminalTransport: .ssh,
-                destination: normalizedDestination,
-                port: nil,
-                identityFile: nil,
-                sshOptions: [],
-                localProxyPort: nil,
-                relayPort: nil,
-                relayID: nil,
-                relayToken: nil,
-                localSocketPath: WorkspaceRemoteConfiguration.normalizedOptionalValue(localSocketPath),
-                managedCloudVMID: normalizedManagedCloudVMID,
-                terminalStartupCommand: Self.defaultFreestyleSSHAttachCommand(vmID: normalizedManagedCloudVMID),
-                agentSocketPath: nil,
-                daemonWebSocketEndpoint: nil,
-                preserveAfterTerminalExit: true,
-                persistentDaemonSlot: Self.defaultFreestylePersistentDaemonSlot,
-                skipDaemonBootstrap: true
-            )
-        }
-        guard transport == .ssh else { return nil }
+        // The websocket transport and managed Cloud VM descriptors belonged to
+        // the removed cmux Cloud product; such workspaces are not restored.
+        guard transport == .ssh,
+              WorkspaceRemoteConfiguration.normalizedOptionalValue(managedCloudVMID) == nil,
+              !Self.isLegacyCloudVMDestination(normalizedDestination, skipDaemonBootstrap: skipDaemonBootstrap)
+        else { return nil }
         let normalizedPort = port.flatMap { port in
             (1...65535).contains(port) ? port : nil
         }
@@ -59,22 +40,10 @@ extension SessionRemoteWorkspaceSnapshot {
             // empty value remains an explicit disable.
             || (self.agentSocketPathOverrideIsSet == true &&
                 SSHAgentSocketResolver(environment: [:]).normalizedAgentSocketPath(self.agentSocketPath) == nil)
-        if let configuration = tuiSSHConfiguration(agentSocketPath: agentSocketPath) { return configuration }
-        if let configuration = legacyTmuxSSHConfiguration(agentSocketPath: agentSocketPath) { return configuration }
-        if skipDaemonBootstrap != true, (terminalTransport ?? .ssh) == .ssh,
-           preserveAfterTerminalExit == true {
-            // Preserve the old descriptor for recovery, but never resume its daemon
-            // or start a replacement workload under a different session owner.
-            var configuration = WorkspaceRemoteConfiguration(destination: normalizedDestination,
-                port: normalizedPort, identityFile: identityFile, sshOptions: sshOptions,
-                localProxyPort: nil, relayPort: nil, relayID: nil, relayToken: nil,
-                localSocketPath: nil, terminalStartupCommand: nil,
-                agentSocketPath: agentSocketPath,
-                agentSocketPathOverrideIsSet: agentSocketPathOverrideIsSet,
-                preserveAfterTerminalExit: true)
-            configuration.restoredSSHSession = self
-            return configuration
-        }
+        // Every SSH descriptor, including one saved by the retired cmux-tui
+        // carrier (`sshSessionOwner == "cmux-tui"`), restores through the
+        // cmuxd-remote lifecycle below. A descriptor without a relay namespace
+        // reconnects with a plain SSH command.
 
         let normalizedPersistentDaemonSlot = WorkspaceRemoteConfiguration.normalizedPersistentDaemonSlot(persistentDaemonSlot)
         let normalizedLocalSocketPath = WorkspaceRemoteConfiguration.normalizedOptionalValue(localSocketPath)
@@ -91,9 +60,6 @@ extension SessionRemoteWorkspaceSnapshot {
         let fallbackSSHOptions = preserveSSHOptions
             ? Self.normalizedSSHOptions(preservedOptions)
             : preservedOptions
-        let managedCloudVMID = normalizedManagedCloudVMID
-            ?? Self.legacyDefaultFreestyleVMID(destination: normalizedDestination, skipDaemonBootstrap: skipDaemonBootstrap)
-        let defaultFreestyleVMID = skipDaemonBootstrap == true ? managedCloudVMID : nil
         let requestedTerminalTransport = terminalTransport ?? .ssh
         let restoredTerminalTransport: WorkspaceRemoteTerminalTransport = requestedTerminalTransport
             .isSupportedForRemoteConfiguration(
@@ -102,11 +68,8 @@ extension SessionRemoteWorkspaceSnapshot {
             )
             ? requestedTerminalTransport
             : .ssh
-        let restoredTerminalProfile: WorkspaceRemoteTerminalProfile = defaultFreestyleVMID == nil
-            ? (terminalProfile ?? .shell)
-            : .shell
+        let restoredTerminalProfile: WorkspaceRemoteTerminalProfile = terminalProfile ?? .shell
         let effectivePersistentDaemonSlot = normalizedPersistentDaemonSlot
-            ?? (defaultFreestyleVMID == nil ? nil : Self.defaultFreestylePersistentDaemonSlot)
         let preservePTYSession =
             restoredTerminalTransport == .ssh &&
             allowPersistentPTYRestore &&
@@ -131,7 +94,6 @@ extension SessionRemoteWorkspaceSnapshot {
             preservePTYSession ||
             restoreMoshRelayNamespace ||
             restoreOrdinarySSHRelayNamespace
-        let restoreDefaultFreestyleSSHD = defaultFreestyleVMID != nil
         let restoredSSHOptions = preservePTYSession ? optionsWithRestoreControlDefaults : fallbackSSHOptions
         let foregroundAuthToken = preservePTYSession ? UUID().uuidString.lowercased() : nil
         let foregroundAuth = foregroundAuthToken.map {
@@ -170,7 +132,6 @@ extension SessionRemoteWorkspaceSnapshot {
             relayID: restoredRelayID,
             relayToken: restoredRelayToken,
             localSocketPath: restoreRelayNamespace ? normalizedLocalSocketPath : nil,
-            managedCloudVMID: managedCloudVMID,
             terminalStartupCommand: {
                 if preservePTYSession {
                     return SSHPTYAttachStartupCommandBuilder.command(
@@ -180,9 +141,6 @@ extension SessionRemoteWorkspaceSnapshot {
                         // persisted session IDs; this workspace default is for new panes.
                         requireExisting: false
                     )
-                }
-                if let defaultFreestyleVMID {
-                    return Self.defaultFreestyleSSHAttachCommand(vmID: defaultFreestyleVMID)
                 }
                 let fallbackCommand = sshReconnectCommand(
                     destination: normalizedDestination,
@@ -233,7 +191,7 @@ extension SessionRemoteWorkspaceSnapshot {
             agentSocketPath: WorkspaceRemoteConfiguration.resolvedAgentSocketPath(
                 sshOptions: restoredSSHOptions,
                 // The agent the connection authenticated with wins over a
-                // `ForwardAgent` path, as it does for cmux-tui carriers.
+                // `ForwardAgent` path.
                 explicitAgentSocketPath: agentSocketPath,
                 explicitAgentSocketPathIsSet: agentSocketPathOverrideIsSet,
                 // `restorableAgentSocketPath` already applied the restore
@@ -245,8 +203,8 @@ extension SessionRemoteWorkspaceSnapshot {
             ),
             agentSocketPathOverrideIsSet: agentSocketPathOverrideIsSet,
             daemonWebSocketEndpoint: nil,
-            preserveAfterTerminalExit: preservePTYSession || restoreDefaultFreestyleSSHD,
-            persistentDaemonSlot: (preservePTYSession || restoreDefaultFreestyleSSHD) ? effectivePersistentDaemonSlot : nil,
+            preserveAfterTerminalExit: preservePTYSession,
+            persistentDaemonSlot: preservePTYSession ? effectivePersistentDaemonSlot : nil,
             skipDaemonBootstrap: skipDaemonBootstrap == true
         )
     }
@@ -555,55 +513,13 @@ extension SessionRemoteWorkspaceSnapshot {
         SSHAgentSocketResolver().removingOptions(named: "RemoteCommand", from: options)
     }
 
-    private static let defaultFreestylePersistentDaemonSlot = "cmux-default-freestyle-sshd-v1"
-
-    private static func legacyDefaultFreestyleVMID(destination: String, skipDaemonBootstrap: Bool?) -> String? {
-        guard skipDaemonBootstrap == true else { return nil }
-        let pattern = #"^([A-Za-z0-9._-]+)\+cmux@vm-ssh\.freestyle\.sh$"#
-        guard let match = destination.range(of: pattern, options: .regularExpression) else {
-            return nil
-        }
-        let matched = String(destination[match])
-        guard let plusRange = matched.range(of: "+cmux@vm-ssh.freestyle.sh") else {
-            return nil
-        }
-        return String(matched[..<plusRange.lowerBound])
-    }
-
-    private static func defaultFreestyleSSHAttachCommand(vmID: String) -> String {
-        let lines = [
-            "cmux_freestyle_cli=\"${CMUX_BUNDLED_CLI_PATH:-}\"",
-            "if [ -z \"$cmux_freestyle_cli\" ] || [ ! -x \"$cmux_freestyle_cli\" ]; then cmux_freestyle_cli=\"$(command -v cmux 2>/dev/null || true)\"; fi",
-            "if [ -z \"$cmux_freestyle_cli\" ]; then printf '%s\\n' '[cmux] bundled CLI not found for Cloud VM SSH attach.' >&2; exit 127; fi",
-            "CMUX_SSH_RECONNECT_LIMIT=\"${CMUX_SSH_RECONNECT_LIMIT:-\(SSHReconnectBudget().maximumLimit)}\"",
-            "CMUX_SSH_RECONNECT_DELAY_SECONDS=\"${CMUX_SSH_RECONNECT_DELAY_SECONDS:-2}\"",
-            "CMUX_DEFAULT_FREESTYLE_ATTACH_RETRY_LIMIT=\"${CMUX_DEFAULT_FREESTYLE_ATTACH_RETRY_LIMIT:-$CMUX_SSH_RECONNECT_LIMIT}\"",
-            "CMUX_DEFAULT_FREESTYLE_ATTACH_RETRY_DELAY_SECONDS=\"${CMUX_DEFAULT_FREESTYLE_ATTACH_RETRY_DELAY_SECONDS:-$CMUX_SSH_RECONNECT_DELAY_SECONDS}\"",
-            "export CMUX_SSH_RECONNECT_LIMIT CMUX_SSH_RECONNECT_DELAY_SECONDS",
-            "export CMUX_DEFAULT_FREESTYLE_ATTACH_RETRY_LIMIT CMUX_DEFAULT_FREESTYLE_ATTACH_RETRY_DELAY_SECONDS",
-            "cmux_freestyle_attach() {",
-            "  if [ -n \"${CMUX_SOCKET_PATH:-}\" ]; then",
-            "    \"$cmux_freestyle_cli\" --socket \"$CMUX_SOCKET_PATH\" vm-pty-attach --id \(shellQuote(vmID)) --default-freestyle-sshd",
-            "  else",
-            "    \"$cmux_freestyle_cli\" vm-pty-attach --id \(shellQuote(vmID)) --default-freestyle-sshd",
-            "  fi",
-            "}",
-            "cmux_freestyle_retry=0",
-            "while :; do",
-            "  if [ \"$cmux_freestyle_retry\" -gt 0 ]; then",
-            "    export CMUX_CLOUD_RECONNECT_ATTEMPT=\"$cmux_freestyle_retry\"",
-            "  else",
-            "    unset CMUX_CLOUD_RECONNECT_ATTEMPT",
-            "  fi",
-            "  cmux_freestyle_attach",
-            "  cmux_freestyle_status=$?",
-            "  case \"$cmux_freestyle_status\" in 254|255) ;; *) exit \"$cmux_freestyle_status\" ;; esac",
-            "  if [ \"$cmux_freestyle_retry\" -ge \"$CMUX_SSH_RECONNECT_LIMIT\" ]; then exit \"$cmux_freestyle_status\"; fi",
-            "  cmux_freestyle_retry=$((cmux_freestyle_retry + 1))",
-            "  sleep \"$CMUX_SSH_RECONNECT_DELAY_SECONDS\"",
-            "done",
-        ]
-        return "/bin/sh -c \(shellQuote(lines.joined(separator: "\n")))"
+    /// A destination on the removed cmux Cloud VM SSH gateway.
+    private static func isLegacyCloudVMDestination(_ destination: String, skipDaemonBootstrap: Bool?) -> Bool {
+        guard skipDaemonBootstrap == true else { return false }
+        return destination.range(
+            of: #"^[A-Za-z0-9._-]+\+cmux@vm-ssh\.freestyle\.sh$"#,
+            options: .regularExpression
+        ) != nil
     }
 
     private static func shellQuote(_ value: String) -> String {

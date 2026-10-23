@@ -652,7 +652,7 @@ class BuildPhaseCallerPathTests(unittest.TestCase):
 
     def test_every_tool_building_script_phase_sources_it(self):
         for script in ("build-command-palette-nucleo-ffi.sh", "build-diff-sidecar.sh",
-                       "build-wireguard-go.sh", "build-app-bundled-resources.sh"):
+                       "build-app-bundled-resources.sh"):
             with self.subTest(script=script):
                 text = (ROOT / "scripts" / script).read_text()
                 self.assertIn("/build-phase-caller-path.sh\"", text)

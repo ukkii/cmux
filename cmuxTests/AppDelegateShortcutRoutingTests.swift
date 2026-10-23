@@ -3029,75 +3029,6 @@ final class AppDelegateShortcutRoutingTests: XCTestCase {
         XCTAssertNotEqual(NSApp.keyWindow?.identifier?.rawValue, "cmux.about", "Closed auxiliary window should not remain key")
     }
 
-    func testCmdWClosesMobilePairingWindowInsteadOfTerminalTab() throws {
-        guard let appDelegate = AppDelegate.shared else {
-            XCTFail("Expected AppDelegate.shared")
-            return
-        }
-
-        let windowId = appDelegate.createMainWindow()
-        defer { closeWindow(withId: windowId) }
-
-        XCTAssertNotNil(window(withId: windowId), "Expected test window")
-
-        guard let manager = appDelegate.tabManagerFor(windowId: windowId) else {
-            XCTFail("Expected test manager")
-            return
-        }
-
-        let mainWorkspaceCount = manager.tabs.count
-        // The same window shape MobilePairingWindowController creates, keyed by
-        // the same identifier constant, so this test fails if the pairing
-        // window's identifier ever drops out of cmuxAuxiliaryWindowIdentifiers
-        // (the regression: Cmd+W on "Mobile Pairing" closed a terminal tab in the
-        // main window behind it instead of the pairing window).
-        let pairingWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 800),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        pairingWindow.isReleasedWhenClosed = false
-        pairingWindow.animationBehavior = .none
-        pairingWindow.identifier = NSUserInterfaceItemIdentifier(MobilePairingWindowController.windowIdentifier)
-        pairingWindow.makeKeyAndOrderFront(nil)
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
-        XCTAssertTrue(pairingWindow.isVisible, "Expected pairing window to be visible before Cmd+W")
-
-        defer {
-            if pairingWindow.isVisible {
-                closeTestWindow(pairingWindow)
-            }
-        }
-
-        guard let event = makeKeyDownEvent(
-            key: "w",
-            modifiers: [.command],
-            keyCode: 13,
-            windowNumber: pairingWindow.windowNumber
-        ) else {
-            XCTFail("Failed to construct Cmd+W event")
-            return
-        }
-
-#if DEBUG
-        XCTAssertTrue(appDelegate.debugHandleCustomShortcut(event: event))
-#else
-        throw XCTSkip("debugHandleCustomShortcut is only available in DEBUG builds")
-#endif
-
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
-
-        XCTAssertFalse(pairingWindow.isVisible, "Cmd+W should close the Mobile Pairing window")
-        XCTAssertNotNil(self.window(withId: windowId), "Cmd+W in the pairing window should not close the main window")
-        XCTAssertEqual(manager.tabs.count, mainWorkspaceCount, "Cmd+W in the pairing window should not close a terminal tab")
-        XCTAssertNotEqual(
-            NSApp.keyWindow?.identifier?.rawValue,
-            MobilePairingWindowController.windowIdentifier,
-            "Closed pairing window should not remain key"
-        )
-    }
-
     func testCmdPhysicalIWithDvorakCharactersDoesNotTriggerShowNotifications() {
         guard let appDelegate = AppDelegate.shared else {
             XCTFail("Expected AppDelegate.shared")
@@ -6458,44 +6389,6 @@ final class AppDelegateShortcutRoutingTests: XCTestCase {
 #endif
     }
 
-    func testWindowSendEventPreservesFirstCloudKeyBeforePortalMount() throws {
-        let appDelegate = try XCTUnwrap(AppDelegate.shared)
-        let windowId = appDelegate.createMainWindow()
-        defer { closeWindow(withId: windowId) }
-        let window = try XCTUnwrap(window(withId: windowId))
-        let manager = try XCTUnwrap(appDelegate.tabManagerFor(windowId: windowId))
-        let workspace = try XCTUnwrap(manager.selectedWorkspace)
-        let panel = coldCloudTerminalPanel(workspace: workspace)
-        _ = try workspace.insertCloudManualMirrorPanel(
-            panel, at: .workspace(id: workspace.id, placement: .tab), focus: true, isLoading: false
-        )
-        // Keep the real manual pane unmounted and cold. Early typing must reach
-        // its actual input queue without depending on renderer availability.
-        TerminalWindowPortalRegistry.detach(hostedView: panel.hostedView)
-        panel.hostedView.removeFromSuperview()
-        _ = window.makeFirstResponder(nil)
-        let view = panel.hostedView.surfaceView
-        XCTAssertFalse(view.window === window)
-        XCTAssertFalse(panel.surface.hasLiveSurface)
-        XCTAssertTrue(panel.surface.canCreateRuntimeSurface)
-        XCTAssertEqual(workspace.focusedTerminalInputTarget()?.0, panel.id)
-#if DEBUG
-        let specification = try XCTUnwrap(SyntheticKeyEventFactory.parseShortcutCombo("e"))
-        let event = try XCTUnwrap(SyntheticKeyEventFactory.keyEvent(
-            specification: specification, keyDown: true, timestamp: ProcessInfo.processInfo.systemUptime
-        ))
-        window.sendEvent(event)
-        XCTAssertEqual(pendingKeyEvents(in: view).map(\.type), [.keyDown])
-        XCTAssertEqual(pendingKeyEvents(in: view).map(\.keyCode), [14])
-        let keyUp = try XCTUnwrap(SyntheticKeyEventFactory.keyEvent(
-            specification: specification, keyDown: false, timestamp: ProcessInfo.processInfo.systemUptime
-        ))
-        window.sendEvent(keyUp)
-        XCTAssertEqual(pendingKeyEvents(in: view).map(\.type), [.keyDown, .keyUp])
-        XCTAssertEqual(pendingKeyEvents(in: view).map(\.keyCode), [14, 14])
-#endif
-    }
-
     private func pendingKeyEvents(in view: GhosttyNSView) -> [NSEvent] {
         view.pendingInputReplayActions.compactMap { action in
             switch action {
@@ -8139,82 +8032,6 @@ final class AppDelegateShortcutRoutingTests: XCTestCase {
                 terminalAgentContext: "restoredAgent:claude"
             ),
             [.pasteText("hello\nworld"), .namedKey("ctrl+enter")]
-        )
-    }
-
-    func testTextBoxSubmitCloudImagesUploadsAtPromptPosition() throws {
-        let imageURL = try makeTemporaryPNGFile(named: "cloud-prompt.png")
-        let attachment = TextBoxAttachment(
-            localURL: imageURL,
-            submissionText: TextBoxAttachment.submissionText(forLocalFileURL: imageURL)
-        )
-
-        XCTAssertEqual(
-            TextBoxSubmit.dispatchEvents(
-                for: [.text("what is "), .attachment(attachment), .text("now")],
-                terminalAgentContext: "restoredAgent:codex",
-                imageTransferTarget: .cloud
-            ),
-            [
-                .validateCloudImages([imageURL.standardizedFileURL]),
-                .pasteText("what is "),
-                .pasteCloudImages([imageURL.standardizedFileURL]),
-                .pasteText(" now"),
-                .namedKey("return")
-            ]
-        )
-    }
-
-    /// Every image is checked before the first text reaches the terminal, so a
-    /// refused later image cannot leave a partial prompt that a retry repeats.
-    func testTextBoxSubmitCloudImagesValidateEveryImageBeforeAnyText() throws {
-        let first = try makeTemporaryPNGFile(named: "cloud-first.png")
-        let second = try makeTemporaryPNGFile(named: "cloud-second.png")
-        let attachments = [first, second].map {
-            TextBoxAttachment(
-                localURL: $0,
-                submissionText: TextBoxAttachment.submissionText(forLocalFileURL: $0)
-            )
-        }
-
-        let events = TextBoxSubmit.dispatchEvents(
-            for: [.text("compare "), .attachment(attachments[0]), .text("with"), .attachment(attachments[1])],
-            terminalAgentContext: "restoredAgent:codex",
-            imageTransferTarget: .cloud
-        )
-        XCTAssertEqual(
-            events.first,
-            .validateCloudImages([first.standardizedFileURL, second.standardizedFileURL])
-        )
-        XCTAssertEqual(events.dropFirst().filter {
-            if case .validateCloudImages = $0 { return true }
-            return false
-        }.count, 0)
-    }
-
-    /// After a Cloud submit the image bytes live on the machine, so the local
-    /// file is disposable even though its submission text is a local path.
-    func testTextBoxSubmitCloudImagesCleanUpAfterSuccessfulSubmit() throws {
-        let imageURL = try makeTemporaryPNGFile(named: "cloud-uploaded.png")
-        let attachment = TextBoxAttachment(
-            localURL: imageURL,
-            submissionText: TextBoxAttachment.submissionText(forLocalFileURL: imageURL),
-            cleanupLocalURLWhenDisposed: true
-        )
-
-        XCTAssertEqual(
-            TextBoxSubmit.cleanupAttachmentsAfterSubmit(
-                from: [.attachment(attachment)],
-                terminalAgentContext: "restoredAgent:codex",
-                imageTransferTarget: .cloud
-            ).compactMap(\.localURL),
-            [imageURL.standardizedFileURL]
-        )
-        XCTAssertTrue(
-            TextBoxSubmit.cleanupAttachmentsAfterSubmit(
-                from: [.attachment(attachment)],
-                terminalAgentContext: "restoredAgent:codex"
-            ).isEmpty
         )
     }
 

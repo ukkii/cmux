@@ -1,5 +1,3 @@
-import CmuxCloud
-import CmuxMobileHost
 import Foundation
 import CMUXMobileCore
 import CmuxCore
@@ -721,10 +719,8 @@ enum BrowserInsecureHTTPSettings {
         // Private-network addresses skip the warning outright: the modal's
         // rationale — "traffic can be read or modified on the network" — is
         // about the public Internet, and traffic to these ranges never crosses
-        // it. cmux Cloud machines live here (their VPC addresses, reached
-        // through the user's WireGuard tunnel, which encrypts the path anyway),
-        // so warning on every http://10.x panel would train people to click
-        // through the one dialog that matters on public sites.
+        // it, so warning on every http://10.x panel would train people to
+        // click through the one dialog that matters on public sites.
         if isPrivateNetworkHost(normalizedHost) { return true }
         return normalizedAllowlistPatterns(rawValue: rawAllowlist).contains { pattern in
             hostMatchesPattern(normalizedHost, pattern: pattern)
@@ -2105,17 +2101,6 @@ final class BrowserPanel: Panel, ObservableObject {
     let id: UUID
     let stableSurfaceIdentity = PanelStableSurfaceIdentity()
     let panelType: PanelType = .browser
-    let cloudAccess = CloudBrowserAccessState()
-    func showCloudAddress(_ url: URL) { currentURL = url }
-    var cloudBrowserMachineID: String?
-    var cloudBrowserStoreIdentity: UUID?
-    var cloudBrowserProxyEndpoint: CloudBrowserProxyEndpoint?
-    /// Saved Cloud path waiting for a provider/resource to become available.
-    /// It is consumed after the first successful authenticated configuration.
-    var pendingCloudRestoreURL: URL?
-    /// The team that owns this pane's Cloud machine, restored from a snapshot.
-    /// Kept so a pane of another team re-persists its own team, not the selection.
-    var restoredCloudTeamID: String?
 
     /// The workspace ID this panel belongs to. A browser REPL session
     /// that may not use the tab in its new workspace leaves it.
@@ -2140,14 +2125,6 @@ final class BrowserPanel: Panel, ObservableObject {
     var browserViewportHostRestorationPending = false
     var websiteDataStore: WKWebsiteDataStore
     private(set) var preservesExplicitEphemeralWebsiteDataStore: Bool
-    /// The native-session exchange running before a trusted app page loads.
-    private(set) var appSessionBootstrapTask: Task<Void, Never>?
-    private var appSessionBootstrapNavigationStarted: ((WKNavigation?) -> Void)?
-    /// Set when sign-out emptied an app-session store, so the next trusted app
-    /// page exchanges the native session again instead of loading signed out.
-    private var appSessionStoreNeedsBootstrap = false
-    /// Replaces the signed-in exchange in tests; production uses the app's auth graph.
-    var appSessionRequestProvider: (@MainActor (URL) async -> BrowserAppSessionRequestOutcome)?
     var browserAutomationUserScripts: [WKUserScript] = []
     var browserAutomationInitScriptCount = 0
     var browserAutomationStyleScriptCount = 0
@@ -2156,14 +2133,6 @@ final class BrowserPanel: Panel, ObservableObject {
     /// the same way automation init scripts do.
     let browserEmulation = BrowserWebKitEmulationController()
     var webViewDidRequestClose: (() -> Void)?
-    var openAppLinkInBrowserSplit: ((URL) -> Bool)?
-    var mobileBrowserStreamSignalHandlers: [UUID: (MobileBrowserPanelNativeSignal) -> Void] = [:]
-    var mobileBrowserStreamMessageHandler: MobileBrowserDirtyMessageHandler?
-    var mobileBrowserStreamScriptInstanceID: UUID?
-    var mobileBrowserStreamRenderHost: BrowserOffscreenRenderHost?
-    var mobileBrowserStreamPreviousViewport: BrowserViewport?
-    var mobileBrowserStreamPreviousViewportWasCaptured = false
-    var mobileBrowserStreamViewport: MobileBrowserViewport?
     /// Automation keeps its dialogs until answered, even after its command
     /// returns. Physical input hands subsequent dialogs back to the native UI.
     enum BrowserDialogOwner {
@@ -2237,8 +2206,7 @@ final class BrowserPanel: Panel, ObservableObject {
     /// This avoids races where SwiftUI focus state steals first responder back from WebKit.
     private var suppressOmnibarAutofocusUntil: Date?
 
-    /// Set for a pane opened to show a sidebar resource (a Cloud browser, display or
-    /// port). It is blank while it connects, but it is not a new tab to type into,
+    /// Set for a pane opened to show a sidebar resource (a display or port). It is blank while it connects, but it is not a new tab to type into,
     /// so focusing it never auto-focuses the address bar.
     var opensLinkedContent = false
 
@@ -2263,9 +2231,7 @@ final class BrowserPanel: Panel, ObservableObject {
     @Published private(set) var currentURL: URL? {
         didSet {
             guard oldValue != currentURL else { return }
-            SurfaceCatalog.shared.cloudBrowserDocumentDidChange(self)
             applyConfiguredWebViewBackground()
-            mobileBrowserStreamStateDidChange(markDirty: true)
         }
     }
 
@@ -2339,8 +2305,6 @@ final class BrowserPanel: Panel, ObservableObject {
     @Published private(set) var pageTitle: String = "" {
         didSet {
             guard oldValue != pageTitle else { return }
-            SurfaceCatalog.shared.cloudBrowserDocumentDidChange(self)
-            mobileBrowserStreamStateDidChange(markDirty: true)
         }
     }
 
@@ -2348,12 +2312,7 @@ final class BrowserPanel: Panel, ObservableObject {
     @Published private(set) var faviconPNGData: Data?
 
     /// Published loading state
-    @Published var isLoading: Bool = false {
-        didSet {
-            guard oldValue != isLoading else { return }
-            mobileBrowserStreamStateDidChange(markDirty: true)
-        }
-    }
+    @Published var isLoading: Bool = false
 
     /// Published download state for browser downloads (navigation + context menu).
     @Published private(set) var isDownloading: Bool = false
@@ -2371,20 +2330,10 @@ final class BrowserPanel: Panel, ObservableObject {
     @Published private(set) var isMuted: Bool = false
 
     /// Published can go back state
-    @Published private(set) var canGoBack: Bool = false {
-        didSet {
-            guard oldValue != canGoBack else { return }
-            mobileBrowserStreamStateDidChange()
-        }
-    }
+    @Published private(set) var canGoBack: Bool = false
 
     /// Published can go forward state
-    @Published private(set) var canGoForward: Bool = false {
-        didSet {
-            guard oldValue != canGoForward else { return }
-            mobileBrowserStreamStateDidChange()
-        }
-    }
+    @Published private(set) var canGoForward: Bool = false
 
     var nativeCanGoBack: Bool = false
     var nativeCanGoForward: Bool = false
@@ -2408,12 +2357,7 @@ final class BrowserPanel: Panel, ObservableObject {
     var isMainFrameProvisionalNavigationActive: Bool = false
 
     /// Published estimated progress (0.0 - 1.0)
-    @Published var estimatedProgress: Double = 0.0 {
-        didSet {
-            guard oldValue != estimatedProgress else { return }
-            mobileBrowserStreamStateDidChange()
-        }
-    }
+    @Published var estimatedProgress: Double = 0.0
 
     /// Increment to request a UI-only flash highlight (e.g. from a keyboard shortcut).
     @Published private(set) var focusFlashToken: Int = 0
@@ -2456,7 +2400,7 @@ final class BrowserPanel: Panel, ObservableObject {
     /// longer the active focus owner.
     private var webViewFocusRequestGeneration: UInt64 = 0
 
-    /// Keeps a Cloud pane's content-focus request alive until its portal host
+    /// Keeps a pane's content-focus request alive until its portal host
     /// has a window. Browser materialization can finish before that attachment.
     private var pendingContentFocusAfterAttachment = false
 
@@ -2964,11 +2908,10 @@ final class BrowserPanel: Panel, ObservableObject {
         )
     }
 
-    /// A navigation waiting on something other than WebKit: a remote proxy
-    /// endpoint or the native app-session exchange. Heal, restore and
-    /// automation must not restart it.
+    /// A navigation waiting on something other than WebKit (a remote proxy
+    /// endpoint). Heal, restore and automation must not restart it.
     var hasPendingRemoteNavigation: Bool {
-        pendingRemoteNavigation != nil || appSessionBootstrapTask != nil
+        pendingRemoteNavigation != nil
     }
 
     @discardableResult
@@ -3357,7 +3300,6 @@ final class BrowserPanel: Panel, ObservableObject {
         setupMediaPlaybackMessageHandler(for: webView); setupFormStateMessageHandler(for: webView)
         webAuthnCoordinator.install(on: webView)
         applyMuteState(to: webView, reason: "bindWebView")
-        mobileBrowserWebViewDidBind()
         BrowserReplTabAttachments.shared.webViewDidBind(webView, panelID: id)
     }
     private func setupSSLTrustBypassMessageHandler(for webView: WKWebView) {
@@ -3400,7 +3342,6 @@ final class BrowserPanel: Panel, ObservableObject {
                 targetURL: Self.remoteProxyDisplayURL(for: self.navigationDelegate?.lastAttemptedURL)
                     ?? self.navigationDelegate?.lastAttemptedURL
             )
-            self.cloudAccess.didStart(url: self.navigationDelegate?.lastAttemptedURL, navigationID: navigation.map(ObjectIdentifier.init))
             self.isMainFrameProvisionalNavigationActive = true
             self.refreshBackgroundAppearance()
             self.applyMuteState(to: webView, reason: "navigationStart")
@@ -3422,18 +3363,6 @@ final class BrowserPanel: Panel, ObservableObject {
                 instanceID: boundWebViewInstanceID,
                 navigationID: navigation.map { ObjectIdentifier($0) }
             )
-            let leavingCloudRoute = self.retainsCloudResourceForDuplication
-                && webView.url.map {
-                    ["http", "https"].contains($0.scheme?.lowercased() ?? "")
-                        && !self.cloudAccess.owns($0)
-                } == true
-            if leavingCloudRoute {
-                if let url = webView.url, self.rebindCloudRouteIfNeeded(to: url) == false {
-                    self.leaveCloudResourceForLocalNavigation()
-                }
-            } else {
-                self.cloudAccess.didCommit(url: webView.url, navigationID: navigation.map(ObjectIdentifier.init))
-            }
             // An about:blank placeholder leaves the restore-stall detector armed.
             if !Self.isAboutBlankURL(webView.url) {
                 self.hasCommittedDocumentSinceWebViewReplacement = true
@@ -3451,9 +3380,6 @@ final class BrowserPanel: Panel, ObservableObject {
         }
         navigationDelegate.didFinish = { [weak self] webView in
             guard let self, self.isCurrentWebView(webView, instanceID: boundWebViewInstanceID) else { return }
-            if self.navigationDelegate?.activeErrorPageDisplayURL == nil {
-                self.cloudAccess.didFinish(url: webView.url)
-            }
             self.isMainFrameProvisionalNavigationActive = false
             self.publishCommittedURL(from: webView)
             self.applyMuteState(to: webView, reason: "navigationFinish")
@@ -3462,7 +3388,6 @@ final class BrowserPanel: Panel, ObservableObject {
                 boundHistoryStore.recordVisit(url: webView.url, title: webView.title)
                 self.refreshFavicon(from: webView)
             }
-            self.applyCurrentAppWebTheme(to: webView)
             // Keep find-in-page open through load completion and refresh matches for the new DOM.
             self.restoreFindStateAfterNavigation(replaySearch: true)
             self.focusPendingContentAfterAttachment()
@@ -3470,7 +3395,6 @@ final class BrowserPanel: Panel, ObservableObject {
         }
         navigationDelegate.didFailNavigation = { [weak self] failedWebView, failedURL, failureMessage, failedNavigation in
             guard let self, self.isCurrentWebView(failedWebView, instanceID: boundWebViewInstanceID) else { return }
-            self.cloudAccess.didFail(url: URL(string: failedURL), message: failureMessage, navigationID: failedNavigation.map(ObjectIdentifier.init))
             self.automationNavigationCoordinator.didFail(
                 instanceID: boundWebViewInstanceID,
                 navigationID: failedNavigation.map { ObjectIdentifier($0) },
@@ -3524,7 +3448,6 @@ final class BrowserPanel: Panel, ObservableObject {
         navigationDelegate.didCancelProvisionalNavigation = { [weak self] webView, cancelledNavigation in
             guard let self, self.isCurrentWebView(webView, instanceID: boundWebViewInstanceID) else { return }
             (webView as? CmuxWebView)?.diffViewerNavigationDidCancel(cancelledNavigation)
-            self.cloudAccess.didCancel(navigationID: cancelledNavigation.map(ObjectIdentifier.init))
             self.automationNavigationCoordinator.didCancel(
                 instanceID: boundWebViewInstanceID,
                 navigationID: cancelledNavigation.map { ObjectIdentifier($0) }
@@ -3593,7 +3516,7 @@ final class BrowserPanel: Panel, ObservableObject {
             GlobalSearchCoordinator.shared.captureBrowserPanel(self)
             return
         }
-        currentURL = cloudAccess.displayURL(webView.url) ?? Self.remoteProxyDisplayURL(for: webView.url)
+        currentURL = Self.remoteProxyDisplayURL(for: webView.url)
         navigationDelegate?.clearAttemptedRequest()
         refreshBackgroundAppearance()
         GlobalSearchCoordinator.shared.captureBrowserPanel(self)
@@ -3792,17 +3715,6 @@ final class BrowserPanel: Panel, ObservableObject {
             preferences: webView.configuration.preferences
         )
         self.insecureHTTPAlertFactory = { NSAlert() }
-        mobileBrowserDialogBroker.onPresented = { [weak self] dialog in
-            guard let self, !self.mobileBrowserStreamSignalHandlers.isEmpty else { return }
-            self.publishMobileBrowserStreamSignal(.dialog(dialog))
-        }
-        mobileBrowserDialogBroker.onResolved = { [weak self] resolved in
-            guard let self else { return }
-            if !self.mobileBrowserStreamSignalHandlers.isEmpty {
-                self.publishMobileBrowserStreamSignal(.dialogResolved(resolved))
-                self.publishMobileBrowserStreamSignal(.dirty(editableFocused: nil))
-            }
-        }
         hiddenWebViewDiscardManager.delegate = self
         applyProxyConfigurationIfAvailable()
         BrowserProfileStore.shared.noteUsed(resolvedProfileID)
@@ -3814,9 +3726,6 @@ final class BrowserPanel: Panel, ObservableObject {
         navDelegate.owner = self
         navDelegate.openInNewTab = { [weak self] url in
             self?.openLinkInNewTab(url: url)
-        }
-        navDelegate.openAppLinkInBrowserSplit = { [weak self] url in
-            self?.openAppLinkInBrowserSplit?(url) ?? false
         }
         navDelegate.requestNavigation = { [weak self] request, intent, onNavigationStarted in
             self?.requestNavigation(
@@ -4006,9 +3915,6 @@ final class BrowserPanel: Panel, ObservableObject {
             guard let self else { return }
             self.openLinkInNewTab(url: url)
         }
-        browserUIDelegate.openAppLinkInBrowserSplit = { [weak self] url in
-            self?.openAppLinkInBrowserSplit?(url) ?? false
-        }
         browserUIDelegate.requestNavigation = { [weak self] in self?.requestNavigation($0, intent: $1) }
         browserUIDelegate.recordPDFPrintIntent = { [weak navDelegate] in navDelegate?.recordPDFPrintIntentIfNeeded($0, sourceFrame: $1) }
         browserUIDelegate.presentAlert = { [weak self] alert, webView, completion, cancel in
@@ -4041,13 +3947,6 @@ final class BrowserPanel: Panel, ObservableObject {
                 return window
             }
             return browserFallbackInteractiveModalHostWindow()
-        }
-
-        // A tab duplicated from an app-session panel shares its store; Dock
-        // panels never pass through a workspace's registration, so register
-        // here so sign-out resets every panel showing those cookies.
-        if preservesExplicitEphemeralWebsiteDataStore {
-            AppDelegate.shared?.auth?.browserAppSession.register(self)
         }
 
         if let initialRequest {
@@ -4296,11 +4195,11 @@ final class BrowserPanel: Panel, ObservableObject {
         resumePendingRemoteNavigationIfNeeded()
     }
 
-    /// Remote and cloud panes route only through cmux proxies that carry
-    /// their credential, so a proxy challenge there is refused rather than
-    /// shown to the user.
+    /// Remote panes route only through cmux proxies that carry their
+    /// credential, so a proxy challenge there is refused rather than shown
+    /// to the user.
     var refusesProxyAuthenticationChallenges: Bool {
-        usesRemoteWorkspaceProxy || cloudBrowserMachineID != nil
+        usesRemoteWorkspaceProxy
     }
 
     func setRemoteWorkspaceStatus(_ status: BrowserRemoteWorkspaceStatus?) {
@@ -4314,13 +4213,6 @@ final class BrowserPanel: Panel, ObservableObject {
         // A live browser REPL session's proxy store keeps the proxy it was
         // given; once the session ends the store is the browser's again.
         if BrowserReplProxyStores.shared.owns(webView.configuration.websiteDataStore) { return }
-
-        if cloudBrowserMachineID != nil {
-            if let endpoint = cloudBrowserProxyEndpoint, let address = cloudAccess.model?.target.host {
-                webView.configuration.websiteDataStore.proxyConfigurations = [CloudBrowserRouting.configuration(endpoint: endpoint, address: address, remoteNetwork: cloudAccess.model?.usesRemoteNetwork == true)]
-            }
-            return
-        }
 
         let store = webView.configuration.websiteDataStore
         guard let endpoint = remoteProxyEndpoint else {
@@ -4493,13 +4385,7 @@ final class BrowserPanel: Panel, ObservableObject {
     }
 
     var explicitEphemeralWebsiteDataStoreForSibling: WKWebsiteDataStore? {
-        // A store emptied by sign-out must not be copied: the sibling would
-        // skip the session exchange and show cmux app pages signed out.
-        guard preservesExplicitEphemeralWebsiteDataStore,
-              !appSessionStoreNeedsBootstrap else {
-            return nil
-        }
-        return websiteDataStore
+        preservesExplicitEphemeralWebsiteDataStore ? websiteDataStore : nil
     }
 
     func reattachToWorkspace(
@@ -4509,13 +4395,9 @@ final class BrowserPanel: Panel, ObservableObject {
         proxyEndpoint: BrowserProxyEndpoint?,
         remoteStatus: BrowserRemoteWorkspaceStatus?
     ) {
-        // A late exchange must not replace the reattached context. A store
-        // swap restores the page itself; otherwise it is requested again below.
-        let appSessionDestinationURL = appSessionBootstrapTask != nil ? currentURL : nil
-        cancelAppSessionBootstrap()
         workspaceId = newWorkspaceId
         usesRemoteWorkspaceProxy = isRemoteWorkspace && !bypassesRemoteWorkspaceProxy
-        let targetStore = cloudBrowserMachineID != nil ? websiteDataStore : preservesExplicitEphemeralWebsiteDataStore
+        let targetStore = preservesExplicitEphemeralWebsiteDataStore
             ? websiteDataStore
             : isRemoteWorkspace
                 ? WKWebsiteDataStore(forIdentifier: remoteWebsiteDataStoreIdentifier ?? newWorkspaceId)
@@ -4534,9 +4416,6 @@ final class BrowserPanel: Panel, ObservableObject {
         }
         applyProxyConfigurationIfAvailable()
         resumePendingRemoteNavigationIfNeeded()
-        if let appSessionDestinationURL, !needsStoreSwap {
-            navigate(to: appSessionDestinationURL)
-        }
     }
 
     @discardableResult
@@ -4551,10 +4430,6 @@ final class BrowserPanel: Panel, ObservableObject {
             BrowserProfileStore.shared.noteUsed(resolvedProfileID)
             return false
         }
-        // The restore below requests a pending app page again from
-        // `currentURL`, which runs a fresh exchange in the new profile.
-        cancelAppSessionBootstrap()
-
         let previousWebView = webView
         let wasRenderable = shouldRenderWebView
         let restoreURL = restorableDisplayURLForCurrentErrorPage(liveURL: previousWebView.url)
@@ -4585,9 +4460,7 @@ final class BrowserPanel: Panel, ObservableObject {
         historyStore = BrowserProfileStore.shared.historyStore(for: resolvedProfileID)
         BrowserProfileStore.shared.noteUsed(resolvedProfileID)
 
-        if let machineID = cloudBrowserMachineID {
-            prepareCloudBrowserStore(machineID: machineID)
-        } else if !usesRemoteWorkspaceProxy {
+        if !usesRemoteWorkspaceProxy {
             websiteDataStore = BrowserProfileStore.shared.websiteDataStore(for: resolvedProfileID)
         }
 
@@ -4617,11 +4490,7 @@ final class BrowserPanel: Panel, ObservableObject {
             )
         }
 
-        if let model = cloudAccess.model,
-           let cloudURL = restoreURL ?? cloudAccess.remoteURL,
-           cloudAccess.owns(cloudURL) {
-            configureCloudBrowser(model: model, url: cloudURL)
-        } else if shouldRestoreURL, let restoreURL {
+        if shouldRestoreURL, let restoreURL {
             navigateWithoutInsecureHTTPPrompt(
                 to: restoreURL,
                 recordTypedNavigation: false,
@@ -4734,7 +4603,7 @@ final class BrowserPanel: Panel, ObservableObject {
             return
         }
 
-        let restoredURL = Self.remappedAppPricingSessionRestoreURL(Self.sanitizedSessionHistoryURL(snapshot.urlString))
+        let restoredURL = Self.sanitizedSessionHistoryURL(snapshot.urlString)
         let shouldRenderRestoredWebView = snapshot.shouldRenderWebView && BrowserAvailabilitySettings.isEnabled()
         hiddenWebViewDiscardManager.updateRestoredSessionRenderIntent(snapshot.shouldRenderWebView)
         setMuted(snapshot.isMuted)
@@ -4750,16 +4619,6 @@ final class BrowserPanel: Panel, ObservableObject {
         )
 
         currentURL = restoredURL
-        if let resource = snapshot.cloudResource {
-            restoredCloudTeamID = snapshot.cloudTeamID
-            if let machineID = resource.machine.cloudMachineID {
-                CmuxTuiSurfaceProviderRegistry.shared.adoptOwnerTeam(snapshot.cloudTeamID, forMachineID: machineID)
-                CmuxTuiSurfaceProviderRegistry.shared.adoptPrivateAddress(restoredURL?.host, forMachineID: machineID)
-            }
-            restoreCloudResource(resource, preferredURL: restoredURL, activate: shouldRenderRestoredWebView)
-            if !shouldRenderRestoredWebView { shouldRenderWebView = false; refreshNavigationAvailability() }
-            return
-        }
         guard shouldRenderRestoredWebView, let restoredURL else {
             shouldRenderWebView = false
             refreshNavigationAvailability()
@@ -4834,7 +4693,6 @@ final class BrowserPanel: Panel, ObservableObject {
     /// speaker/mic/camera glyph; the next `setupObservers` re-seeds the flags
     /// from the fresh web view.
     func detachWebViewObservers() {
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: CloudDesktopConnectionObserver.name, contentWorld: CloudDesktopConnectionObserver.contentWorld)
         webViewObservationGeneration &+= 1
         webViewObservers.removeAll()
         webView.configuration.userContentController.removeScriptMessageHandler(
@@ -4858,7 +4716,6 @@ final class BrowserPanel: Panel, ObservableObject {
             )
         }
 
-        installCloudDesktopConnectionObserver(on: webView)
         // URL changes
         let urlObserver = webView.observe(\.url, options: [.new]) { [weak self] webView, change in
             let observedURL = change.newValue ?? webView.url
@@ -4866,7 +4723,7 @@ final class BrowserPanel: Panel, ObservableObject {
                 guard let self, let webView, isCurrentObservedWebView(self, webView) else { return }
                 guard !self.isMainFrameProvisionalNavigationActive else { return }
                 self.designModeController.webViewURLDidChange(to: observedURL)
-                self.currentURL = self.cloudAccess.displayURL(observedURL) ?? Self.remoteProxyDisplayURL(for: observedURL) ?? observedURL
+                self.currentURL = Self.remoteProxyDisplayURL(for: observedURL) ?? observedURL
                 self.refreshBackgroundAppearance()
                 GlobalSearchCoordinator.shared.captureBrowserPanel(self)
             }
@@ -4992,8 +4849,6 @@ final class BrowserPanel: Panel, ObservableObject {
             .sink { [weak self] notification in
                 guard let self else { return }
                 self.applyWebViewBackground(color: GhosttyBackgroundTheme.resolvedColor(from: notification))
-                guard self.supportsAppWebTheme(self.webView) else { return }
-                self.applyAppWebTheme(AppWebThemeSnapshot.current(notification: notification), to: self.webView)
             }
             .store(in: &webViewCancellables)
 
@@ -5006,27 +4861,6 @@ final class BrowserPanel: Panel, ObservableObject {
         // Apply the configured background for the freshly bound webview (covers
         // the initial bind and every post-crash replacement).
         applyConfiguredWebViewBackground()
-        applyCurrentAppWebTheme(to: webView)
-    }
-
-    private func applyCurrentAppWebTheme(to webView: WKWebView) {
-        guard supportsAppWebTheme(webView) else { return }
-        applyAppWebTheme(AppWebThemeSnapshot.current(), to: webView)
-    }
-
-    private func supportsAppWebTheme(_ webView: WKWebView) -> Bool {
-        BrowserAppTheme.supportsAppSurface(
-            url: webView.url,
-            trustedOrigin: AuthEnvironment.appWebOrigin
-        )
-    }
-
-    private func applyAppWebTheme(_ theme: AppWebThemeSnapshot, to webView: WKWebView) {
-        let browserTheme = theme.browserTheme
-        guard let script = browserTheme.applyingJavaScript() else {
-            return
-        }
-        webView.evaluateJavaScript(script, completionHandler: nil)
     }
 
     /// Configures the live webview's background for the current Ghostty theme.
@@ -5057,13 +4891,10 @@ final class BrowserPanel: Panel, ObservableObject {
             portalAnchorView.layer?.backgroundColor = NSColor.clear.cgColor
             return
         }
-        if usesTransparentBackground || cloudAccess.isPreparingDocument {
+        if usesTransparentBackground {
             // Transparent internal pages keep their page CSS clear. On opaque
             // themes, the native webview layer owns the terminal-color backing
             // fill so loading/empty/code regions never fall through to window gray.
-            // Any Cloud document can wait for CSS after committing. Keep the pane
-            // backing until load completes, then restore normal page rendering,
-            // including the default background of websites without their own CSS.
             webView.wantsLayer = true
             webView.setValue(false, forKey: "drawsBackground")
             webView.underPageBackgroundColor = color
@@ -5095,14 +4926,10 @@ final class BrowserPanel: Panel, ObservableObject {
     }
 
     func restorableDisplayURLForCurrentErrorPage(liveURL: URL?) -> URL? {
-        // An SSH loopback service commits on an ephemeral local listener. The
-        // omnibar, its edit buffer, reload and session history all read the
-        // live URL here, so they show the service origin instead of that port.
         Self.restorableDisplayURL(
-            liveURL: liveURL.map { cloudAccess.displayURL($0) ?? $0 },
+            liveURL: liveURL,
             currentURL: currentURL,
             activeErrorPageDisplayURL: navigationDelegate?.activeErrorPageDisplayURL
-                .map { cloudAccess.displayURL($0) ?? $0 }
         )
     }
 
@@ -5132,7 +4959,7 @@ final class BrowserPanel: Panel, ObservableObject {
         }
     }
 
-    /// Focuses Cloud page content now, or retries once when the portal host
+    /// Focuses linked page content now, or retries once when the portal host
     /// attaches to a window later in the same materialization.
     func focusContentAfterAttachment() {
         pendingContentFocusAfterAttachment = true
@@ -5146,7 +4973,7 @@ final class BrowserPanel: Panel, ObservableObject {
         }
     }
 
-    /// Completes a deferred Cloud content-focus request after portal attachment.
+    /// Completes a deferred content-focus request after portal attachment.
     func focusPendingContentAfterAttachment() {
         guard pendingContentFocusAfterAttachment else { return }
         prepareFocusIntentForActivation(.browser(.webView))
@@ -5243,17 +5070,13 @@ final class BrowserPanel: Panel, ObservableObject {
 
     func close() {
         BrowserReplTabAttachments.shared.panelDidClose(id)
-        cloudAccess.leave()
         cancelHiddenWebViewDiscard()
         isClosingWebViewLifecycle = true
-        cancelAppSessionBootstrap()
         trustedLocalFileURL = nil
         pendingTrustedLocalFileURL = nil
         automationNavigationCoordinator.invalidate()
         navigationDelegate?.cancelPendingAuthenticationPrompts()
         mobileBrowserDialogBroker.resolveAll()
-        clearMobileStreamViewport()
-        publishMobileBrowserStreamSignal(.closed)
         automationDocumentReadiness.invalidate()
         automationWatchdog.invalidate()
         refreshWebViewLifecycleState()
@@ -5272,7 +5095,6 @@ final class BrowserPanel: Panel, ObservableObject {
         navigationDelegate = nil
         uiDelegate = nil
         webViewDidRequestClose = nil
-        openAppLinkInBrowserSplit = nil
         faviconTask?.cancel(); faviconTask = nil
         designModeToolbarToggleTask?.cancel()
     }
@@ -5452,33 +5274,28 @@ final class BrowserPanel: Panel, ObservableObject {
             let data: Data
             let response: URLResponse
             do {
-                let cloudIconURL = cloudAccess.rewrittenLoopbackURL(iconURL) ?? iconURL
-                if cloudAccess.model?.usesBrowserProxy == true, cloudAccess.owns(cloudIconURL) {
-                    (data, response) = try await CloudBrowserRouting.favicon(url: cloudIconURL, webView: webView)
+                let remoteSession = remoteProxyURLSession()
+                defer { remoteSession?.finishTasksAndInvalidate() }
+                if let remoteSession {
+#if DEBUG
+                    cmuxDebugLog(
+                        "browser.favicon.fetch " +
+                        "panel=\(id.uuidString.prefix(5)) " +
+                        "via=proxy " +
+                        "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
+                    )
+#endif
+                    (data, response) = try await remoteSession.data(for: effectiveRequest)
                 } else {
-                    let remoteSession = remoteProxyURLSession()
-                    defer { remoteSession?.finishTasksAndInvalidate() }
-                    if let remoteSession {
 #if DEBUG
-                        cmuxDebugLog(
-                            "browser.favicon.fetch " +
-                            "panel=\(id.uuidString.prefix(5)) " +
-                            "via=proxy " +
-                            "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
-                        )
+                    cmuxDebugLog(
+                        "browser.favicon.fetch " +
+                        "panel=\(id.uuidString.prefix(5)) " +
+                        "via=direct " +
+                        "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
+                    )
 #endif
-                        (data, response) = try await remoteSession.data(for: effectiveRequest)
-                    } else {
-#if DEBUG
-                        cmuxDebugLog(
-                            "browser.favicon.fetch " +
-                            "panel=\(id.uuidString.prefix(5)) " +
-                            "via=direct " +
-                            "url=\(effectiveRequest.url?.absoluteString ?? "<nil>")"
-                        )
-#endif
-                        (data, response) = try await URLSession.shared.data(for: effectiveRequest)
-                    }
+                    (data, response) = try await URLSession.shared.data(for: effectiveRequest)
                 }
             } catch {
 #if DEBUG
@@ -5679,24 +5496,6 @@ final class BrowserPanel: Panel, ObservableObject {
         fileReadAccessURL: URL? = nil,
         onNavigationStarted: ((WKNavigation?) -> Void)? = nil
     ) -> WKNavigation? {
-        var url = url
-        var leaveCloudRouteAfterValidation = false
-        if let model = cloudAccess.model, cloudAccess.owns(url) {
-            if !model.isReady { return nil }
-            prepareCloudBrowserNavigation()
-            // A forwarded route serves the remote service on a local listener.
-            // Never load the remote address itself: on SSH it is this Mac's loopback.
-            if model.route == .loopback {
-                guard let forwarded = model.url(for: url) else { return nil }
-                url = forwarded
-            }
-        } else if ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
-                  let provider = privateAddressRouteProvider(for: url) {
-            provider.configureBrowser(self, url: provider.sshServiceURL(forForwardListener: url) ?? url)
-            return nil
-        } else {
-            leaveCloudRouteAfterValidation = retainsCloudResourceForDuplication
-        }
         let request = URLRequest(url: url)
         let policy = BrowserURLAllowlistPolicy(defaults: .standard)
         (webView as? CmuxWebView)?.clearTrustedInternalNavigationGrants()
@@ -5713,9 +5512,6 @@ final class BrowserPanel: Panel, ObservableObject {
                 onNavigationStarted: onNavigationStarted
             )
             return nil
-        }
-        if leaveCloudRouteAfterValidation {
-            leaveCloudResourceForLocalNavigation()
         }
         return navigateWithoutInsecureHTTPPrompt(
             request: request,
@@ -5768,9 +5564,6 @@ final class BrowserPanel: Panel, ObservableObject {
             navigationDelegate?.blockURLAllowlistNavigation(url, in: webView)
             return nil
         }
-        if cloudAccess.model != nil, cloudAccess.owns(url) {
-            cloudAccess.rememberNavigationRequest(request)
-        }
         if trustedInternalNavigation {
             if url.isFileURL {
                 beginTrustedLocalFileNavigation(url)
@@ -5778,30 +5571,7 @@ final class BrowserPanel: Panel, ObservableObject {
                 clearTrustedLocalFileDocumentIfNeeded(for: url)
             }
         }
-        let routesThroughSSHTui = owningWorkspaceRoutesThroughSSHTui
-        if routesThroughSSHTui, let serviceURL = sshLoopbackServiceURL(for: url) {
-            // A pinned file load is granted its read access now or not at
-            // all: a later load would not be under the session's check.
-            if fileReadAccessURL != nil {
-                onNavigationStarted?(nil)
-                return nil
-            }
-            // Every entry point (history, restore, heal, page links) lands here.
-            // A loopback URL belongs to the SSH host: hand it to that machine's
-            // forward, or wait for the machine, never this Mac's same-port service.
-            if let provider = privateAddressRouteProvider(for: serviceURL) {
-                onNavigationStarted?(nil)
-                provider.configureBrowser(self, url: serviceURL, request: request)
-            } else {
-                var serviceRequest = request
-                serviceRequest.url = serviceURL
-                queueRemoteNavigation(serviceRequest, recordTypedNavigation: recordTypedNavigation,
-                                      preserveRestoredSessionHistory: preserveRestoredSessionHistory,
-                                      onNavigationStarted: onNavigationStarted)
-            }
-            return nil
-        }
-        if cloudBrowserMachineID == nil, usesRemoteWorkspaceProxy, remoteProxyEndpoint == nil, !routesThroughSSHTui {
+        if usesRemoteWorkspaceProxy, remoteProxyEndpoint == nil {
             // A pinned file load is granted its read access now or not at
             // all: a later load would not be under the session's check.
             if fileReadAccessURL != nil {
@@ -5847,16 +5617,7 @@ final class BrowserPanel: Panel, ObservableObject {
         // Resume on endpoint arrival, or directly once the pane turned local
         // (a stranded queue pins the hidden pane as non-discardable forever).
         guard let navigation = pendingRemoteNavigation else { return }
-        if remoteProxyEndpoint == nil, usesRemoteWorkspaceProxy {
-            // Managed SSH has no workspace proxy: a waiting loopback URL resumes
-            // on its machine's forward once that machine is registered.
-            guard let url = navigation.request.url, owningWorkspaceRoutesThroughSSHTui,
-                  let provider = privateAddressRouteProvider(for: url) else { return }
-            pendingRemoteNavigation = nil
-            navigation.onNavigationStarted?(nil)
-            provider.configureBrowser(self, url: url, request: navigation.request)
-            return
-        }
+        if remoteProxyEndpoint == nil, usesRemoteWorkspaceProxy { return }
         guard let originalURL = navigation.request.url else {
             navigation.onNavigationStarted?(nil)
             pendingRemoteNavigation = nil
@@ -5880,21 +5641,8 @@ final class BrowserPanel: Panel, ObservableObject {
         recordTypedNavigation: Bool,
         preserveRestoredSessionHistory: Bool,
         fileReadAccessURL: URL? = nil,
-        onNavigationStarted: ((WKNavigation?) -> Void)? = nil,
-        skipsAppSessionBootstrap: Bool = false
+        onNavigationStarted: ((WKNavigation?) -> Void)? = nil
     ) -> WKNavigation? {
-        // A newer navigation supersedes an exchange that has not loaded yet.
-        cancelAppSessionBootstrap()
-        if !skipsAppSessionBootstrap,
-           beginAppSessionBootstrapIfNeeded(
-               request: request,
-               originalURL: originalURL,
-               recordTypedNavigation: recordTypedNavigation,
-               preserveRestoredSessionHistory: preserveRestoredSessionHistory,
-               onNavigationStarted: onNavigationStarted
-           ) {
-            return nil
-        }
         cancelHiddenWebViewDiscard()
         if hasRecoverableWebContentTermination {
             _ = replaceWebViewPreservingState(
@@ -5923,12 +5671,6 @@ final class BrowserPanel: Panel, ObservableObject {
         if shouldPreloadInitialNavigationInBackground {
             shouldPreloadInitialNavigationInBackground = false
             ensureBackgroundPreloadHostIfNeeded(reason: "initial-navigation")
-        }
-        if cloudAccess.model != nil && !cloudAccess.showsPage {
-            // The connection card mounts the visible browser only after load.
-            // Store replacement closes the old preload host, so the new view
-            // needs its own host to load while that card remains onscreen.
-            ensureBackgroundPreloadHostIfNeeded(reason: "cloud-navigation")
         }
         if recordTypedNavigation {
             historyStore.recordTypedNavigation(url: originalURL)
@@ -5981,137 +5723,8 @@ final class BrowserPanel: Panel, ObservableObject {
         return startedNavigation
     }
 
-    /// Trusted cmux app pages (`/app-pricing`, `/app-pro-welcome`) read the
-    /// plan from Stack cookies, which only a store prepared by
-    /// ``BrowserAppSessionController`` holds. Every direct entrypoint (Upgrade,
-    /// Pro welcome, restore, typed URL) lands here, so the exchange runs before
-    /// WebKit loads the document and a signed-in app never shows the page
-    /// signed out. Without a signed-in app the page loads unchanged.
-    private func beginAppSessionBootstrapIfNeeded(
-        request: URLRequest,
-        originalURL: URL,
-        recordTypedNavigation: Bool,
-        preserveRestoredSessionHistory: Bool,
-        onNavigationStarted: ((WKNavigation?) -> Void)?
-    ) -> Bool {
-        // A tab a browser REPL session drives never receives the signed-in
-        // app session: the session could read the user's account pages.
-        guard !isClosingWebViewLifecycle,
-              BrowserReplTabAttachments.shared.attachment(for: id)?.isAttached != true,
-              cloudBrowserMachineID == nil,
-              cloudAccess.model == nil,
-              !usesRemoteWorkspaceProxy,
-              !preservesExplicitEphemeralWebsiteDataStore || appSessionStoreNeedsBootstrap,
-              (request.httpMethod ?? "GET").uppercased() == "GET",
-              Self.isNativeAppSessionSurface(originalURL),
-              let requestSession = appSessionRequestProvider ?? Self.signedInAppSessionRequest() else {
-            return false
-        }
-
-        hiddenWebViewDiscardManager.updateRestoredSessionRenderIntent(nil)
-        currentURL = originalURL
-        navigationDelegate?.recordAttemptedRequest(request, displayURL: originalURL)
-        refreshBackgroundAppearance()
-        shouldRenderWebView = true
-        appSessionBootstrapNavigationStarted = onNavigationStarted
-        appSessionBootstrapTask = Task { @MainActor [weak self] in
-            let outcome = await requestSession(originalURL)
-            guard let self, !Task.isCancelled else { return }
-            self.appSessionBootstrapTask = nil
-            self.appSessionBootstrapNavigationStarted = nil
-            if case let .navigation(navigation) = outcome {
-                self.adoptAppSessionStore(
-                    navigation.websiteDataStore,
-                    preservingRestoredSessionHistory: preserveRestoredSessionHistory
-                )
-            }
-            self.performNavigation(
-                request: request,
-                originalURL: originalURL,
-                recordTypedNavigation: recordTypedNavigation,
-                preserveRestoredSessionHistory: preserveRestoredSessionHistory,
-                onNavigationStarted: onNavigationStarted,
-                skipsAppSessionBootstrap: true
-            )
-        }
-        return true
-    }
-
-    private func cancelAppSessionBootstrap() {
-        guard let task = appSessionBootstrapTask else { return }
-        task.cancel()
-        appSessionBootstrapTask = nil
-        let navigationStarted = appSessionBootstrapNavigationStarted
-        appSessionBootstrapNavigationStarted = nil
-        navigationStarted?(nil)
-    }
-
-    /// Moves the panel into the controller-owned store that received the
-    /// session cookies. The store is registered so sign-out clears it.
-    private func adoptAppSessionStore(
-        _ store: WKWebsiteDataStore,
-        preservingRestoredSessionHistory: Bool
-    ) {
-        guard store !== WKWebsiteDataStore.default(), store.identifier == nil else { return }
-        let restoredHistory = restoredSessionHistory
-        closeAllPopupControllers()
-        websiteDataStore = store
-        preservesExplicitEphemeralWebsiteDataStore = true
-        appSessionStoreNeedsBootstrap = false
-        historyStore = BrowserHistoryStore(fileURL: nil)
-        resetForWorkspaceContextChange(
-            reason: "appSessionBootstrap",
-            forceWebViewReplacement: true
-        )
-        if preservingRestoredSessionHistory {
-            restoredSessionHistory = restoredHistory
-            refreshNavigationAvailability()
-        }
-        AppDelegate.shared?.auth?.browserAppSession.register(self)
-    }
-
-    static func isNativeAppSessionSurface(_ url: URL?) -> Bool {
-        BrowserAppTheme.supportsAppSurface(
-            url: url,
-            trustedOrigin: AuthEnvironment.appSessionHandoffOrigin
-        )
-    }
-
-    /// A page prewarmed in the profile store has no session cookies, so a
-    /// signed-in app must load trusted app pages through the exchange instead.
-    static func requiresAppSessionBootstrap(_ url: URL?) -> Bool {
-        isNativeAppSessionSurface(url) && signedInAppSessionRequest() != nil
-    }
-
-    private static func signedInAppSessionRequest() -> (@MainActor (URL) async -> BrowserAppSessionRequestOutcome)? {
-        guard let auth = AppDelegate.shared?.auth,
-              auth.coordinator.isAuthenticated else {
-            return nil
-        }
-        let appSession = auth.browserAppSession
-        return { url in
-            var outcome = await appSession.request(destinationURL: url)
-            if outcome.shouldRetry {
-                outcome = await appSession.request(destinationURL: url)
-            }
-            if case let .navigation(navigation) = outcome,
-               !appSession.isCurrent(
-                   generation: navigation.generation,
-                   authSessionGeneration: navigation.authSessionGeneration
-               ) {
-                return .cancelled
-            }
-            return outcome
-        }
-    }
-
     private func remoteProxyPreparedRequest(from request: URLRequest, logScope: String) -> URLRequest {
-        if let url = request.url, let rewritten = cloudAccess.rewrittenLoopbackURL(url) {
-            var prepared = request
-            prepared.url = rewritten
-            return prepared
-        }
-        guard cloudBrowserMachineID == nil, remoteProxyEndpoint != nil else { return request }
+        guard remoteProxyEndpoint != nil else { return request }
         guard let url = request.url else { return request }
         guard let rewrittenURL = Self.remoteProxyLoopbackAliasURL(for: url) else { return request }
 
@@ -6445,7 +6058,7 @@ extension BrowserPanel: BrowserHiddenWebViewDiscardManagerDelegate {
             isVisualAutomationCaptureActive: activeVisualAutomationCaptureCount > 0
                 || !mobileBrowserDialogBroker.pendingDialogs.isEmpty
                 || BrowserReplTabAttachments.shared.attachment(for: id) != nil,
-            isMobileBrowserStreamActive: !mobileBrowserStreamSignalHandlers.isEmpty,
+            isMobileBrowserStreamActive: false,
             hasPopups: !popupControllers.isEmpty,
             isCapturingMedia: webView.cmuxIsCapturingMedia,
             isPlayingMedia: isPlayingMedia,
@@ -6600,19 +6213,6 @@ extension BrowserPanel {
 #endif
     }
 
-    func resetForAppSessionSignOut() {
-        // Stop exposing the authenticated store before its asynchronous WebKit
-        // deletion callback completes. If WebKit drops that callback, the live
-        // panel is still isolated from the previous account immediately.
-        closeAllPopupControllers()
-        cancelAppSessionBootstrap()
-        websiteDataStore = WKWebsiteDataStore.nonPersistent()
-        appSessionStoreNeedsBootstrap = preservesExplicitEphemeralWebsiteDataStore
-        resetForWorkspaceContextChange(
-            reason: "appSessionSignOut",
-            forceWebViewReplacement: true
-        )
-    }
 }
 
 func resolveBrowserNavigableURL(_ input: String) -> URL? {
@@ -6704,7 +6304,6 @@ extension BrowserPanel {
     func goBack(dialogOwner: BrowserDialogOwner = .user) {
         takeBrowserDialogOwnership(dialogOwner)
         guard canGoBack else { return }
-        cancelAppSessionBootstrap()
         reactivateDiscardedWebViewWithoutNavigation(reason: "goBack")
         cancelInFlightNavigationBeforeHistoryTraversal()
         if usesRestoredSessionHistory {
@@ -6744,7 +6343,6 @@ extension BrowserPanel {
     func goForward(dialogOwner: BrowserDialogOwner = .user) {
         takeBrowserDialogOwnership(dialogOwner)
         guard canGoForward else { return }
-        cancelAppSessionBootstrap()
         reactivateDiscardedWebViewWithoutNavigation(reason: "goForward")
         cancelInFlightNavigationBeforeHistoryTraversal()
         if usesRestoredSessionHistory {
@@ -6881,10 +6479,6 @@ extension BrowserPanel {
     }
 
     private func prepareForReload(reason: String, mode: BrowserPanelReloadMode) -> Bool {
-        if cloudAccess.model != nil {
-            cloudAccess.retry()
-            return true
-        }
         if retryFailedNavigationForReload(mode: mode) {
             return true
         }
@@ -6919,12 +6513,6 @@ extension BrowserPanel {
     @discardableResult
     func reload(dialogOwner: BrowserDialogOwner = .user) -> WKNavigation? {
         takeBrowserDialogOwnership(dialogOwner)
-        if cloudAccess.model?.usesBrowserProxy == true, cloudAccess.error != nil || cloudAccess.model?.isReady != true {
-            cloudAccess.retry()
-            return nil
-        }
-        // The pending exchange is already loading the intended page.
-        if appSessionBootstrapTask != nil { return nil }
         if prepareForReload(reason: "reload", mode: .soft) {
             return nil
         }
@@ -6935,11 +6523,6 @@ extension BrowserPanel {
     /// Reload the current page, bypassing WebKit's cache.
     func hardReload(dialogOwner: BrowserDialogOwner = .user) {
         takeBrowserDialogOwnership(dialogOwner)
-        if cloudAccess.model?.usesBrowserProxy == true, cloudAccess.error != nil || cloudAccess.model?.isReady != true {
-            cloudAccess.retry()
-            return
-        }
-        if appSessionBootstrapTask != nil { return }
         if prepareForReload(reason: "hardReload", mode: .hard) {
             return
         }
@@ -6949,8 +6532,6 @@ extension BrowserPanel {
 
     /// Stop loading
     func stopLoading() {
-        cloudAccess.didCancel()
-        cancelAppSessionBootstrap()
         // Fail closed: a reveal must never blank-shell-heal over an explicit Stop.
         userStoppedLoadSinceWebViewReplacement = true
         webView.stopLoading()
@@ -9186,7 +8767,6 @@ final class BrowserUIDelegate: BrowserPDFPreviewActionUIDelegate {
     private let externalNavigationHandler: BrowserExternalNavigationHandler
     weak var owner: BrowserPanel?
     var openInNewTab: ((URL) -> Void)?
-    var openAppLinkInBrowserSplit: ((URL) -> Bool)?
     var requestNavigation: ((URLRequest, BrowserInsecureHTTPNavigationIntent) -> Void)?; var recordPDFPrintIntent: ((URLRequest, WKFrameInfo?) -> Void)?
     var presentAlert: BrowserAlertPresenter = browserPresentAlert
     var openPopup: ((WKWebViewConfiguration, WKWindowFeatures) -> WKWebView?)?
@@ -9384,16 +8964,6 @@ final class BrowserUIDelegate: BrowserPDFPreviewActionUIDelegate {
         // Every external side effect below asks the same decision.
         let replGuard = BrowserReplNavigationGuard.shared
         if let url = navigationAction.request.url {
-            if navigationAction.navigationType == .linkActivated,
-               navigationAction.targetFrame?.isMainFrame != false,
-               let appLink = BrowserAppLinkOpenRequest(
-                   url: url,
-                   webOrigin: AuthEnvironment.appSessionHandoffOrigin
-               ),
-               replGuard.allowsExternal(panelID: owner?.id, action: navigationAction, target: .appLink),
-               openAppLinkInBrowserSplit?(appLink.destinationURL) == true {
-                return nil
-            }
             let replAllowsExternalOpen = replGuard.allowsExternal(panelID: owner?.id, action: navigationAction, target: .configuredBrowser)
             switch replAllowsExternalOpen ? externalNavigationHandler.openConfiguredExternallyResult(
                 url,
@@ -9416,21 +8986,8 @@ final class BrowserUIDelegate: BrowserPDFPreviewActionUIDelegate {
 
         if let url = navigationAction.request.url,
            navigationAction.targetFrame?.isMainFrame != false,
-           url.scheme?.lowercased() != AuthEnvironment.callbackScheme.lowercased(),
+           url.scheme?.lowercased() != CmuxAppURLScheme.current.lowercased(),
            !BrowserURLAllowlistPolicy(defaults: .standard).allows(url) {
-            return nil
-        }
-
-        // Auth-callback-shaped URLs never get the external-app prompt from the
-        // popup path: the only legitimate producer is the app's own
-        // after-sign-in page, which the main navigation delegate consumes.
-        if let url = navigationAction.request.url,
-           BrowserAuthCallbackNavigationPolicy.shouldBlockExternalNavigation(url) {
-#if DEBUG
-            cmuxDebugLog(
-                "browser.nav.createWebView kind=blockUntrustedAuthCallback scheme=\(url.scheme ?? "nil")"
-            )
-#endif
             return nil
         }
 
@@ -9451,16 +9008,6 @@ final class BrowserUIDelegate: BrowserPDFPreviewActionUIDelegate {
                 },
                 presentAlert: presentAlert
             )
-            return nil
-        }
-
-        if owner?.mobileBrowserStreamSignalHandlers.isEmpty == false {
-            if let requestNavigation {
-                recordPDFPrintIntent?(navigationAction.request, navigationAction.sourceFrame)
-                requestNavigation(navigationAction.request, .currentTab)
-            } else {
-                browserLoadRequest(navigationAction.request, in: webView)
-            }
             return nil
         }
 

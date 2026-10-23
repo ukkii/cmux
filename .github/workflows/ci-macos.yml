@@ -2259,16 +2259,6 @@ jobs:
             -default-test-execution-time-allowance 120 \
             -maximum-test-execution-time-allowance 120 \
             CMUX_SKIP_ZIG_BUILD=1 \
-            -only-testing:cmuxTests/DeviceDirectoryLifecycleTests \
-            -only-testing:cmuxTests/DeviceDirectoryMergeTests \
-            -only-testing:cmuxTests/DeviceLinkReconnectPolicyTests \
-            -only-testing:cmuxTests/DevicePresenceWireTests \
-            -only-testing:cmuxTests/DeviceRegistryClientTests \
-            -only-testing:cmuxTests/DeviceRouteSelectorTests \
-            -only-testing:cmuxTests/DeviceTerminalMirrorTests \
-            -only-testing:cmuxTests/DeviceWorkspaceProjectionTests \
-            -only-testing:cmuxTests/DevicesCloudTreeBuilderTests \
-            -only-testing:cmuxTests/DevicesSidebarModeTests \
             -only-testing:cmuxTests/SurfaceMachineIDDeviceEncodingTests \
             test-without-building
 

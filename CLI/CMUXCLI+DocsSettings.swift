@@ -328,7 +328,7 @@ extension CMUXCLI {
         DocsReference(
             topic: "managed-policies",
             aliases: ["mdm", "managed", "policy", "policies", "enterprise", "managed-device-policies"],
-            summary: "MDM-enforceable managed policies: disable the embedded browser, iOS remote control, and Cloud on managed Macs.",
+            summary: "MDM-enforceable managed policies: disable the embedded browser, remote connections, and file transfer on managed Macs.",
             webURL: "https://cmux.com/docs/managed-policies",
             rawResources: [
                 DocsResource(label: "managed device policies", url: "https://raw.githubusercontent.com/manaflow-ai/cmux/main/docs/managed-device-policies.md"),
@@ -490,7 +490,7 @@ extension CMUXCLI {
     /// Completion candidates for `cmux settings <target>` and `cmux settings open
     /// <target>`. Canonical spellings only, matching `settingsTargetRawValue`.
     static let settingsTargetNames: [String] = [
-        "account", "app", "themes", "terminal", "networking", "computers", "sidebar-appearance",
+        "app", "themes", "terminal", "sidebar-appearance",
         "custom-sidebars", "automation", "browser", "browser-import",
         "global-hotkey", "keyboard-shortcuts", "workspace-colors",
         "cmux-json", "reset",
@@ -811,7 +811,7 @@ extension CMUXCLI {
           docs                Print the same output as `cmux docs settings`.
 
         Targets:
-          account, app, themes, terminal, networking, computers, devices, sidebar-appearance,
+          account, app, themes, terminal, sidebar-appearance,
           custom-sidebars, automation, browser, browser-import,
           global-hotkey, keyboard-shortcuts, shortcuts, workspace-colors,
           cmux-json, json, reset
@@ -839,8 +839,6 @@ extension CMUXCLI {
             .replacingOccurrences(of: "_", with: "-")
 
         switch normalized {
-        case "account":
-            return "account"
         case "app", "general":
             return "app"
         case "themes", "theme", "appearance":
@@ -855,10 +853,6 @@ extension CMUXCLI {
             return "automation"
         case "browser":
             return "browser"
-        case "networking", "network", "iroh":
-            return "networking"
-        case "computers", "devices":
-            return "computers"
         case "browser-import", "browserimport", "import-browser-data":
             return "browserImport"
         case "global-hotkey", "globalhotkey", "hotkey":

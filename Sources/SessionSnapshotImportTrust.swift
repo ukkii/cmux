@@ -9,10 +9,10 @@ struct SessionSnapshotImportTrustReport: Equatable, Sendable {
     /// agent registrations, trusted-source resume bindings, and tmux start
     /// commands taken from the file.
     var heldBackResumeCount = 0
-    /// Workspaces whose SSH/cloud connection, surface projections, or
-    /// environment was dropped.
+    /// Workspaces whose SSH connection, legacy Cloud binding, or environment
+    /// was dropped.
     var droppedRemoteWorkspaceCount = 0
-    /// Browser panels whose URL, history entries, profile, or cloud/diff
+    /// Browser panels whose URL, history entries, profile, or diff
     /// provenance was dropped.
     var sanitizedBrowserPanelCount = 0
     /// Terminals whose scrollback had terminal control strings removed.
@@ -51,8 +51,8 @@ struct SessionSnapshotImportTrustReport: Equatable, Sendable {
 ///   are removed before replay.
 /// - Text box draft attachments (hidden submission text) are dropped.
 /// - Browser panels keep only http/https URLs and history entries, and lose
-///   their profile, dev tools, diff-viewer and cloud provenance.
-/// - Workspace SSH/cloud connections, surface projections, and workspace
+///   their profile, dev tools and diff-viewer provenance.
+/// - Workspace SSH connections, legacy Cloud bindings, and workspace
 ///   environment variables are dropped (SSH options such as `ProxyCommand`
 ///   and variables such as `BASH_ENV` execute locally).
 ///
@@ -104,16 +104,12 @@ enum SessionSnapshotImportTrust {
             for workspaceIndex in window.tabManager.workspaces.indices {
                 var workspace = window.tabManager.workspaces[workspaceIndex]
                 if workspace.remote != nil || workspace.cloudVM != nil
-                    || workspace.environment?.isEmpty == false
-                    || workspace.surfaceProjections?.isEmpty == false
-                    || workspace.cloudMachineTeams?.isEmpty == false {
+                    || workspace.environment?.isEmpty == false {
                     report.droppedRemoteWorkspaceCount += 1
                 }
                 workspace.remote = nil
                 workspace.cloudVM = nil
                 workspace.environment = nil
-                workspace.surfaceProjections = nil
-                workspace.cloudMachineTeams = nil
                 workspace.panels = sanitize(workspace.panels)
                 if var dock = workspace.dock {
                     dock.panels = sanitize(dock.panels)
@@ -287,8 +283,6 @@ enum SessionSnapshotImportTrust {
         sanitized.backHistoryURLStrings = browser.backHistoryURLStrings?.filter(isAllowedImportedURL)
         sanitized.forwardHistoryURLStrings = browser.forwardHistoryURLStrings?.filter(isAllowedImportedURL)
         sanitized.profileID = nil
-        sanitized.cloudResource = nil
-        sanitized.cloudTeamID = nil
         sanitized.diffViewerToken = nil
         sanitized.diffViewerRequestPath = nil
         // WebKit's interaction state holds its own back/forward list, which
@@ -301,8 +295,6 @@ enum SessionSnapshotImportTrust {
             || sanitized.backHistoryURLStrings != browser.backHistoryURLStrings
             || sanitized.forwardHistoryURLStrings != browser.forwardHistoryURLStrings
             || browser.profileID != nil
-            || browser.cloudResource != nil
-            || browser.cloudTeamID != nil
             || browser.diffViewerToken != nil
             || browser.diffViewerRequestPath != nil
             || browser.interactionState != nil

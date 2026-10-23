@@ -205,7 +205,7 @@ jobs:
 
       - name: Validate feature flag linter scope
         if: ${{ matrix.group == 'ci' }}
-        run: python3 -m unittest tests/test_lint_feature_flags_scope.py tests/test_lint_feature_flags_review_date.py tests/test_cloud_upgrade_rollout_retirement.py
+        run: python3 -m unittest tests/test_lint_feature_flags_scope.py tests/test_lint_feature_flags_review_date.py
 
       - name: Validate feature flag review lead-time report
         if: ${{ matrix.group == 'ci' }}
@@ -438,7 +438,7 @@ jobs:
         run: python3 scripts/generate-claude-launch-environment-policy.py --check
 
       # The Swift validator reads the schema embedded in CmuxFoundation, so it
-      # must be regenerated whenever web/data/cmux.schema.json changes.
+      # must be regenerated whenever schemas/cmux.schema.json changes.
       - name: Validate embedded cmux.json schema generation
         if: ${{ matrix.group == 'preflight' }}
         run: python3 scripts/generate-cmux-config-schema.py --check

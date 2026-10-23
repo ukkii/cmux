@@ -482,9 +482,6 @@ final class CmuxSettingsFileStore {
         if let browserSection = root["browser"] as? [String: Any] {
             parseBrowserSection(browserSection, sourcePath: sourcePath, snapshot: &snapshot)
         }
-        if let mobileSection = root["mobile"] as? [String: Any] {
-            parseMobileSection(mobileSection, sourcePath: sourcePath, snapshot: &snapshot)
-        }
         if let markdownSection = root["markdown"] as? [String: Any] {
             parseMarkdownSection(markdownSection, sourcePath: sourcePath, snapshot: &snapshot)
         }

@@ -34,7 +34,7 @@ extension TerminalController {
             // Subscribe, then reread, so output that lands between the last
             // read and the subscription still answers the wait.
             guard let output = try? await v2MainAsync({
-                MobileTerminalByteTee.shared.outputUpdates(surfaceID: outputSurfaceID)
+                TerminalOutputUpdateTee.shared.outputUpdates(surfaceID: outputSurfaceID)
             }) else { break }
             reading = await waitTextChangeRead(wait)
             if let answer = waitTextChangeAnswer(reading, wait: wait) {

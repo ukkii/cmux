@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxSurfaceCatalogModel
 import Foundation
 
@@ -9,8 +8,7 @@ extension SurfaceCatalog {
         pendingRestoredProjections.projection(forPanel: panelID) ?? projection(forPanel: panelID)
     }
 
-    /// Captures the authoritative identity, including Cloud resources still awaiting a provider.
-    /// Pending remote identity takes precedence over a live local placeholder.
+    /// Captures the authoritative identity, including restored resources still awaiting a provider.
     func projectionRecord(forPanel panelID: UUID) -> SurfaceProjectionRecord? {
         guard let projection = projectionIncludingPendingRestore(forPanel: panelID) else { return nil }
         return SurfaceProjectionRecord(
@@ -19,14 +17,6 @@ extension SurfaceCatalog {
             remoteWorkspaceID: projection.remoteWorkspaceID,
             remoteTabID: projection.remoteTabID
         )
-    }
-
-    /// Only a provider's remote materialization supersedes a pending Cloud identity.
-    /// The local shell/browser registered during restore is still its placeholder.
-    func consumePendingProjectionIfMaterialized(_ projection: SurfaceProjection) {
-        if !projection.resource.machine.isLocal {
-            pendingRestoredProjections.remove(panelID: projection.panelID)
-        }
     }
 
     func projection(forPanel panelID: UUID) -> SurfaceProjection? {
@@ -40,8 +30,7 @@ extension SurfaceCatalog {
     }
 
     func validateOwnership(of resources: [SurfaceResourceID], at destination: SurfaceDestination) throws {
-        guard let workspace = cloudWorkspaceRenameService.environment.workspace(destination.workspaceID)
-                ?? Workspace.liveWorkspace(id: destination.workspaceID) else {
+        guard let workspace = Workspace.liveWorkspace(id: destination.workspaceID) else {
             throw SurfaceCatalogError.destinationNotFound(destination.workspaceID.uuidString)
         }
         if let rejection = ownershipRejection(for: resources, policy: workspace.surfaceOwnershipPolicy) {
@@ -81,20 +70,19 @@ extension SurfaceCatalog {
         return resources.compactMap { policy.rejection(for: machineOwningResource($0), kind: $0.kind) }.first
     }
 
-    /// A legacy SSH projection is catalogued by its local PTY, while the live
-    /// panel retains the stable Cloud machine that actually executes its shell.
+    /// A remote projection is catalogued by its local PTY, while the live panel
+    /// retains the stable machine that actually executes its shell.
     private func machineOwningResource(_ resource: SurfaceResourceID) -> SurfaceMachineID {
         guard resource.machine.isLocal, let panelID = UUID(uuidString: resource.key) else { return resource.machine }
         if let dock = DockSplitStore.liveStore(containingPanel: panelID) {
             return dock.machineOwningSurface(panelID) ?? resource.machine
         }
         if let projection = projection(forPanel: panelID),
-           let workspace = cloudWorkspaceRenameService.environment.workspace(projection.workspaceID)
-                ?? Workspace.liveWorkspace(id: projection.workspaceID),
+           let workspace = Workspace.liveWorkspace(id: projection.workspaceID),
            let machine = workspace.machineOwningSurface(panelID, catalog: self) {
             return machine
         }
-        return AppDelegate.shared?.workspace(containingSurfaceID: panelID)?.machineOwningSurface(panelID, catalog: self)
+        return AppDelegate.shared?.workspaceContainingPanel(panelId: panelID)?.workspace.machineOwningSurface(panelID, catalog: self)
             ?? resource.machine
     }
 }

@@ -57,8 +57,6 @@ struct SidebarWorkspaceSnapshotBuilder {
         // check `hasManualCustomColor` instead.
         let customColorHex: String?
         let hasManualCustomColor: Bool
-        /// Stable Cloud identity, independent of connection status and detail visibility.
-        let cloudWorkspaceLabel: String?
         let remoteWorkspaceSidebarText: String?
         let remoteConnectionStatusText: String
         let remoteStateHelpText: String
@@ -91,13 +89,9 @@ struct SidebarWorkspaceSnapshotBuilder {
         let checklistTotalCount: Int
         let checklistFirstUncheckedText: String?
         var taskStatusInput = SidebarWorkspaceTaskStatusSnapshot()
-        var deviceWorkspaceLabel: String? = nil
         /// The single leading status glyph when `sidebar.compactAgentStatus`
         /// is on (agent status entries then leave `metadataEntries`).
         var compactStatusGlyph: SidebarCompactStatusGlyph? = nil
-
-        var remoteWorkspaceBadgeLabel: String? { deviceWorkspaceLabel ?? cloudWorkspaceLabel }
-        var remoteWorkspaceBadgeSymbol: String { deviceWorkspaceLabel == nil ? "cloud" : "desktopcomputer" }
 
         /// Remote host named after the title when another workspace shares it (beta), else nil.
         var hostTitleSuffix: String? = nil
@@ -123,9 +117,7 @@ struct SidebarWorkspaceSnapshotBuilder {
                 Int64(index + 1),
                 Int64(workspaceCount)
             )
-            let cloudDirectory = cloudWorkspaceLabel == nil ? nil
-                : (compactDirectoryCandidates.first ?? branchDirectoryLines.first?.directory)
-            return [position, remoteWorkspaceBadgeLabel, cloudDirectory].compactMap { $0 }.joined(separator: ", ")
+            return position
         }
     }
 }

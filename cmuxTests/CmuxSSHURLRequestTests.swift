@@ -1,4 +1,3 @@
-import CmuxCloud
 import XCTest
 import Foundation
 
@@ -12,7 +11,7 @@ final class CmuxSSHURLRequestTests: XCTestCase {
     deinit {}
 
     private var supportedScheme: String {
-        AuthEnvironment.callbackScheme
+        CmuxAppURLScheme.current
     }
 
     func testParsesSSHURLWithExplicitHostUserPortAndTitle() throws {

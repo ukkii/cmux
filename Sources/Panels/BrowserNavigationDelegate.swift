@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxBrowser
 import CmuxCore
@@ -9,9 +8,6 @@ import WebKit
 @MainActor final class BrowserNavigationDelegate: NSObject, WKNavigationDelegate {
     enum PolicyCancellationKind { case terminal(restoreAttemptID: UUID?) }
     private let subframeDownloadIntents = BrowserSubframeDownloadIntentTracker()
-    private let externalNavigationPolicy = BrowserExternalNavigationPolicy(
-        trustedOrigin: AuthEnvironment.appWebOrigin
-    )
     private let externalNavigationHandler: BrowserExternalNavigationHandler
     private var shouldPrintAfterCurrentNavigationFinishes = false
     var didStartProvisionalNavigation: (@MainActor (WKWebView, WKNavigation?) -> Void)?
@@ -26,7 +22,6 @@ import WebKit
     var didTerminateWebContentProcess: (@MainActor (WKWebView) -> Void)?
     var handleBlockedURLAllowlistNavigation: (@MainActor (URL, WKWebView) -> Void)?
     var openInNewTab: (@MainActor (URL) -> Void)?
-    var openAppLinkInBrowserSplit: (@MainActor (URL) -> Bool)?
     var requestNavigation: (@MainActor (URLRequest, BrowserInsecureHTTPNavigationIntent, (@MainActor (WKNavigation?) -> Void)?) -> Void)?
     var presentAlert: BrowserAlertPresenter = browserPresentAlert
     var shouldBlockInsecureHTTPNavigation: (@MainActor (URL) -> Bool)?
@@ -434,93 +429,11 @@ import WebKit
             return
         }
 
-        // A link, redirect or script navigation to loopback in a managed SSH
-        // workspace goes to the SSH host, never this Mac's same-port service.
-        if navigationAction.targetFrame?.isMainFrame == true,
-           let url = navigationAction.request.url,
-           let owner, owner.owningWorkspaceRoutesThroughSSHTui,
-           let model = owner.cloudAccess.model,
-           model.route == .loopback,
-           BrowserURLAllowlistPolicy(defaults: .standard).allows(url),
-           let serviceURL = owner.sshLoopbackServiceURL(for: url),
-           owner.cloudAccess.owns(serviceURL),
-           let listenerURL = model.url(for: url),
-           listenerURL != url {
-            // A service may redirect back to its canonical localhost origin.
-            // Once this pane owns a live forward, rewrite that request to the
-            // existing listener instead of reconfiguring the route and
-            // reloading the forward indefinitely. Keep the original method,
-            // headers, and body intact. Preserve the service Host as well: a
-            // number of dev servers redirect a loopback listener back to
-            // localhost when the forwarded request presents the listener's
-            // ephemeral host, which would otherwise repeat this interception.
-            var request = navigationAction.request
-            request.url = listenerURL
-            if let host = serviceURL.host {
-                let hostValue = host.contains(":") ? "[\(host)]" : host
-                let port = serviceURL.port.map { ":\($0)" } ?? ""
-                request.setValue(hostValue + port, forHTTPHeaderField: "Host")
-            }
-            decisionHandler(.cancel)
-            requestNavigation?(request, navigationIntent, nil)
-            return
-        }
-
-        if navigationAction.targetFrame?.isMainFrame == true,
-           let url = navigationAction.request.url,
-           let owner, owner.owningWorkspaceRoutesThroughSSHTui,
-           owner.sshLoopbackServiceURL(for: url) != nil {
-            decisionHandler(.cancel)
-            requestNavigation?(navigationAction.request, navigationIntent, nil)
-            return
-        }
-
-        if navigationAction.targetFrame?.isMainFrame == true,
-           let url = navigationAction.request.url,
-           BrowserURLAllowlistPolicy(defaults: .standard).allows(url),
-           let rewritten = owner?.cloudAccess.rewrittenLoopbackURL(url), rewritten != url {
-            var request = navigationAction.request
-            request.url = rewritten
-            decisionHandler(.cancel)
-            requestNavigation?(request, .currentTab, nil)
-            return
-        }
-
         if let url = navigationAction.request.url,
            url.scheme == "cmux-browser-action",
            url.host == "bypass-ssl" {
             decisionHandler(.cancel)
             handleSSLTrustBypassAction(url, in: webView)
-            return
-        }
-
-        // Authenticated cmux app links carry an in-process handoff action.
-        // Consume them before generic URL rules so a broad external pattern
-        // cannot divert the signed-in split placement to LaunchServices.
-        // In a tab a browser REPL session drives, only the user's own click
-        // opens the split; any other activation loads the link in the tab.
-        if navigationAction.navigationType == .linkActivated,
-           navigationAction.targetFrame?.isMainFrame != false,
-           let url = navigationAction.request.url,
-           let appLink = BrowserAppLinkOpenRequest(
-               url: url,
-               webOrigin: AuthEnvironment.appSessionHandoffOrigin
-           ),
-           BrowserReplNavigationGuard.shared.allowsExternal(panelID: owner?.id, action: navigationAction, target: .appLink),
-           openAppLinkInBrowserSplit?(appLink.destinationURL) == true {
-            clearAttemptedRequest(discardPendingBypasses: true)
-            let reportTerminalCancellation: @MainActor () -> Void = terminalPolicyCancellationReporter?(
-                navigationAction,
-                webView
-            ) ?? {}
-            reportTerminalCancellation()
-#if DEBUG
-            cmuxDebugLog(
-                "browser.nav.decidePolicy.action kind=openAppLinkInBrowserSplit " +
-                "url=\(browserNavigationDebugURL(appLink.destinationURL))"
-            )
-#endif
-            decisionHandler(.cancel)
             return
         }
 
@@ -581,7 +494,7 @@ import WebKit
                 && owner?.isTrustedLocalFileDocument(url) == true
             if !isTrustedInternal,
                !isTrustedDocument,
-               url.scheme?.lowercased() != AuthEnvironment.callbackScheme.lowercased(),
+               url.scheme?.lowercased() != CmuxAppURLScheme.current.lowercased(),
                !BrowserURLAllowlistPolicy(defaults: .standard).allows(url) {
                 decisionHandler(.cancel)
                 if isMainFrame {
@@ -664,35 +577,6 @@ import WebKit
             "openInNewTab=\(shouldOpenInNewTab ? 1 : 0)"
         )
 #endif
-
-        if let url = navigationAction.request.url,
-           shouldOpenInSystemBrowser(navigationAction, url: url),
-           BrowserReplNavigationGuard.shared.allowsExternal(panelID: owner?.id, action: navigationAction, target: .systemBrowser) {
-            clearAttemptedRequest(discardPendingBypasses: true)
-            let reportTerminalCancellation: @MainActor () -> Void = terminalPolicyCancellationReporter?(navigationAction, webView) ?? {}
-            let opened = NSWorkspace.shared.open(url)
-#if DEBUG
-            cmuxDebugLog(
-                "browser.nav.decidePolicy.action kind=openExternalIntentInSystemBrowser opened=\(opened ? 1 : 0) " +
-                "url=\(browserNavigationDebugURL(url))"
-            )
-#endif
-            if opened {
-                reportTerminalCancellation()
-            } else if restartNavigationForUserAgentPolicyIfNeeded(
-                navigationAction,
-                in: webView,
-                decisionHandler: decisionHandler
-            ) {
-                return
-            }
-            decisionHandler(opened ? .cancel : .allow)
-            return
-        }
-
-        if handleAuthCallbackNavigationAction(navigationAction, webView: webView, decisionHandler: decisionHandler) {
-            return
-        }
 
         if let url = navigationAction.request.url,
            navigationAction.targetFrame?.isMainFrame != false,
@@ -857,58 +741,6 @@ import WebKit
         decisionHandler(.allow)
     }
 
-    let authCallbackNavigationPolicy = BrowserAuthCallbackNavigationPolicy(
-        trustedSourcePageOrigin: AuthEnvironment.appSessionHandoffOrigin,
-        callbackScheme: AuthEnvironment.callbackScheme
-    )
-
-    /// Handles auth-callback-shaped navigation actions. Returns `true` when
-    /// the navigation was consumed (delivered in-app or blocked); the caller
-    /// must stop policy evaluation in that case.
-    private func handleAuthCallbackNavigationAction(
-        _ navigationAction: WKNavigationAction,
-        webView: WKWebView,
-        decisionHandler: (WKNavigationActionPolicy) -> Void
-    ) -> Bool {
-        guard let url = navigationAction.request.url else { return false }
-        let disposition = authCallbackNavigationPolicy.disposition(
-            for: navigationAction,
-            url: url
-        )
-        return authCallbackNavigationPolicy.consume(
-            disposition: disposition,
-            callbackURL: url,
-            sourcePageURL: webView.url,
-            cancelNavigation: { [self] in
-                clearAttemptedRequest(discardPendingBypasses: true)
-                decisionHandler(.cancel)
-            },
-            reportTerminalCancellation: { [self] in
-                let report: @MainActor () -> Void = terminalPolicyCancellationReporter?(navigationAction, webView) ?? {}
-                report()
-            },
-            deliver: authCallbackNavigationPolicy.deliverAuthCallbackInApp,
-            completion: { [weak self, weak webView] delivered, returnURL in
-                guard let self, let webView else { return }
-#if DEBUG
-                cmuxDebugLog(
-                    "browser.nav.decidePolicy.action kind=deliverNativeAuthCallbackInApp " +
-                    "delivered=\(delivered ? 1 : 0) scheme=\(url.scheme ?? "nil")"
-                )
-#endif
-                BrowserAuthCallbackNavigationPolicy.finishDelivery(
-                    delivered: delivered,
-                    returnURL: returnURL,
-                    in: webView,
-                    prepareReturnRequest: { [weak self] request in
-                        self?.recordAttemptedRequest(request)
-                    },
-                    presentAlert: presentAlert
-                )
-            }
-        )
-    }
-
     private func restartNavigationForUserAgentPolicyIfNeeded(
         _ navigationAction: WKNavigationAction,
         in webView: WKWebView,
@@ -944,16 +776,6 @@ import WebKit
                     )
                 })
             }
-        )
-    }
-
-    private func shouldOpenInSystemBrowser(_ navigationAction: WKNavigationAction, url: URL) -> Bool {
-        guard navigationAction.targetFrame?.isMainFrame != false else { return false }
-        guard navigationAction.navigationType == .linkActivated else { return false }
-        return externalNavigationPolicy.shouldOpenInSystemBrowser(
-            url,
-            sourceURL: navigationAction.sourceFrame.request.url
-                ?? owner?.webView.url
         )
     }
 

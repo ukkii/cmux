@@ -79,3 +79,127 @@ Kept on purpose: local diagnostics that never leave the machine (debug log, star
 breadcrumb log, local Ghostty crash marker scan, memory-pressure and main-thread
 hang monitoring, the Cloud diagnostics view). GhosttyKit is still built with its
 own Sentry turned off.
+
+## Cloud tunnel and SSH transport
+
+The cmux Cloud packet-tunnel system extension (`cmuxTunnel.systemextension`, built on
+WireGuardKit/wireguard-go) is gone. The app no longer bundles or installs a system
+extension, never asks for System Extension or VPN approval, and its signature no
+longer claims the NetworkExtension, system-extension install or app-group
+entitlements. The `NSSystemExtensionUsageDescription` prompt string and the "Cloud
+VPN" setup pane are removed, and a VPN configuration saved by an earlier version is
+no longer adopted or managed.
+
+Cloud machines, iOS pairing, My Devices and workspace presence are switched off:
+cmux no longer restores a cmux account session at launch and opens no connections
+to cmux services. (Their code is deleted in the following steps.)
+
+`cmux ssh` (and `ssh://` links) now always use the classic cmuxd-remote transport,
+interactive sessions included, instead of the cmux-tui SSH carrier, which was built
+on Cloud code. Workspaces saved by the cmux-tui carrier still restore, but reconnect
+with a plain `ssh` command rather than reattaching to the old cmux-tui session.
+
+## Mobile app pairing, devices and peer networking
+
+- The Mac can no longer pair with or be controlled from the cmux iPhone/iPad app.
+  The Mobile Pairing workspace, the sidebar iPhone button, the "Open Mobile Pairing"
+  palette and menu actions and the `cmux.mobileconnect` tab-bar action are gone;
+  configs that still name that action ignore it.
+- Agent notifications are no longer forwarded to the phone, and phone replies to
+  notifications are no longer received. The "Forward notifications to my iPhone"
+  controls are gone.
+- My Devices is gone: no discovery of or connection to your other Macs, no Devices
+  section in the sidebar, no Settings › Devices pane.
+- Iroh/relay peer networking is gone, including Settings › Networking, the
+  Debug › Iroh Transport menu and `cmux iroh-diag`. The app no longer bundles
+  iroh-ffi or embeds Iroh relay-policy keys.
+- Shared terminal sizing is gone: the size panel and bounds overlay, "Size Terminal
+  to My Window" (Ctrl+Opt+Cmd+=), "Show Terminal Size Panel", "Disconnect Other
+  Terminal Clients", and `cmux surface size|participants|size-policy|size-to-me|size-counts|disconnect-participant|disconnect-others`.
+- Workspace presence avatars are gone.
+- Removed CLI commands: `cmux mobile …`. `cmux settings open` no longer accepts
+  `networking`, `computers` or `devices`.
+- Removed socket methods: every `mobile.*` method, the `terminal.create/input/replay/viewport/scroll/mouse/paste_image`
+  aliases, `terminal.size_*`, `terminal.participant(s).disconnect*`,
+  `debug.mobile.transport.*`, the `mobile_connect` workspace action and v1
+  `iroh_diag`. `terminal.paste` is kept (used by `cmux paste`).
+- Removed settings: the cmux.json `mobile` section and the feature flags
+  `mobile-connect-button`, `mobile-workspace-changes`, `ios-artifact-chip`,
+  `mobile-task-composer`, `mac-account-directory`. A leftover `mobile` key in
+  cmux.json is reported as unknown by schema validation.
+- MDM keys DisableRemoteControl, DisableDeviceDiscovery, DisableIncomingDeviceAccess
+  and DisableIrohNetworking are removed.
+
+## cmux Cloud
+
+cmux no longer includes cmux Cloud. Cloud machines and VMs, Cloud workspaces, the
+Cloud sidebar, the private network and every client of the cmux Cloud backend are
+removed from the app, the `cmux` CLI and the Xcode project, including the packages
+`CmuxCloud`, `CmuxCloudBannerCore`, `CmuxCloudImagePaste`, `CmuxCloudMachines`,
+`CmuxCloudResizeCore`, `CmuxCloudTui` and `CmuxTerminalSizing`.
+
+What users see:
+
+- **No Cloud machines.** No creating, opening, attaching to, snapshotting, forking,
+  resizing or deleting Cloud VMs; no Cloud desktops, port forwarding, published
+  domains, or file push/pull / drag-and-drop to a VM.
+- **UI removed:** the right-sidebar Cloud/Machines tab, the sidebar Cloud button,
+  Cloud workspace badges, the Cloud team picker, "New Cloud Workspace" / "New Cloud
+  Machine", the Cloud welcome window, Cloud loading/failure panes, the Cloud
+  reconnect overlay, Settings → Cloud Machines and its beta toggle, Cloud palette
+  commands, and the shortcuts for the team picker, new Cloud workspace/machine, the
+  Machines sidebar and Cmd+Y.
+- **CLI commands removed:** `cmux vm`, `cmux cloud`, `cmux remotes`,
+  `cmux ai-accounts`, `cmux billing`, `cmux vpn`, `cmux surface ls/open/new-terminal`,
+  and the hidden `vm-pty-*`, `vm-tui-*`, `vm-ssh-attach` helpers. `cmux agent` only
+  handles local agents (message, inbox, messages, hibernate, wake).
+- **Socket API:** `vm.*`, `cloud.*`, `remotes.*`, `aiAccounts.*`, `coderouter.*`,
+  `workspace.cloud_vm_*`, `workspace.ssh.open` and Cloud catalog listings now answer
+  `method_not_found`.
+- **CodeRouter removed.** `cmux coderouter`, `cr`, the CodeRouter guide pane, the
+  socket handoff, and the bundled CodeRouter CLI and its `coderouter/` crate are gone
+  (CodeRouter required the hosted `coderouter.dev` account backend).
+- **SSH:** the bundled `cmux-tui` client (SSH-TUI) is no longer installed; `cmux ssh`
+  always uses cmuxd-remote.
+- **MDM policy keys:** `DisableCloud` and `DisableAICredentialUpload` are removed;
+  `DisableRemoteConnections` and `DisableFileTransfer` still work.
+- **Session restore:** Cloud workspaces and panes saved by older versions are dropped
+  on restore and from "Reopen Closed"; the rest of the session restores normally.
+- **Config:** a `cmux.json` action using `cmux.cloudvm` no longer resolves.
+
+## Account, sign-in, teams, Pro and billing
+
+- The sidebar footer no longer shows the account avatar, the account/team popover or
+  the Pro/Upgrade badge. In minimal mode the footer is empty.
+- The sidebar Help popover and the Help menu no longer offer "Upgrade…", "Upgrade to
+  Pro/Max", "Preview Native Pro Pricing…" or "Show Pro Welcome Checklist…". The native
+  pricing window and the Pro welcome checklist are gone.
+- Settings has no Account section (no sign-in/out, profile, team management,
+  invitations, plan card or billing portal). Settings opens on App by default;
+  `cmux settings open account` is no longer accepted.
+- The command palette no longer offers sign in/out, team picker, team members or Pro
+  upgrade commands.
+- The "Sign In" workspace pane is gone; saved sessions containing one restore
+  without it.
+- Removed CLI commands: `cmux auth status|login|logout|team …`, `cmux login`,
+  `cmux logout`. Removed socket methods: `auth.status`, `auth.sign_in_url`,
+  `auth.begin_sign_in`, `auth.sign_out`, `auth.team.*`,
+  `mobile.dev_stack_auth.configure`, `debug.pro_welcome_checklist.show`,
+  `debug.native_pricing.show`. `auth.login` (socket password) still works.
+- The embedded browser no longer intercepts `cmux://auth-callback` links, exchanges a
+  signed-in session for cmux.com app pages, themes cmux.com pricing pages or opens
+  cmux.com app links in a split.
+- The app makes no requests to the cmux account, billing or team backend or to Stack
+  Auth. The Stack Auth SDK and the `CmuxAuthRuntime`, `CMUXAuthCore`, `CmuxAPIClient`
+  and `CmuxClientConfig` packages are gone.
+- Feature flags "Sidebar account button" and "Go plan" are removed.
+- The setting "Show Cloud and Device Icons in Sidebar" (`sidebar.showCloudDeviceIcons`)
+  is removed; `cmux.json` validation now rejects it, along with
+  `cloud.beta.machines.enabled` and the shortcut bindings `newCloudWorkspace`,
+  `newCloudMachine`, `openTeamPicker`, `switchRightSidebarToMachines`.
+- `cmux://` deep links for SSH, workspaces, panes and surfaces still work; the URL
+  scheme is now registered as `.links` (build setting `CMUX_URL_SCHEME`).
+- The config schema source moved from `web/data/cmux.schema.json` to
+  `schemas/cmux.schema.json`.
+- The one-time terminal welcome banner still shows once and keeps its "already shown"
+  state.

@@ -366,8 +366,6 @@ struct WorkspaceContentView: View {
                         workspace.bonsplitController.focusPane(paneId)
                     }
                 }
-            } else if workspace.cloudVMID != nil {
-                TerminalPanelUnavailableView(appearance: appearance)
             } else {
                 EmptyPanelView(workspace: workspace, paneId: paneId)
             }
@@ -475,20 +473,10 @@ struct WorkspaceContentView: View {
                 bonsplitView
             }
         }
-        .overlay {
-            if workspace.isManagedCloudVMWorkspace {
-                CloudSurfaceDropGate(workspaceID: workspace.id, isActive: isWorkspaceInputActive)
-            }
-        }
         .modifier(WorkspaceContentMinimalModeSafeAreaModifier(isFullScreen: isFullScreen))
         // A workspace is a page: accept the parent proposal instead of
         // contributing a hidden child's content-derived ideal to its ZStack.
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .modifier(CloudPaneCreationFailurePresentation(
-            failureStore: workspace.cloudPaneCreationFailureStore,
-            isWorkspaceVisible: isWorkspaceVisible,
-            sourceView: workspace.cloudPaneCreationFailureSourceView
-        ))
     }
 
     /// Captures the selection identity needed by each pane before Bonsplit

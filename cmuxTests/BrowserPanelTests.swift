@@ -775,39 +775,6 @@ final class BrowserPanelFileSystemAccessBridgeTests: XCTestCase {
 
 @MainActor
 final class BrowserPanelInitialNavigationTests: XCTestCase {
-    /// #18249: in a managed SSH workspace only loopback URLs belong to the SSH
-    /// host. Public and private-network pages load from this Mac directly.
-    func testSSHTuiWorkspaceLoadsNonLoopbackPagesFromThisMac() throws {
-        let panel = BrowserPanel(workspaceId: UUID(), renderInitialNavigation: false, isRemoteWorkspace: true)
-        for raw in ["https://example.com/", "http://10.0.0.5:8080/", "about:blank"] {
-            let url = try XCTUnwrap(URL(string: raw))
-            XCTAssertNil(panel.sshLoopbackServiceURL(for: url), raw)
-        }
-    }
-
-    /// Loopback URLs in a managed SSH workspace name the SSH host's service, so
-    /// they are routed there and never load a same-port service on this Mac.
-    func testSSHTuiWorkspaceRoutesEveryLoopbackSpellingToTheSSHHost() throws {
-        let panel = BrowserPanel(workspaceId: UUID(), renderInitialNavigation: false, isRemoteWorkspace: true)
-        for raw in ["http://localhost:3000/", "http://127.0.0.1:3000/", "http://[::1]:3000/", "http://0.0.0.0:3000/"] {
-            let url = try XCTUnwrap(URL(string: raw))
-            XCTAssertEqual(panel.sshLoopbackServiceURL(for: url), url, raw)
-        }
-    }
-
-    /// SSH machines advertise 127.0.0.1; `localhost` and `::1` name the same
-    /// service and must route to the machine that owns the browser.
-    func testLoopbackSpellingsRouteToTheOwningSSHMachine() {
-        let selector = PrivateAddressRouteSelector<String>()
-        let addresses = ["ssh:a": "127.0.0.1", "ssh:b": "127.0.0.1", "vm": "10.8.0.5"]
-        for host in ["localhost", "LOCALHOST", "127.0.0.1", "::1", "0.0.0.0"] {
-            let routeHost = BrowserPanel.privateAddressRouteHost(host)
-            XCTAssertEqual(selector.machine(forHost: routeHost, owner: "ssh:b", addresses: addresses), "ssh:b", host)
-            XCTAssertNil(selector.machine(forHost: routeHost, owner: nil, addresses: addresses), host)
-            XCTAssertNil(selector.machine(forHost: routeHost, owner: "vm", addresses: addresses), host)
-        }
-        XCTAssertEqual(BrowserPanel.privateAddressRouteHost("10.8.0.5"), "10.8.0.5")
-    }
 
     func testInitialURLCanBePreservedWithoutRenderingWebView() throws {
         let url = try XCTUnwrap(URL(string: "https://example.com/custom-layout"))
@@ -5237,95 +5204,8 @@ final class MobileBrowserStreamInputFocusTests: XCTestCase {
         return (value as? String) ?? "none"
     }
 
-    func testReplayedClickFocusesEditableUnderTap() async throws {
-        // RED: replayed phone clicks reach the page as DOM events, but WebKit
-        // refuses to move field focus for clicks in a window that is never key
-        // (the offscreen render host), so a tapped text field never focuses,
-        // the phone keyboard never rises, and backspace falls through as
-        // page-level history back-navigation.
-        let panel = try await loadInputTestPanel()
-        defer { panel.close() }
-        let click = MobileBrowserPointerInput(
-            panelID: panel.id.uuidString,
-            kind: .click,
-            x: 100,
-            y: 30,
-            clickCount: 1,
-            button: .left
-        )
-        _ = try await panel.replayMobileBrowserPointer(click)
-        let active = await activeElementID(panel)
-        XCTAssertEqual(active, "field", "A replayed click on a text field must focus it")
-    }
 }
 
 extension MobileBrowserStreamInputFocusTests {
-    func testBareBackspaceOutsideEditableIsSuppressed() async throws {
-        let panel = try await loadInputTestPanel()
-        defer { panel.close() }
-        let backspace = MobileBrowserKeyInput(
-            panelID: panel.id.uuidString,
-            key: "delete",
-            modifiers: []
-        )
-        let deliveredWithoutFocus = try await panel.replayMobileBrowserKey(backspace)
-        XCTAssertFalse(
-            deliveredWithoutFocus,
-            "A bare backspace with no focused editable must be suppressed, not navigate history"
-        )
 
-        let click = MobileBrowserPointerInput(
-            panelID: panel.id.uuidString,
-            kind: .click,
-            x: 100,
-            y: 30,
-            clickCount: 1,
-            button: .left
-        )
-        _ = try await panel.replayMobileBrowserPointer(click)
-        let deliveredWhileEditing = try await panel.replayMobileBrowserKey(backspace)
-        XCTAssertTrue(deliveredWhileEditing, "Backspace while editing must reach the field")
-    }
-
-    func testBackspaceDeliversToShadowRootInput() async throws {
-        // document.activeElement reports the shadow HOST when focus sits in a
-        // shadow root; the suppression check must descend to the real focused
-        // element or widget-wrapped inputs never receive backspace.
-        let panel = BrowserPanel(workspaceId: UUID())
-        panel.webView.frame = CGRect(x: 0, y: 0, width: 400, height: 300)
-        let baseURL = try XCTUnwrap(URL(string: "https://example.test/shadow-focus"))
-        let loaded = expectation(description: "shadow test page loaded")
-        let previousDelegate = panel.webView.navigationDelegate
-        let loadDelegate = BrowserPanelTestNavigationDelegate(expectation: loaded)
-        panel.webView.navigationDelegate = loadDelegate
-        defer { panel.webView.navigationDelegate = previousDelegate }
-        panel.webView.loadHTMLString(
-            """
-            <!doctype html><html><body style="margin:0"><div id="host"></div>
-            <script>
-              const root = document.getElementById('host').attachShadow({ mode: 'open' });
-              const field = document.createElement('input');
-              field.id = 'shadow-field';
-              root.appendChild(field);
-            </script>
-            </body></html>
-            """,
-            baseURL: baseURL
-        )
-        await fulfillment(of: [loaded], timeout: 5)
-        if let error = loadDelegate.error { throw error }
-        defer { panel.close() }
-
-        _ = try await panel.webView.evaluateJavaScript(
-            "document.getElementById('host').shadowRoot.getElementById('shadow-field').focus()",
-            contentWorld: .page
-        )
-        let backspace = MobileBrowserKeyInput(
-            panelID: panel.id.uuidString,
-            key: "delete",
-            modifiers: []
-        )
-        let delivered = try await panel.replayMobileBrowserKey(backspace)
-        XCTAssertTrue(delivered, "Backspace must reach an input focused inside a shadow root")
-    }
 }

@@ -8,8 +8,7 @@ import Foundation
 /// `v2SystemTree` tree walk, `v2WorkspaceAction` / `v2TabAction` mutation
 /// switches, `v2ExtensionSidebarSnapshot`, `v2SessionRestorePrevious`, the
 /// `session.import` / `session.export` session transfer,
-/// `v2SettingsOpen`, and the DEBUG-only
-/// `v2MobileDevStackAuthConfigure`, minus the per-read `v2MainSync` hops (the
+/// and `v2SettingsOpen`, minus the per-read `v2MainSync` hops (the
 /// coordinator already runs on the main actor inside the socket-command policy
 /// scope). `system.identify` and `surface.split_off` stay shared app-side
 /// bodies (`v2Identify` feeds `system.top` / `system.memory` and the
@@ -594,12 +593,4 @@ extension TerminalController: ControlSystemContext {
             return .err(code: code, message: message, data: data.flatMap { JSONValue(foundationObject: $0) })
         }
     }
-
-#if DEBUG
-    // MARK: - mobile.dev_stack_auth.configure (DEBUG)
-
-    func controlMobileDevStackAuthSetToken(_ token: String?) {
-        MobileHostService.shared.debugConfigureAcceptedStackAuthTokenForTesting(token)
-    }
-#endif
 }

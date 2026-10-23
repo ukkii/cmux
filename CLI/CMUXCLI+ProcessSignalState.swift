@@ -1,8 +1,8 @@
 import Darwin
 
 /// Signals a CLI command may leave ignored while it runs: pipe handling at
-/// startup, and the SIGWINCH `DispatchSource` monitors of the SSH and VM PTY
-/// bridges. An ignored disposition survives `exec`, and an interactive agent
+/// startup, and the SIGWINCH `DispatchSource` monitors of the SSH PTY
+/// bridge. An ignored disposition survives `exec`, and an interactive agent
 /// must own its terminal-size and pipe signals itself.
 let cliChildLaunchDefaultDispositionSignals: [Int32] = [SIGPIPE, SIGWINCH, SIGTTOU]
 

@@ -220,4 +220,15 @@ extension CMUXCLI {
     func simulatorTerminalText(_ value: String) -> String {
         Self.sanitizeForTerminal(value)
     }
+
+    /// Strip control characters (ANSI escapes, CR/LF, etc.) before printing an
+    /// untrusted string in a table. Replaces control and format characters with
+    /// U+FFFD; `--json` output is unaffected (it goes through the JSON encoder).
+    static func sanitizeForTerminal(_ value: String) -> String {
+        String(value.unicodeScalars.map { scalar in
+            (scalar.properties.generalCategory == .control || scalar.properties.generalCategory == .format)
+                ? Character("\u{FFFD}")
+                : Character(scalar)
+        })
+    }
 }

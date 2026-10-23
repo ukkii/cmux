@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxSurfaceCatalogModel
 import Foundation
 import Testing

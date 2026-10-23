@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Large v2 requests from the CLI put `method` first, so the app can route them (#21222).
 
-The app reads the first 4 KiB of every request line to tell an ordinary
-request from a CodeRouter handoff frame, and it closes the connection without
-a reply when a longer line has no `method` key in that prefix. The CLI used to
-serialize requests in dictionary hash order, which changes from one process to
-the next, so a request with large params sometimes put `method` after them and
-failed with "Socket closed before reply".
+The CLI used to serialize requests in dictionary hash order, which changes
+from one process to the next, so a request with large params sometimes put
+`method` after them; the app's former route classifier then failed it with
+"Socket closed before reply". The CLI keeps writing `method` first.
 
 This drives the real CLI against a socket that records each raw request line.
 Every line longer than 4 KiB must start with its `method` key, across several
@@ -34,7 +32,7 @@ WORKSPACE_ID = "11111111-1111-4111-8111-111111111111"
 PANE_ID = "33333333-3333-4333-8333-333333333333"
 SURFACE_ID = "44444444-4444-4444-8444-444444444444"
 
-# The app's route classification window (`codeRouterHandshakeMaximumBytes`).
+# The former route classification window of the app's line reader.
 CLASSIFICATION_PREFIX_BYTES = 4_096
 RUNS_PER_SCENARIO = 6
 

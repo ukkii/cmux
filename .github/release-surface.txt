@@ -31,7 +31,6 @@ scripts/cmux-next/media/**
 scripts/import-apple-developer-id-intermediates.sh
 scripts/apple-developer-id-certs/**
 scripts/install-cmux-tui-client.sh
-scripts/normalize-system-extension-bundle.sh
 scripts/prune_nightly_release_assets.py
 scripts/reconcile-entitlements-with-profile.py
 scripts/select-ci-xcode.sh

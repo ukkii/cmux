@@ -1,5 +1,5 @@
 import XCTest
-import struct CmuxSettings.AccountCatalogSection
+import struct CmuxSettings.AppCatalogSection
 
 #if canImport(cmux_DEV)
 @testable import cmux_DEV
@@ -78,7 +78,7 @@ final class WorkspaceStressProfileTests: XCTestCase {
 
     func testWorkspaceCreationAndSwitchingStressProfile() {
         let config = StressConfig.current()
-        let welcomeShownKey = AccountCatalogSection().welcomeShown.userDefaultsKey
+        let welcomeShownKey = AppCatalogSection().welcomeShown.userDefaultsKey
         let welcomeWasShown = UserDefaults.standard.object(forKey: welcomeShownKey)
         UserDefaults.standard.set(true, forKey: welcomeShownKey)
         defer {
@@ -212,7 +212,7 @@ final class WorkspaceStressProfileTests: XCTestCase {
 
     func testWorkspaceBatchActionsStressProfile() {
         let config = StressConfig.current()
-        let welcomeShownKey = AccountCatalogSection().welcomeShown.userDefaultsKey
+        let welcomeShownKey = AppCatalogSection().welcomeShown.userDefaultsKey
         let welcomeWasShown = UserDefaults.standard.object(forKey: welcomeShownKey)
         UserDefaults.standard.set(true, forKey: welcomeShownKey)
         defer {

@@ -18,11 +18,9 @@ enum CmuxSocketEventMapper {
             return false
         }
         // ControlRequestParser trims method names before dispatch. Keep event
-        // classification on the same canonical value so a whitespace-wrapped
-        // handoff can never enter a normal event path.
+        // classification on the same canonical value.
         let method = rawMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard method != "events.stream",
-              method != "coderouter.handoff.complete" else {
+        guard method != "events.stream" else {
             return true
         }
         guard let mapping = domainEventMapping(forV2Method: method) else {

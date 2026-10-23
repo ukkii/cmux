@@ -16,16 +16,8 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
     /// from the main thread.
     case socketWorker(mainThreadCallable: Bool)
 
-    /// Classifies a method: every `vm.`-, `remotes.`-, `aiAccounts.`-, and
-    /// `coderouter.`-prefixed method and the fixed socket-worker set run on the
-    /// worker; everything else runs on the main actor.
-    ///
-    /// `remotes.*` (the `cmux remotes` device-registry verbs), `aiAccounts.*`
-    /// (the team's subrouter AI-account verbs), and `coderouter.*` (the team's
-    /// coderouter Claude upstream and per-machine usage) make blocking,
-    /// authenticated web API calls just like `vm.*`, so they must stay off the
-    /// main actor; prefix matches keep each verb family in lockstep without
-    /// listing each method.
+    /// Classifies a method: the fixed socket-worker set runs on the worker;
+    /// everything else runs on the main actor.
     ///
     /// - Parameter method: The trimmed method name.
     public init(forMethod method: String) {
@@ -37,8 +29,7 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
             return
         }
 #endif
-        if method.hasPrefix("vm.") || method.hasPrefix("remotes.") || method.hasPrefix("aiAccounts.")
-            || method.hasPrefix("coderouter.") || Self.socketWorkerMethods.contains(method) {
+        if Self.socketWorkerMethods.contains(method) {
             self = .socketWorker(
                 mainThreadCallable: Self.mainThreadCallableSocketWorkerMethods.contains(method)
             )
@@ -51,9 +42,9 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
     /// runs on the socket-worker thread; everything else runs on the main
     /// actor.
     ///
-    /// The v2 namespace prefix rules (`vm.`, `remotes.`) deliberately do not
-    /// apply here — they are v2 method namespaces, and a v1 token that happens
-    /// to contain a dot must not be routed off the main lane by accident.
+    /// The v2 method set deliberately does not apply here: a v1 token that
+    /// happens to match a v2 method name must not be routed off the main lane
+    /// by accident.
     ///
     /// - Parameter command: The v1 command token, lowercased by the dispatcher
     ///   (`processCommand` lowercases before dispatching, and this initializer
@@ -81,25 +72,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // hop to the main actor.
         "session.agent_recovery.list",
         "session.agent_recovery.restore",
-        // Minting a hosted CodeRouter lease performs an authenticated HTTP
-        // request and must never block the main actor.
-        "coderouter.handoff.complete",
-        "auth.status",
-        "auth.sign_in_url",
-        "auth.begin_sign_in",
-        "auth.sign_out",
-        "auth.team.list",
-        "auth.team.use",
-        "auth.team.create",
-        "auth.team.members",
-        "auth.team.invite",
-        "auth.team.invite_link",
-        "auth.team.revoke_invite",
-        "auth.team.remove_member",
-        "auth.team.open_members",
-        "auth.team.invitations",
-        "auth.team.accept_invite",
-        "auth.team.decline_invite",
         // `feed.jump` awaits its actor-owned hook-session lookup while the
         // socket worker waits for the response.
         "feed.jump",
@@ -139,39 +111,9 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         "browser.profiles.clear",
         "browser.profiles.delete",
         "browser.import.cookies",
-        "mobile.attach_ticket.create",
-        // Provider discovery reads config or runs `opencode models`; chat
-        // send/interrupt await terminal input. Neither may hold the main actor.
-        "mobile.task.models.list", "mobile.chat.send", "mobile.chat.interrupt",
         // Prompt submission suspends between paste and Enter while agent
         // editors commit the paste. The socket worker awaits the final result.
-        "mobile.terminal.paste",
         "terminal.paste",
-        // `mobile.terminal.set_font` only validates params and emits a push
-        // event via thread-safe MobileHostService statics, so it runs on the worker
-        // like the other mobile data-plane verbs. Without this entry the policy
-        // routes it to the main-actor processV2Command switch, which lacks the
-        // case, and the control socket returns method_not_found.
-        "mobile.terminal.set_font",
-        // Shared terminal sizing verbs are dispatched by the worker switch and
-        // hop to MainActor for the one store mutation (TerminalSharingStore).
-        "terminal.size_state", "terminal.size_policy.set", "terminal.size_to_me",
-        "terminal.size_counts.set", "terminal.participant.disconnect",
-        "terminal.participants.disconnect_others",
-        // Same profile as set_font: UserDefaults reads/writes plus a push
-        // event through thread-safe MobileHostService statics.
-        "mobile.compatible_tags.get",
-        "mobile.compatible_tags.set",
-        // Panel artifact reads are mobile data-plane file IO for non-terminal
-        // surfaces. Keep them on the worker lane so markdown/file-preview panes
-        // reach TerminalController's mobile.panel.artifact.* dispatcher instead
-        // of the main-actor switch returning method_not_found.
-        // `mobile.panel.artifact.fetch` is deliberately absent: it needs the
-        // authenticated mobile RPC execution context, so the local control
-        // socket answers method_not_found instead of bypassing
-        // artifact-transfer authorization (the worker switch has no case for it).
-        "mobile.panel.artifact.stat",
-        "mobile.panel.artifact.thumbnail",
         "system.top",
         "system.memory",
         // vault.* scans agent transcript stores on disk (~/.claude/projects,
@@ -225,7 +167,7 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // env dictionary behind a `v2MainSync` hop, so it runs on the worker
         // lane like the other workspace reads below.
         "workspace.env",
-        "workspace.ssh.open", "workspace.remote.pty_sessions",
+        "workspace.remote.pty_sessions",
         "workspace.remote.pty_close",
         "workspace.remote.pty_detach",
         "workspace.remote.pty_bridge",
@@ -273,15 +215,8 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // v2MainSync). Running on .mainActor would deadlock the UI for the
         // entire simulation, defeating the profiling workload.
         "debug.sidebar.simulate_drag",
-        // DEBUG builds close the selected mobile transport through its normal
-        // connection-owned shutdown path, which awaits asynchronous writers.
-        // Keep that wait off the main actor.
-        "debug.mobile.transport.disconnect",
-        "debug.mobile.transport.reconnect_loop",
-        // Presents the Cloud tree style gallery window: one v2MainSync hop for
-        // the presentation, like debug.window.screenshot's capture wait.
-        "debug.cloudtree.gallery",
-        // Reads hint mode's labels: one v2MainSync hop, like the gallery.
+        // Reads hint mode's labels: one v2MainSync hop, like
+        // debug.window.screenshot's capture wait.
         "debug.window_hints",
         // Browser automation methods that wait on page JavaScript, WebKit
         // cookies, or capture callbacks run on the socket worker: on the main
@@ -549,13 +484,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         "read_screen",
     ]
 
-    /// The v1 diagnostic-read family. These commands await actor-owned
-    /// diagnostic snapshots, so they run on the socket worker and are not
-    /// callable from the main thread.
-    static let diagnosticReadV1Commands: Set<String> = [
-        "iroh_diag",
-    ]
-
     /// The v1 resolution-read family (tranche D): the v1 twins of the v2
     /// resolution reads. Nonisolated `TerminalController` bodies take one
     /// `v2MainSync` snapshot hop and format their reply lines on the worker.
@@ -602,7 +530,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
             .union(notificationV1Commands)
             .union(agentJournalV1Commands)
             .union(terminalReadV1Commands)
-            .union(diagnosticReadV1Commands)
             .union(resolutionReadV1Commands)
             .union(terminalSendV1Commands)
             .union(configurationMutationV1Commands)

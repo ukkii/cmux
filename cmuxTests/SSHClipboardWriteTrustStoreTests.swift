@@ -1,5 +1,4 @@
 import CmuxSSHClipboardTrust
-import CmuxCloud
 import CmuxSurfaceCatalogModel
 import CmuxRemoteSession
 import Foundation
@@ -79,94 +78,6 @@ struct SSHClipboardWriteTrustStoreTests {
         #expect(workspace.sshClipboardMachine(for: panel.id, ownership: ownership) == machine)
     }
 
-    @Test("generic manual mirrors do not inherit workspace SSH trust")
-    @MainActor
-    func genericManualMirrorRemainsDenied() throws {
-        let suiteName = "cmux.ssh-clipboard-generic-mirror-test-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let store = SSHClipboardWriteTrustStore(defaults: defaults)
-        let configuration = WorkspaceRemoteConfiguration(
-            destination: "user@example.test",
-            port: 2222,
-            identityFile: "/tmp/id_test",
-            sshOptions: [],
-            localProxyPort: nil,
-            relayPort: nil,
-            relayID: nil,
-            relayToken: nil,
-            localSocketPath: nil,
-            terminalStartupCommand: nil
-        )
-        let machine = SurfaceMachineID.ssh(SSHTuiConnection(configuration: configuration).identityDigest)
-        store.setTrusted(true, for: machine)
-
-        let workspace = Workspace(sshClipboardWriteTrustStore: store)
-        workspace.remoteConfiguration = configuration
-        let panel = try #require(workspace.makeRemoteTmuxPanePanel(onInput: { _ in }))
-        _ = try workspace.insertCloudManualMirrorPanel(
-            panel, at: .workspace(id: workspace.id, placement: .tab),
-            focus: false, isLoading: false
-        )
-        let ownership = SSHClipboardWriteSurfaceOwnershipIndex(projections: [], pendingRestores: [])
-        workspace.applySSHClipboardWritePermission(for: machine, ownership: ownership)
-
-        #expect(!panel.surface.allowsRemoteClipboardWrites)
-        #expect(workspace.sshClipboardMachine(for: panel.id, ownership: ownership) == nil)
-    }
-
-    @Test("pending SSH cmux-tui reservations keep their machine identity")
-    @MainActor
-    func pendingSSHTuiReservationRemainsOwned() throws {
-        let suiteName = "cmux.ssh-clipboard-pending-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let store = SSHClipboardWriteTrustStore(defaults: defaults)
-        let workspace = Workspace(sshClipboardWriteTrustStore: store)
-        let machine = SurfaceMachineID.ssh("pending-ssh-machine")
-        store.setTrusted(true, for: machine)
-        let reservation = try #require(workspace.reserveCloudTerminalPane(
-            machine: machine,
-            at: .workspace(id: workspace.id, placement: .tab),
-            focus: false
-        ))
-        let panel = try #require(workspace.terminalPanel(for: reservation.panelID))
-        let ownership = SSHClipboardWriteSurfaceOwnershipIndex(projections: [], pendingRestores: [])
-        #expect(panel.surface.allowsRemoteClipboardWrites)
-        #expect(workspace.sshClipboardMachine(for: panel.id, ownership: ownership) == machine)
-        store.setTrusted(false, for: machine)
-        workspace.applySSHClipboardWritePermission(for: machine, ownership: ownership)
-        #expect(!panel.surface.allowsRemoteClipboardWrites)
-    }
-
-    @Test("live cmux-tui projections own their trust independently of workspace configuration")
-    @MainActor
-    func liveSSHTuiMirrorUsesProjectionIdentity() throws {
-        let suiteName = "cmux.ssh-clipboard-tui-mirror-test-" + UUID().uuidString
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let store = SSHClipboardWriteTrustStore(defaults: defaults)
-        let machine = SurfaceMachineID.ssh("projected-ssh-machine")
-        let workspace = Workspace(sshClipboardWriteTrustStore: store)
-        let panel = try #require(workspace.makeRemoteTmuxPanePanel(onInput: { _ in }))
-        let panelID = try workspace.insertCloudManualMirrorPanel(
-            panel, at: .workspace(id: workspace.id, placement: .tab),
-            focus: false, isLoading: false
-        )
-        let projection = SurfaceProjection(
-            resource: SurfaceResourceID(machine: machine, kind: .terminal, key: "tui-term"),
-            workspaceID: workspace.id, panelID: panelID
-        )
-        let ownership = SSHClipboardWriteSurfaceOwnershipIndex(projections: [projection], pendingRestores: [])
-        #expect(workspace.sshClipboardMachine(for: panelID, ownership: ownership) == machine)
-        store.setTrusted(true, for: machine)
-        workspace.applySSHClipboardWritePermission(for: machine, ownership: ownership)
-        #expect(panel.surface.allowsRemoteClipboardWrites)
-        store.setTrusted(false, for: machine)
-        workspace.applySSHClipboardWritePermission(for: machine, ownership: ownership)
-        #expect(!panel.surface.allowsRemoteClipboardWrites)
-    }
-
     @Test("plain SSH tmux mirrors keep the grant for future nested panes")
     @MainActor
     func plainSSHMirrorUsesHostIdentityForNewPanes() throws {
@@ -191,7 +102,7 @@ struct SSHClipboardWriteTrustStoreTests {
             localSocketPath: nil,
             terminalStartupCommand: nil
         )
-        let machine = SurfaceMachineID.ssh(SSHTuiConnection(configuration: configuration).identityDigest)
+        let machine = SurfaceMachineID.ssh(configuration.sshClipboardIdentityDigest)
         store.setTrusted(true, for: machine)
 
         let manager = TabManager(sshClipboardWriteTrustStore: store)

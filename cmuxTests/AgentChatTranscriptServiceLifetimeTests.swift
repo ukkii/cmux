@@ -1,6 +1,6 @@
 import CMUXAgentLaunch
 import CmuxAgentChat
-@testable import CmuxMobileHost
+@testable import CmuxAgentSessionStore
 import CmuxTerminal
 import CmuxTerminalCore
 import Foundation
@@ -63,7 +63,7 @@ struct AgentChatTranscriptServiceLifetimeTests {
         var iterator = events.stream.makeAsyncIterator()
         var addedObserverIDs: Set<ObjectIdentifier> = []
         var addedNames: Set<Notification.Name> = []
-        for _ in 0..<3 {
+        for _ in 0..<2 {
             guard case let .added(name, observerID) = try #require(await iterator.next()) else {
                 Issue.record("Expected a registered streaming observer before teardown")
                 return
@@ -71,9 +71,9 @@ struct AgentChatTranscriptServiceLifetimeTests {
             addedObserverIDs.insert(observerID)
             addedNames.insert(try #require(name))
         }
-        #expect(addedNames == [.mobileHostEventSubscriptionsDidChange, .ghosttyDidRenderFrame, .ghosttyDidTick])
+        #expect(addedNames == [.ghosttyDidRenderFrame, .ghosttyDidTick])
         var removedObserverIDs: Set<ObjectIdentifier> = []
-        for _ in 0..<3 {
+        for _ in 0..<2 {
             guard case let .removed(observerID, onMainThread) = try #require(await iterator.next()) else {
                 Issue.record("Expected streaming observers to be removed during teardown")
                 return
@@ -156,7 +156,6 @@ struct AgentChatTranscriptServiceLifetimeTests {
         #expect(recordAfterIngress.surfaceID == surfaceID)
 
         registry.update(sessionID: sessionID) { $0.title = "Late registry update" }
-        notificationCenter.post(name: .mobileHostEventSubscriptionsDidChange, object: nil)
         notificationCenter.post(name: .ghosttyDidTick, object: nil)
         #expect(emittedPayloadCount == payloadCountAtShutdown)
         #expect(!frameDemand.isActive)

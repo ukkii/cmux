@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Behavior tests for scripts/reconcile-entitlements-with-profile.py.
 
-The helper can describe a profile that lacks the Cloud tunnel capability.
-Release signing uses that result to stop before it can ship a half-authorized
-Network Extension. A capable profile passes through unchanged.
+The helper passes the desired entitlements through unchanged and reports any
+restricted entitlement the provisioning profile does not grant.
 """
 import json
 import plistlib
@@ -21,33 +20,17 @@ DESIRED = {
     "com.apple.developer.team-identifier": "7WLXT3NR37",
     "keychain-access-groups": ["7WLXT3NR37.com.cmuxterm.app"],
     "com.apple.developer.web-browser.public-key-credential": True,
-    "com.apple.developer.networking.networkextension": ["packet-tunnel-provider-systemextension"],
-    "com.apple.developer.system-extension.install": True,
-    "com.apple.security.application-groups": ["7WLXT3NR37.com.cmuxterm.app"],
     "com.apple.security.cs.allow-jit": True,
     "com.apple.security.cs.allow-unsigned-executable-memory": True,
     "com.apple.security.cs.disable-library-validation": True,
 }
 
-PROFILE_WITHOUT_TUNNEL = {
+PROFILE = {
     "Entitlements": {
         "com.apple.application-identifier": "7WLXT3NR37.com.cmuxterm.app",
         "com.apple.developer.team-identifier": "7WLXT3NR37",
         "keychain-access-groups": ["7WLXT3NR37.*"],
         "com.apple.developer.web-browser.public-key-credential": True,
-    },
-    "ProvisionsAllDevices": True,
-}
-
-PROFILE_WITH_TUNNEL = {
-    "Entitlements": {
-        **PROFILE_WITHOUT_TUNNEL["Entitlements"],
-        "com.apple.developer.networking.networkextension": [
-            "packet-tunnel-provider-systemextension",
-            "app-proxy-provider-systemextension",
-        ],
-        "com.apple.developer.system-extension.install": True,
-        "com.apple.security.application-groups": ["7WLXT3NR37.com.cmuxterm.app"],
     },
     "ProvisionsAllDevices": True,
 }
@@ -74,105 +57,38 @@ def run(entitlements, profile=None, no_profile=False):
 
 
 class ReconcileEntitlementsTests(unittest.TestCase):
-    def test_profile_without_tunnel_drops_only_the_tunnel_feature_set(self):
-        proc, effective = run(DESIRED, PROFILE_WITHOUT_TUNNEL)
+    def test_granted_entitlements_pass_through_unchanged(self):
+        proc, effective = run(DESIRED, PROFILE)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         summary = json.loads(proc.stdout)
-        self.assertFalse(summary["tunnel_supported"])
-        self.assertEqual(
-            sorted(summary["dropped"]),
-            sorted([
-                "com.apple.developer.networking.networkextension",
-                "com.apple.developer.system-extension.install",
-                "com.apple.security.application-groups",
-            ]),
-        )
-        self.assertNotIn("com.apple.developer.networking.networkextension", effective)
-        self.assertNotIn("com.apple.developer.system-extension.install", effective)
-        self.assertNotIn("com.apple.security.application-groups", effective)
-        # Everything unrelated to the tunnel is byte-for-byte the desired state.
-        for key in ("com.apple.application-identifier", "keychain-access-groups",
-                    "com.apple.developer.web-browser.public-key-credential", "com.apple.security.cs.allow-jit"):
-            self.assertEqual(effective[key], DESIRED[key])
-        self.assertIn("::warning::", proc.stderr)
+        self.assertEqual(effective, DESIRED)
+        self.assertEqual(summary["missing_restricted"], [])
         self.assertEqual(summary["profile_app_id"], "7WLXT3NR37.com.cmuxterm.app")
-
-    def test_profile_with_tunnel_drops_runtime_relaxations_required_by_system_extensions(self):
-        proc, effective = run(DESIRED, PROFILE_WITH_TUNNEL)
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        summary = json.loads(proc.stdout)
-        self.assertTrue(summary["tunnel_supported"])
-        self.assertEqual(
-            summary["dropped"],
-            [
-                "com.apple.security.cs.allow-unsigned-executable-memory",
-                "com.apple.security.cs.disable-library-validation",
-            ],
-        )
-        self.assertEqual(
-            summary["dropped_for_system_extension"],
-            summary["dropped"],
-        )
-        self.assertNotIn("com.apple.security.cs.allow-unsigned-executable-memory", effective)
-        self.assertNotIn("com.apple.security.cs.disable-library-validation", effective)
-        # JIT remains available to the container app. It is accepted by macOS
-        # here, while the two other relaxation entitlements are rejected when
-        # the app contains a packet-tunnel system extension.
-        self.assertTrue(effective["com.apple.security.cs.allow-jit"])
-        for key, value in DESIRED.items():
-            if key not in summary["dropped"]:
-                self.assertEqual(effective[key], value)
         self.assertNotIn("::warning::", proc.stderr)
 
-    def test_network_extension_without_install_entitlement_is_not_supported(self):
-        profile = {"Entitlements": {**PROFILE_WITH_TUNNEL["Entitlements"]}}
-        del profile["Entitlements"]["com.apple.developer.system-extension.install"]
-        proc, effective = run(DESIRED, profile)
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertFalse(json.loads(proc.stdout)["tunnel_supported"])
-        self.assertNotIn("com.apple.developer.networking.networkextension", effective)
-
-    def test_app_extension_flavor_does_not_count(self):
-        profile = {"Entitlements": {**PROFILE_WITH_TUNNEL["Entitlements"],
-                                    "com.apple.developer.networking.networkextension": ["packet-tunnel-provider"]}}
-        proc, _ = run(DESIRED, profile)
-        self.assertFalse(json.loads(proc.stdout)["tunnel_supported"])
-
-    def test_no_profile_drops_the_tunnel_feature_set(self):
+    def test_no_profile_passes_entitlements_through(self):
         proc, effective = run(DESIRED, no_profile=True)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         summary = json.loads(proc.stdout)
-        self.assertFalse(summary["tunnel_supported"])
-        self.assertNotIn("com.apple.developer.networking.networkextension", effective)
+        self.assertEqual(effective, DESIRED)
         self.assertIsNone(summary["profile_app_id"])
 
-    def test_entitlements_without_tunnel_are_untouched(self):
-        plain = {k: v for k, v in DESIRED.items() if k not in (
-            "com.apple.developer.networking.networkextension",
-            "com.apple.developer.system-extension.install",
-            "com.apple.security.application-groups",
-        )}
-        proc, effective = run(plain, PROFILE_WITHOUT_TUNNEL)
-        summary = json.loads(proc.stdout)
-        self.assertFalse(summary["tunnel_requested"])
-        self.assertEqual(summary["dropped"], [])
-        self.assertEqual(effective, plain)
-
     def test_missing_restricted_entitlement_is_reported_not_dropped(self):
-        profile = {"Entitlements": {k: v for k, v in PROFILE_WITH_TUNNEL["Entitlements"].items()
+        profile = {"Entitlements": {k: v for k, v in PROFILE["Entitlements"].items()
                                     if k != "com.apple.developer.web-browser.public-key-credential"}}
         proc, effective = run(DESIRED, profile)
         summary = json.loads(proc.stdout)
         self.assertEqual(summary["missing_restricted"], ["com.apple.developer.web-browser.public-key-credential"])
         self.assertIn("com.apple.developer.web-browser.public-key-credential", effective)
+        self.assertIn("::warning::", proc.stderr)
 
-    def test_repo_entitlement_files_request_the_tunnel(self):
+    def test_repo_entitlement_files_request_no_tunnel(self):
         for name in ("cmux.release.entitlements", "cmux.nightly.entitlements", "cmux.rc.entitlements"):
             desired = plistlib.load((ROOT / name).open("rb"))
-            proc, effective = run(desired, PROFILE_WITHOUT_TUNNEL)
-            self.assertEqual(proc.returncode, 0, proc.stderr)
-            self.assertTrue(json.loads(proc.stdout)["tunnel_requested"], name)
-            self.assertNotIn("com.apple.developer.networking.networkextension", effective, name)
+            for key in ("com.apple.developer.networking.networkextension",
+                        "com.apple.developer.system-extension.install",
+                        "com.apple.security.application-groups"):
+                self.assertNotIn(key, desired, name)
 
 
 if __name__ == "__main__":

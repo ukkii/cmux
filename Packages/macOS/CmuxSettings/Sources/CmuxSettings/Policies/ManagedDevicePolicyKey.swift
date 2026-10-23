@@ -15,46 +15,17 @@ public enum ManagedDevicePolicyKey: String, CaseIterable, Sendable {
     /// layouts, and session restore.
     case disableEmbeddedBrowser = "DisableEmbeddedBrowser"
 
-    /// Disables the Mac acting as a remote view/control host for the cmux
-    /// iOS companion app: the Iroh host runtime, the legacy TCP pairing
-    /// listener, connection admission, and device pairing.
-    case disableRemoteControl = "DisableRemoteControl"
-
-    /// Disables discovery of other account Macs in the My Devices surfaces.
-    /// Incoming access to this Mac is controlled independently by
-    /// ``disableIncomingDeviceAccess``.
-    case disableDeviceDiscovery = "DisableDeviceDiscovery"
-
-    /// Disables this Mac accepting incoming account-device or iOS sessions.
-    /// Outbound discovery and control remain available unless separately denied.
-    case disableIncomingDeviceAccess = "DisableIncomingDeviceAccess"
-
-    /// Disables cmux Cloud Machines and the cmux-managed private network. This
-    /// is a tier-0 administrator gate: the sidebar, Settings, palette, session
-    /// restore, the surface registry, Cloud VM service calls, the tunnel, and
-    /// CLI/socket commands all fail closed while it is enforced.
-    case disableCloud = "DisableCloud"
-
     /// Disables cmux-created remote connections: SSH, Mosh, remote tmux, and
     /// the remote registry, from every entry point (CLI, palette, menus,
-    /// session restore, automation). Cloud Machines attach over the same
-    /// mechanism, so this key gates them too; ``disableCloud`` remains the key
-    /// for disabling Cloud as a product. Terminals on this Mac are unaffected,
+    /// session restore, automation). Terminals on this Mac are unaffected,
     /// and a user's own `ssh` typed into a shell is out of scope by design.
     case disableRemoteConnections = "DisableRemoteConnections"
 
     /// Disables cmux-mediated file transfer: drag-and-drop and pasted-image
-    /// uploads into remote terminals, the configured custom upload command,
-    /// and Cloud VM push/pull. Local drops into local terminals still work,
+    /// uploads into remote terminals, and the configured custom upload command.
+    /// Local drops into local terminals still work,
     /// and a user's own `scp` in a shell is out of scope by design.
     case disableFileTransfer = "DisableFileTransfer"
-
-    /// Disables cmux-managed Iroh networking: the host runtime, its relay
-    /// traffic, and the client-side connectivity subscriber. Local terminal
-    /// work is unaffected. ``disableRemoteControl`` disables the Mac as an
-    /// iOS remote-control host specifically; this key disables the Iroh
-    /// transport itself, including the paths that are not remote control.
-    case disableIrohNetworking = "DisableIrohNetworking"
 
     /// Disables the `webhook` action of automation rules, which posts event
     /// payloads with caller-supplied headers to any http(s) URL.
@@ -71,12 +42,6 @@ public enum ManagedDevicePolicyKey: String, CaseIterable, Sendable {
     /// Disables interpreted custom sidebars from `~/.config/cmux/sidebars`
     /// (user- or agent-authored code that can dispatch `cmux(...)` commands).
     case disableCustomSidebars = "DisableCustomSidebars"
-
-    /// Disables uploading local AI credentials (Claude/Codex OAuth tokens,
-    /// Anthropic/OpenAI API keys) to the cmux tenant: `aiAccounts.upload` and
-    /// the coderouter upstream-account writes. Independent of ``disableCloud``,
-    /// which already covers both families.
-    case disableAICredentialUpload = "DisableAICredentialUpload"
 
     /// Forces the local automation socket to a restrictive access mode. The
     /// only valid profile values are the strings `cmuxOnly` and `off`;

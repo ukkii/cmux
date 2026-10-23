@@ -1,16 +1,41 @@
 import CmuxSSHClipboardTrust
-import CmuxCloud
 import AppKit
 import Bonsplit
+import CmuxCore
+import CmuxFoundation
 import CmuxSurfaceCatalogModel
+import CryptoKit
 import Foundation
 
+extension WorkspaceRemoteConfiguration {
+    /// Stable digest of the SSH route inputs (destination, port, identity, persistent
+    /// options). The SSH clipboard trust store keys its per-host grants by this value,
+    /// so it must stay byte-compatible with grants persisted by earlier builds.
+    var sshClipboardIdentityDigest: String {
+        let resolver = SSHAgentSocketResolver(environment: [:])
+        let persistentOptions = sshOptions.filter {
+            let key = resolver.optionKey($0) ?? ""
+            return !["controlmaster", "controlpersist", "controlpath"].contains(key)
+        }
+        var components = [destination, port.map(String.init) ?? "", identityFile ?? ""] + persistentOptions
+        if let routeIdentifier = routeSensitiveIdentifier {
+            components.append(routeIdentifier)
+        } else if routeSensitivity == .unidentified {
+            // Before the marker moved out of the options, the `true`
+            // placeholder was hashed as one of them.
+            components.append(SSHConnectionSharingOptions.unidentifiedRouteSensitiveMarkerOption)
+        }
+        return SHA256.hash(data: Data(components.joined(separator: "\0").utf8))
+            .map { String(format: "%02x", $0) }.joined()
+    }
+}
+
 extension Workspace {
-    /// The configured cmux-tui SSH identity for this workspace, when present.
+    /// The configured SSH identity for this workspace, when present.
     var configuredSSHClipboardMachine: SurfaceMachineID? {
         guard let configuration = remoteConfiguration,
               configuration.transport == .ssh else { return nil }
-        return .ssh(SSHTuiConnection(configuration: configuration).identityDigest)
+        return .ssh(configuration.sshClipboardIdentityDigest)
     }
 
     /// The SSH identity for a plain `ssh-tmux` mirror, when this workspace is
@@ -32,7 +57,7 @@ extension Workspace {
             localSocketPath: nil,
             terminalStartupCommand: nil
         )
-        return .ssh(SSHTuiConnection(configuration: configuration).identityDigest)
+        return .ssh(configuration.sshClipboardIdentityDigest)
     }
 
     /// Whether a new pane created by this plain `ssh-tmux` mirror may emit OSC 52.
@@ -41,8 +66,9 @@ extension Workspace {
         return sshClipboardWriteTrustStore.allowsRemoteClipboardWrites(for: machine)
     }
 
+    /// Every workspace on this Mac accepts surfaces from any machine.
     var surfaceOwnershipPolicy: SurfaceOwnershipPolicy {
-        SurfaceOwnershipPolicy(cloudMachine: cloudVMBinding.map { SurfaceMachineID(rawValue: $0.vmID) } ?? cloudVMID.map(SurfaceMachineID.cloud))
+        SurfaceOwnershipPolicy(cloudMachine: nil)
     }
 
     /// A pane's projection or remote transport owns its machine, never its title
@@ -51,12 +77,6 @@ extension Workspace {
         let catalog = catalog ?? SurfaceCatalog.shared
         guard panels[panelID] != nil else { return nil }
         if let machine = catalog.machineOwningPanel(panelID), !machine.isLocal { return machine }
-        if let resource = (panels[panelID] as? DeferredBrowserPanel)?.sessionPanelSnapshot.browser?.cloudResource { return resource.machine }
-        if let reservation = cloudPendingCreations[panelID] { return reservation.machine }
-        if activeRemoteTerminalSurfaceIds.contains(panelID),
-           let machine = remoteConfiguration?.managedCloudVMID {
-            return .cloud(machine)
-        }
         return panels[panelID]?.transferredSurfaceMachine ?? .local
     }
 
@@ -73,24 +93,6 @@ extension Workspace {
         let catalogMachine = ownership.machine(for: panelID)
         if let machine = catalogMachine, !machine.isLocal {
             return machine
-        }
-
-        // Optimistic SSH cmux-tui panes are owned before their catalog
-        // projection/provider session exists. Preserve that exact reservation
-        // identity even when they are inserted into another remote workspace.
-        if let reservation = cloudPendingCreations[panelID] {
-            return reservation.machine
-        }
-
-        // A live cmux-tui session can briefly outlive its catalog projection
-        // while a restored or moved pane is being attached. Use the provider's
-        // machine identity only for that live session; an arbitrary manual
-        // mirror must not inherit the workspace's SSH configuration.
-        if let session = tuiMirrorSession(for: panelID) {
-            let machine = SurfaceMachineID(rawValue: session.machineID)
-            if machine.isSSH {
-                return machine
-            }
         }
 
         // A window container remains an owner even when its terminal panel
@@ -113,13 +115,6 @@ extension Workspace {
             // An unprojected generic/device mirror cannot borrow the SSH
             // identity of the workspace it happens to be displayed in.
             return panel.transferredSurfaceMachine
-        }
-        if let resource = (panel as? DeferredBrowserPanel)?.sessionPanelSnapshot.browser?.cloudResource {
-            return resource.machine
-        }
-        if activeRemoteTerminalSurfaceIds.contains(panelID),
-           let machine = remoteConfiguration?.managedCloudVMID {
-            return .cloud(machine)
         }
         return panel.transferredSurfaceMachine ?? catalogMachine ?? .local
     }
@@ -156,8 +151,7 @@ extension Workspace {
         case .surface:
             guard transfer.isFromCurrentProcess else { return surfaceOwnershipPolicy.rejection(for: nil) }
             // A surface already in this workspace crosses no machine boundary when
-            // it is reordered or split within it. Rejecting it here put the Cloud
-            // drop gate over the workspace's own tab strips and blocked tab drags.
+            // it is reordered or split within it.
             if panelIdFromSurfaceId(TabID(uuid: transfer.tabId)) != nil { return nil }
             guard let app = AppDelegate.shared else { return surfaceOwnershipPolicy.rejection(for: nil) }
             return app.ownershipRejection(forBonsplitTab: transfer.tabId, policy: surfaceOwnershipPolicy)
@@ -189,8 +183,6 @@ extension Workspace {
         if transfer.origin == .workspace(id) { return true }
         let machine = transfer.surfaceMachine
             ?? SurfaceCatalog.shared.machineOwningPanel(transfer.panelId)
-            ?? transfer.remoteRelayNamespaceConfiguration?.managedCloudVMID.map(SurfaceMachineID.cloud)
-            ?? transfer.remoteCleanupConfiguration?.managedCloudVMID.map(SurfaceMachineID.cloud)
             ?? .local
         return surfaceOwnershipPolicy.rejection(for: machine, kind: AppDelegate.shared?.surfaceResourceKind(for: transfer.panel)) == nil
     }

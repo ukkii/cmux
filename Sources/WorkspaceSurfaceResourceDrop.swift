@@ -27,13 +27,11 @@ extension SurfaceDestination {
 }
 
 extension Workspace {
-    /// Projects a Cloud tree row dropped into this workspace — a terminal on this
-    /// Mac or on a machine, a machine's screen, a browser, or a whole workspace's
-    /// collection — exactly where a Vault session or a file dropped at the same
-    /// spot would land. One path for every row kind: `SurfaceCatalog.projectGroup`
-    /// with the real drop destination; the first resource takes the drop spot and
-    /// the rest join it as tabs; the provider decides whether a resource means a
-    /// new pane (cloud) or moving the one pane a local terminal has. A drop never
+    /// Projects a dropped surface resource group into this workspace exactly
+    /// where a Vault session or a file dropped at the same spot would land. One
+    /// path for every row kind: `SurfaceCatalog.projectGroup` with the real drop
+    /// destination; the first resource takes the drop spot and the rest join it
+    /// as tabs; the provider decides how a resource lands. A drop never
     /// reuses an existing pane elsewhere. The drop is accepted as soon as the
     /// request is dispatched; failures are logged here.
     @discardableResult
@@ -50,26 +48,10 @@ extension Workspace {
 #if DEBUG
         cmuxDebugLog("surfaces.drop workspace=\(self.id.uuidString.prefix(5)) group=\(group.title) count=\(group.resources.count) target=\(target)")
 #endif
-        if let url = catalog.cloudBrowserCopyURL(for: group, intoWorkspace: id) {
-            // The normal browser creation path creates the daemon browser for this
-            // mirrored workspace, so the copy gets its own tab and sidebar row.
-            do {
-                let created = try SurfacePaneFactory.makeBrowserPane(
-                    url: url, at: target, focus: true, creationPolicy: .userInitiated
-                )
-                SurfacePaneFactory.focus(panelID: created.panelID, in: created.workspaceID)
-            } catch {
-#if DEBUG
-                cmuxDebugLog("surfaces.drop.copyFailed group=\(group.title) error=\(error)")
-#endif
-                return false
-            }
-            return true
-        }
         Task { @MainActor in
             do {
                 let projections = try await catalog.projectGroup(group, into: target, focus: true)
-                // A Cloud drag starts in the right sidebar, so the sidebar remains
+                // A drag can start in the right sidebar, so the sidebar remains
                 // the window's recorded keyboard owner after AppKit completes the
                 // drop. Re-run the shared focus transaction once the first pane is
                 // materialized so its Bonsplit focus and bright active state agree.

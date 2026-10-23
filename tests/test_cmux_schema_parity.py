@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The cmux.json schema must describe every key the app reads from cmux.json.
 
-`web/data/cmux.schema.json` is embedded in the app and drives
+`schemas/cmux.schema.json` is embedded in the app and drives
 `cmux config validate`, the editor schema, the docs page, and the settings
 skill. A key the app honors but the schema omits validates as "unknown", so a
 user who follows the Settings "Edit in cmux.json" button gets a warning for a
@@ -31,7 +31,7 @@ import unittest
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = REPO_ROOT / "web" / "data" / "cmux.schema.json"
+SCHEMA = REPO_ROOT / "schemas" / "cmux.schema.json"
 SUPPORTED = REPO_ROOT / "Sources" / "CmuxSettingsFileStore+SupportedPaths.swift"
 CATALOG_KEYS = REPO_ROOT / "Packages" / "macOS" / "CmuxSettings" / "Sources" / "CmuxSettings" / "Keys"
 SHORTCUT_ACTION = (
@@ -48,15 +48,13 @@ STRING = re.compile(r'"([^"]+)"')
 SYMBOL = re.compile(r"^([A-Z][A-Za-z0-9_]*)\.([A-Za-z0-9_]+)\s*,?$")
 
 # Catalog DefaultsKey ids that no cmux.json section parser reads. They are
-# stored only in UserDefaults (UI state, device and account state, or
+# stored only in UserDefaults (UI state, onboarding state, or
 # remembered values). Adding one to the schema would make
 # `cmux config validate` accept a key that has no effect, so wire a parser
 # first and then move the id into the schema.
 NOT_IN_CMUX_JSON = frozenset({
-    # Account and onboarding state.
-    "account.piiDisplayMode",
-    "account.selectedTeamID",
-    "account.welcomeShown",
+    # Onboarding state: the one-time terminal welcome banner.
+    "app.welcomeShown",
     # App preferences stored only in UserDefaults today.
     # The custom accent color's storage; cmux.json sets it through a
     # "#RRGGBB" app.accentColor value.
@@ -70,16 +68,6 @@ NOT_IN_CMUX_JSON = frozenset({
     "browser.disabled",
     "browser.importHintDismissed",
     "browser.importHintVariant",
-    # Device discovery and pairing state.
-    "devices.discovery.enabled",
-    "devices.incomingAccess.enabled",
-    "devices.sidebar.hiddenMacIDs",
-    "mobile.iOSPairingHost.displayName",
-    "mobile.iOSPairingHost.enabled",
-    "mobile.iOSPairingHost.port",
-    "mobile.phonePush.forwardingEnabled",
-    "mobile.phonePush.hideContent",
-    "mobile.phonePush.mode",
     # Sidebar remembered UI state remains UserDefaults-only. The cmux.json
     # paths for the ordinary appearance settings are covered by the parser.
     "sidebar.rightMaxWidth.remembered",
@@ -223,7 +211,7 @@ class SchemaParityTests(unittest.TestCase):
         self.assertEqual(
             missing,
             [],
-            "cmux.json accepts these paths but web/data/cmux.schema.json does not "
+            "cmux.json accepts these paths but schemas/cmux.schema.json does not "
             "describe them, so `cmux config validate` reports them as unknown. Add "
             "each to the schema (then run scripts/generate-cmux-config-schema.py and "
             "update skills/cmux-settings/references/all-keys.md).",

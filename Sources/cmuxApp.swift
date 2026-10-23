@@ -1,4 +1,3 @@
-import CmuxCloud
 import CmuxComputerUse
 import AppKit
 import CmuxAppKitSupportUI
@@ -20,8 +19,6 @@ struct cmuxApp: App {
     /// Single owner of the independently launched Computer Use helper daemon.
     private let computerUseRuntimeService: ComputerUseRuntimeService
 
-    /// App-owned auth graph injected into the delegate and auth consumers.
-    private let authComposition: MacAuthComposition
     /// Composition-root owner for the config-backed automation bridge.
     private let automationEngine: AutomationEngine
     private let browserDataImportCoordinator: BrowserDataImportCoordinator
@@ -97,12 +94,10 @@ struct cmuxApp: App {
             saveSecret: { try socketPasswordStore.savePassword($0) },
             backupTimestamp: secretMigrationTimestamp
         )
-        let authComposition = MacAuthComposition()
         let browserDataImportCoordinator = BrowserDataImportCoordinator()
         let notificationStore = TerminalNotificationStore.shared
         let closedItemHistoryStore = ClosedItemHistoryStore.shared
         let sidebarState = SidebarState()
-        self.authComposition = authComposition
         self.browserDataImportCoordinator = browserDataImportCoordinator
 
         // If invoked with CLI-style arguments (e.g. `cmux hooks setup`), exec the
@@ -186,14 +181,11 @@ struct cmuxApp: App {
         // Reconcile saved language preference before any UI loads
         LanguageSettingsStore(defaults: .standard, domainName: ProcessDefaultsDomain.name).reconcileLanguageOverrideAtLaunch()
         StartupBreadcrumbLog.append("app.init.language.applied")
-        let devices = MacDevicesComposition(defaults: .standard, catalog: settingsCatalog)
-        let devicesRegistry = devices.registry
-        let computersService = devices.computers
+        let userDefaultsStore = UserDefaultsSettingsStore(defaults: .standard, migrating: settingsCatalog.all)
         let hostSettingsActions = HostSettingsActions(
             configFileURL: configFileURL,
             computerUseRuntimeService: computerUseRuntimeService,
             browserDataImportCoordinator: browserDataImportCoordinator,
-            computersActions: devices.settingsActions,
             runComputerUseOnboardingAction: { startingPoint in
                 AppDelegate.shared?.computerUseUXCoordinator.presentOnboardingFromSettings(
                     startingAt: startingPoint
@@ -202,11 +194,10 @@ struct cmuxApp: App {
         )
         self.settingsRuntime = SettingsRuntime(
             catalog: settingsCatalog,
-            userDefaultsStore: devices.defaultsStore,
+            userDefaultsStore: userDefaultsStore,
             jsonStore: JSONConfigStore(fileURL: configFileURL),
             secretStore: secretStore,
             errorLog: SettingsErrorLog(),
-            accountFlow: authComposition.accountFlow,
             hostActions: hostSettingsActions,
             shortcutDefaultResolver: Self.makeShortcutDefaultResolver()
         )
@@ -228,11 +219,9 @@ struct cmuxApp: App {
         KeyboardShortcutSettings.settingsFileStore.applyDeferredManagedDefaultSideEffects()
         StartupBreadcrumbLog.append("app.init.keyboardShortcuts.sideEffectsApplied")
         StartupBreadcrumbLog.append("app.init.tabManager.begin")
-        let (cloudMachinePinStore, cloudWorkspaceCoordinator) = Self.makeCloudWorkspaceComposition(auth: authComposition)
         let tabManager = TabManager(
             workspaceCustomizationStore: workspaceCustomizationStore,
             nativeSSHConnectionBroker: TerminalController.shared.nativeSSHConnectionBroker,
-            cloudWorkspaceSelection: cloudWorkspaceCoordinator.makeSelectionState(),
             sshClipboardWriteTrustStore: AppDelegate.shared?.sshClipboardWriteTrustStore
         )
         let historyMenuCoordinator = HistoryMenuCoordinator(
@@ -307,26 +296,15 @@ struct cmuxApp: App {
 
         // UI tests need AppDelegate wiring even if SwiftUI appearance callbacks are skipped.
         StartupBreadcrumbLog.append("app.init.delegate.configure.begin")
-        let cloudWorkspaceOperationController = CloudWorkspaceOperationController(
-            isAvailable: { cloudWorkspaceCoordinator.isAvailable }
-        )
         appDelegate.configure(
             tabManager: tabManager,
             notificationStore: notificationStore,
             sidebarState: sidebarState,
             settingsRuntime: settingsRuntime,
-            auth: authComposition,
-            cloudMachinePinStore: cloudMachinePinStore,
-            cloudWorkspaceCoordinator: cloudWorkspaceCoordinator,
-            cloudWorkspaceOperationController: cloudWorkspaceOperationController,
-            newMachineSheetPresenter: NewMachineSheetPresenter.shared,
             automationEngine: automationEngine,
             browserDataImportCoordinator: browserDataImportCoordinator,
-            computerUseRuntimeService: computerUseRuntimeService,
-            devicesRegistry: devicesRegistry,
-            computersService: computersService
+            computerUseRuntimeService: computerUseRuntimeService
         )
-        hostSettingsActions.cloudActivationCoordinator = appDelegate.cloudActivationCoordinator
         historyMenuCoordinator.refreshIfNeeded()
         StartupBreadcrumbLog.append("app.init.delegate.configured")
     }
@@ -622,10 +600,11 @@ struct cmuxApp: App {
                     appDelegate.openDebugScrollbackTab(nil)
                 }
 
-                IrohAndAgentSessionDebugMenuButtons(
+                AgentSessionDebugMenuButtons(
                     openReact: { appDelegate.openDebugAgentSessionReact(nil) },
                     openSolid: { appDelegate.openDebugAgentSessionSolid(nil) }
                 )
+                NotificationDebugMenuButtons()
 
                 Button("Open Workspaces for All Workspace Colors") {
                     appDelegate.openDebugColorComparisonWorkspaces(nil)
@@ -643,9 +622,6 @@ struct cmuxApp: App {
                     Button("Background Debug…") {
                         BackgroundDebugWindowController.shared.show()
                     }
-                    Button("Pro Badge Style…") {
-                        ProBadgeDebugWindowController.shared.show()
-                    }
                     Button(
                         String(
                             localized: "debug.menu.bonsplitTabBarDebug",
@@ -656,41 +632,6 @@ struct cmuxApp: App {
                     }
                     Button("Browser Import Hint Debug…") {
                         BrowserImportHintDebugWindowController.shared.show()
-                    }
-                    Button("Cloud Tree Style Gallery…") {
-                        CloudTreeStyleGalleryWindowController.shared.show()
-                    }
-                    Button(String(localized: "debug.menu.cloudSidebarSpacingLab", defaultValue: "Cloud Sidebar Spacing Lab…")) {
-                        AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-                    }
-                    Menu("Cloud Terminal Error Style") {
-                        Button("Preview in Selected Terminal") {
-                            guard let workspace = activeTabManager.selectedWorkspace,
-                                  let panelID = workspace.focusedPanelId,
-                                  workspace.terminalPanel(for: panelID) != nil else { return }
-                            let failure = CloudPaneCreationFailure(
-                                machine: .cloud("preview"),
-                                error: CmuxTuiSurfaceProvider.ProviderError.stateUnavailable("preview")
-                            )
-                            workspace.setCloudMaterializationFailure(
-                                surfaceID: panelID,
-                                detail: failure.errorText,
-                                reference: "Design preview"
-                            )
-                        }
-                        Divider()
-                        Button("Compact") {
-                            UserDefaults.standard.set("compact", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Compact + 1px Border") {
-                            UserDefaults.standard.set("compact-bordered", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Dialog") {
-                            UserDefaults.standard.set("dialog", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
-                        Button("Inline") {
-                            UserDefaults.standard.set("inline", forKey: "cloudPaneFailurePrototypeStyle")
-                        }
                     }
                     Button(
                         String(
@@ -883,15 +824,6 @@ struct cmuxApp: App {
                     }
                 }
 
-                if CloudMachinesFeature.isEnabled && AppDelegate.shared?.auth?.accountFlow.isAuthenticated == true {
-                    splitCommandButton(title: String(localized: "menu.file.newCloudWorkspace", defaultValue: "New Cloud Workspace"), shortcut: menuShortcut(for: .newCloudWorkspace)) {
-                        _ = AppDelegate.shared?.performNewCloudWorkspaceOnResolvedMachineAction(tabManager: activeTabManager, debugSource: "menu.newCloudWorkspace")
-                    }
-                    splitCommandButton(title: String(localized: "menu.file.newCloudMachine", defaultValue: "New Cloud Machine"), shortcut: menuShortcut(for: .newCloudMachine)) {
-                        _ = AppDelegate.shared?.performNewCloudMachineAction(tabManager: activeTabManager, debugSource: "menu.newCloudMachine")
-                    }
-                }
-
                 if CmuxFeatureFlags.shared.isSimulatorEnabled {
                     Button(String(localized: "menu.file.newSimulatorPane", defaultValue: "New Simulator Pane")) {
                         performNewSimulatorPaneFromMenu()
@@ -1057,7 +989,6 @@ struct cmuxApp: App {
         }
         helpCommands
         historyCommands
-        cloudCommands
         CommandGroup(after: .toolbar) {
             splitCommandButton(title: String(localized: "menu.view.toggleLeftSidebar", defaultValue: "Toggle Left Sidebar"), shortcut: menuShortcut(for: .toggleSidebar)) {
                 // The AppKit-hosted Settings window has no SwiftUI
@@ -1667,7 +1598,6 @@ struct cmuxApp: App {
         BackgroundDebugWindowController.shared.show()
         StartupAppearanceDebugWindowController.shared.show()
         MenuBarExtraDebugWindowController.shared.show()
-        AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
         PDFPreviewChromeDebugWindowController.shared.show()
         FeedPreviewWindowController.shared.show()
         FeedTextEditorDebugWindowController.shared.show()
@@ -1697,10 +1627,8 @@ private struct MainWindowBootstrapView: View {
     }
 }
 private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
-    "cmux.newMachine",
     "cmux.settings",
     "cmux.about",
-    "cmux.cloud.welcome",
     "cmux.licenses",
     "cmux.browser-popup",
     "cmux.browserProfilePopoverDebug",
@@ -1725,17 +1653,12 @@ private let cmuxAuxiliaryWindowIdentifiers: Set<String> = [
     "cmux.sidebarDebug",
     "cmux.menubarDebug",
     "cmux.spinnerGallery",
-    "cmux.cloudTreeStyleGallery",
-    "cmux.cloudSidebarDebugLab",
     "cmux.backgroundDebug",
     "cmux.startupAppearanceDebug",
     "cmux.bonsplitTabBarDebug",
     "cmux.titlebarLayoutDebug",
     "cmux.devWindowDisplay",
-    "cmux.mobilePairingWindow",
     "cmux.sidebarFooterIconBalanceDebug",
-    "cmux.cloudPaneCreationFailure.card",
-    "cmux.cloudCreateTeam",
     "cmux.sudo.approval",
 ]
 
@@ -1946,9 +1869,6 @@ private struct DebugWindowControlsView: View {
                         Button("Menu Bar Extra Debug…") {
                             MenuBarExtraDebugWindowController.shared.show()
                         }
-                        Button(String(localized: "debug.menu.cloudSidebarSpacingLab", defaultValue: "Cloud Sidebar Spacing Lab…")) {
-                            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
-                        }
                         Button(
                             String(
                                 localized: "debug.menu.pdfPreviewChromeDebug",
@@ -1985,7 +1905,6 @@ private struct DebugWindowControlsView: View {
                             BonsplitTabBarDebugWindowController.shared.show()
                             StartupAppearanceDebugWindowController.shared.show()
                             MenuBarExtraDebugWindowController.shared.show()
-                            AppDelegate.shared?.debugWindowsCoordinator.cloudSidebarDebugLabController.show()
                             PDFPreviewChromeDebugWindowController.shared.show()
                             TabBarBackdropLabWindowController.shared.show()
                             FeedTextEditorDebugWindowController.shared.show()
@@ -3218,15 +3137,6 @@ private struct SidebarFooterHoverIntensityPreview: View {
     var body: some View {
         HStack(spacing: 4) {
             Button(action: {}) {
-                SidebarFooterProfileIconReference(
-                    profileDisplay: profileDisplay,
-                    size: profileSize
-                )
-            }
-            .buttonStyle(SidebarFooterIconButtonStyle())
-            .accessibilityLabel(accessibilityLabel)
-
-            Button(action: {}) {
                 CmuxSystemSymbolImage(systemName: "iphone", pointSize: CGFloat(mobileSize), weight: .medium, tint: Color(nsColor: .secondaryLabelColor))
                     .frame(width: 22, height: 22)
             }
@@ -3305,14 +3215,6 @@ private struct SidebarFooterIconBalanceStrip: View {
     var body: some View {
         HStack(spacing: 4) {
             SidebarFooterBalanceCell(showsGuide: showsCellGuides) {
-                SidebarFooterProfileIconReference(
-                    profileDisplay: profileDisplay,
-                    size: profileSize
-                )
-                    .compositingGroup()
-                    .blur(radius: CGFloat(blurRadius))
-            }
-            SidebarFooterBalanceCell(showsGuide: showsCellGuides) {
                 SidebarFooterMobileIconReference(size: mobileSize)
                     .compositingGroup()
                     .blur(radius: CGFloat(blurRadius))
@@ -3322,7 +3224,6 @@ private struct SidebarFooterIconBalanceStrip: View {
                     .compositingGroup()
                     .blur(radius: CGFloat(blurRadius))
             }
-            ProBadgeLabel(style: .textPro)
         }
         .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
@@ -3350,26 +3251,6 @@ private struct SidebarFooterBalanceCell<Content: View>: View {
                         )
                 }
             }
-    }
-}
-
-private struct SidebarFooterProfileIconReference: View {
-    let profileDisplay: String
-    let size: Double
-
-    var body: some View {
-        let showsProfilePicture =
-            SidebarFooterProfileDisplayDebugChoice(rawValue: profileDisplay) == .picture
-        SidebarAccountAvatar(
-            avatarURL: nil,
-            displayName: "cmux",
-            email: "",
-            isSignedIn: showsProfilePicture,
-            size: showsProfilePicture
-                ? SidebarFooterButtonMetrics.profilePictureSize
-                : CGFloat(size)
-        )
-            .frame(width: 22, height: 22)
     }
 }
 

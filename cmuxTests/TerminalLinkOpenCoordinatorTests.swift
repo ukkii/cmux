@@ -693,7 +693,7 @@ struct TerminalLinkOpenCoordinatorTests {
         let defaults = makeDefaults()
         let directory = try makeLaunchableFixtures()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let container = CloudGuestURLTestContainer()
+        let container = RemoteLinkTestContainer()
         let fileOpener = RecordingFileOpener()
         let coordinator = TerminalLinkOpenCoordinator(
             defaults: defaults,
@@ -749,7 +749,7 @@ struct TerminalLinkOpenCoordinatorTests {
     @MainActor
     func remoteInitiatedWebLinkFailsClosedBeforeRouting() throws {
         let defaults = makeDefaults()
-        let container = CloudGuestURLTestContainer()
+        let container = RemoteLinkTestContainer()
         var external: [URL] = []
         let coordinator = TerminalLinkOpenCoordinator(
             defaults: defaults,
@@ -847,7 +847,6 @@ private final class RemotePreviewLinkContainer: TerminalLinkOpenContainer {
     var terminalLinkContainerDebugName: String { "remote-preview-test" }
     func terminalLinkWorkingDirectory(for sourcePanelId: UUID) -> String? { "/remote/project" }
     func terminalLinkIsRemoteTerminal(_ sourcePanelId: UUID) -> Bool { true }
-    func cloudTerminalLinkTarget(url: URL, sourcePanelId: UUID) -> CloudTerminalLinkTarget? { nil }
     func deferRemoteTerminalFileLinkOpen(sourcePanelId: UUID, rawValue: String) -> Bool {
         sourcePanelIDs.append(sourcePanelId)
         remoteLinks.append(rawValue)
@@ -871,7 +870,6 @@ private final class LocalLinkContainer: TerminalLinkOpenContainer {
     var terminalLinkContainerDebugName: String { "local-test" }
     func terminalLinkWorkingDirectory(for sourcePanelId: UUID) -> String? { nil }
     func terminalLinkIsRemoteTerminal(_ sourcePanelId: UUID) -> Bool { false }
-    func cloudTerminalLinkTarget(url: URL, sourcePanelId: UUID) -> CloudTerminalLinkTarget? { nil }
     func deferTerminalFileLinkOpen(
         sourcePanelId: UUID,
         filePath: String,

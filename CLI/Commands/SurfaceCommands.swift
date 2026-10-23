@@ -141,157 +141,22 @@ struct DragSurfaceToSplitCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(commandName: "drag-surface-to-split", helpNames: [])
 }
 
-/// `surface` is a namespace, not a leaf: `runSurfaceCommand` dispatches `ls`,
-/// `open`, `new-terminal` into the surface catalog and `resume` into the restart
-/// metadata commands, and rejects a bare `cmux surface`. Declaring it as a single
-/// unrecognized-argument sink meant `cmux surface <TAB>` offered nothing and the
-/// options below (which really belong to `resume set`) were offered everywhere.
+/// `surface` is a namespace, not a leaf: `runSurfaceCommand` dispatches `resume`
+/// into the restart metadata commands and rejects a bare `cmux surface`.
 ///
-/// See VMCommand's comment: no catch-all argument alongside `subcommands`, and
+/// No catch-all argument alongside `subcommands` (ArgumentParser rejects it), and
 /// `defaultSubcommand` absorbs anything that doesn't name a declared one, so an
 /// unknown verb still reaches the legacy parser's own diagnostic instead of
-/// ArgumentParser's "Unexpected argument". `ls` matches the read-only default
-/// `vm`, `auth`, and `remotes` already use.
+/// ArgumentParser's "Unexpected argument".
 struct SurfaceCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(
         commandName: "surface",
         subcommands: [
-            SurfaceListCommand.self,
-            SurfaceOpenCommand.self,
-            SurfaceNewTerminalCommand.self,
             SurfaceResumeGroupCommand.self,
-            SurfaceSizeCommand.self,
-            SurfaceParticipantsCommand.self,
-            SurfaceSizeToMeCommand.self,
-            SurfaceDisconnectOthersCommand.self,
-            SurfaceSizePolicyCommand.self,
-            SurfaceSizeCountsCommand.self,
-            SurfaceDisconnectParticipantCommand.self,
         ],
-        defaultSubcommand: SurfaceListCommand.self,
+        defaultSubcommand: SurfaceResumeGroupCommand.self,
         helpNames: []
     )
-}
-
-struct SurfaceListCommand: SharedLegacyFacadeCommand {
-    /// A machine id, or `local` for This Mac.
-    @Argument(completion: vmCompletion) var machine: String?
-    @Flag(name: .customLong("refresh")) var refresh = false
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(
-        commandName: "ls",
-        helpNames: [],
-        aliases: ["list", "tree", "catalog"]
-    )
-}
-
-struct SurfaceOpenCommand: SharedLegacyFacadeCommand {
-    /// `<machine>/<kind>/<key>`, e.g. `local/terminal/<uuid>`. Not completable
-    /// from a flat entity list: the catalog is the only source, and resolving it
-    /// on Tab would need a `surface.catalog` round trip per keystroke.
-    @Argument var resource: String?
-    @Option(name: .customLong("workspace"), completion: workspaceCompletion) var workspaceID: String?
-    @Option(name: .customLong("pane"), completion: paneCompletion) var paneID: String?
-    // The four sides are mutually exclusive with each other and with --tab, and
-    // the legacy runner enforces that (and that they need --pane) itself.
-    @Flag(name: .customLong("left")) var left = false
-    @Flag(name: .customLong("right")) var right = false
-    @Flag(name: .customLong("up")) var up = false
-    @Flag(name: .customLong("down")) var down = false
-    @Flag(name: .customLong("tab")) var tab = false
-    @Flag(name: .customLong("new")) var new = false
-    /// Bare `--focus`, `--focus true|false` and `--no-focus` all parse
-    /// (`openFocusFlag`), so a bare `--focus` must not expect a value.
-    @Option(
-        name: .customLong("focus"),
-        defaultAsFlag: "true",
-        parsing: .next,
-        completion: .list(["true", "false"])
-    ) var focus: String?
-    @Flag(name: .customLong("no-focus")) var noFocus = false
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(
-        commandName: "open",
-        helpNames: [],
-        aliases: ["project"]
-    )
-}
-
-struct SurfaceNewTerminalCommand: SharedLegacyFacadeCommand {
-    @Option(name: .customLong("machine"), completion: vmCompletion) var machine: String?
-    @Option(name: .customLong("cwd"), completion: .directory) var cwd: String?
-    @Option(name: .customLong("name")) var name: String?
-    @Option(name: .customLong("remote-workspace")) var remoteWorkspace: String?
-    @Option(name: .customLong("workspace"), completion: workspaceCompletion) var workspaceID: String?
-    /// Bare `--focus`, `--focus true|false` and `--no-focus` all parse
-    /// (`openFocusFlag`), so a bare `--focus` must not expect a value.
-    @Option(
-        name: .customLong("focus"),
-        defaultAsFlag: "true",
-        parsing: .next,
-        completion: .list(["true", "false"])
-    ) var focus: String?
-    @Flag(name: .customLong("no-focus")) var noFocus = false
-    @Flag(name: .customLong("no-open")) var noOpen = false
-    /// `-- <command...>` runs in the new terminal.
-    @Argument(parsing: .captureForPassthrough) var command: [String] = []
-    static let configuration = CommandConfiguration(
-        commandName: "new-terminal",
-        helpNames: [],
-        aliases: ["new"]
-    )
-}
-
-/// The shared terminal sizing verbs (`runSurfaceSizingCommand`). They take the
-/// same workspace/surface/window selector as `surface resume`.
-struct SurfaceSizeCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size", helpNames: [])
-}
-
-struct SurfaceParticipantsCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "participants", helpNames: [])
-}
-
-struct SurfaceSizeToMeCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size-to-me", helpNames: [])
-}
-
-struct SurfaceDisconnectOthersCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "disconnect-others", helpNames: [])
-}
-
-struct SurfaceSizePolicyCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    // Strings, not Int: the legacy runner owns the integer check.
-    @Option(name: .customLong("cols")) var cols: String?
-    @Option(name: .customLong("rows")) var rows: String?
-    @Argument(completion: .list(["latest", "smallest", "largest", "priority", "fixed"])) var mode: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size-policy", helpNames: [])
-}
-
-struct SurfaceSizeCountsCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    @Option(name: .customLong("participant")) var participant: String?
-    @Argument(completion: .list(["true", "false", "auto"])) var value: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "size-counts", helpNames: [])
-}
-
-struct SurfaceDisconnectParticipantCommand: SharedLegacyFacadeCommand {
-    @OptionGroup var target: SurfaceResumeTargetOptions
-    /// An id from `cmux surface participants`.
-    @Argument var participant: String?
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "disconnect-participant", helpNames: [])
 }
 
 /// `surface resume`. Named apart from `SurfaceResumeCommand`, which declares the

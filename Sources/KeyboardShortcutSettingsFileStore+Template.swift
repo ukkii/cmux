@@ -168,7 +168,6 @@ extension CmuxSettingsFileStore {
                     "showNotificationMessage": SettingCatalog().sidebar.showNotificationMessage.defaultValue,
                     "notificationMessageLineLimit": SettingCatalog().sidebar.notificationMessageLineLimit.defaultValue,
                     "showBranchDirectory": SidebarWorkspaceDetailDefaults.showBranchDirectory,
-                    "showCloudDeviceIcons": SidebarWorkspaceDetailDefaults.showCloudDeviceIcons,
                     "showPullRequests": SidebarWorkspaceDetailDefaults.showPullRequests,
                     "watchGitStatus": SidebarWorkspaceDetailDefaults.watchGitStatus,
                     "makePullRequestsClickable": SettingCatalog().sidebar.makePullRequestsClickable.defaultValue,
@@ -258,14 +257,6 @@ extension CmuxSettingsFileStore {
                     "urlAllowlist": BrowserURLAllowlistPolicy.defaultPatterns,
                     "showImportHintOnBlankTabs": BrowserImportHintSettings.defaultShowOnBlankTabs,
                     "reactGrabVersion": ReactGrabSettings.defaultVersion,
-                ],
-            ],
-            [
-                "mobile": [
-                    "artifactFolderAccess": SettingCatalog().mobile.artifactFolderAccess.defaultValue.rawValue,
-                    "browserTunnel": [
-                        "allowOtherHosts": SettingCatalog().mobile.browserTunnelAllowOtherHosts.defaultValue,
-                    ],
                 ],
             ],
             [

@@ -1,4 +1,4 @@
-import CmuxCloud
+import CmuxSettings
 import CmuxControlSocket
 import CmuxCore
 import CmuxFoundation
@@ -55,8 +55,8 @@ extension TerminalController: ControlWorkspaceContext {
 
     // MARK: - Create
 
-    /// `workspace.create` forwards to the single shared `v2WorkspaceCreate` body
-    /// (also driven by `v2MobileWorkspaceCreate`), bridging its Foundation result
+    /// `workspace.create` forwards to the single shared `v2WorkspaceCreate` body,
+    /// bridging its Foundation result
     /// — one source of truth for the create logic, byte-identical wire output.
     func controlWorkspaceCreate(params: [String: JSONValue]) -> ControlCallResult {
         switch v2WorkspaceCreate(params: params.mapValues(\.foundationObject)) {
@@ -537,8 +537,6 @@ extension TerminalController: ControlWorkspaceContext {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let configuredRemoteCommand = v2RawString(params, "configured_remote_command")?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let managedCloudVMID = v2RawString(params, "managed_cloud_vm_id")?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
         var persistentDaemonSlot = v2RawString(params, "persistent_daemon_slot")?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if v2HasNonNullParam(params, "persistent_daemon_slot") {
@@ -643,13 +641,6 @@ extension TerminalController: ControlWorkspaceContext {
                 data: nil
             )
         }
-        // `DisableCloud` (MDM): a workspace bound to a Cloud machine is a Cloud
-        // attach whichever verb carried it, so pre-minted daemon credentials
-        // cannot route around the `vm.*` gate.
-        if let managedCloudVMID, !managedCloudVMID.isEmpty,
-           (ManagedCloudPolicy.isDisabled || !CloudMachinesFeature.offMainIsEnabled()) {
-            return .err(code: ManagedCloudPolicy.socketErrorCode, message: CloudMachinesFeature.disabledMessage, data: nil)
-        }
         guard let owner = AppDelegate.shared?.tabManagerFor(tabId: workspaceId),
               let workspace = owner.tabs.first(where: { $0.id == workspaceId }) else {
             return .err(code: "not_found", message: "Workspace not found", data: .object([
@@ -670,7 +661,6 @@ extension TerminalController: ControlWorkspaceContext {
             relayID: relayID?.isEmpty == true ? nil : relayID,
             relayToken: relayToken?.isEmpty == true ? nil : relayToken,
             localSocketPath: localSocketPath,
-            managedCloudVMID: managedCloudVMID?.isEmpty == true ? nil : managedCloudVMID,
             terminalStartupCommand: terminalStartupCommand?.isEmpty == true ? nil : terminalStartupCommand,
             configuredRemoteCommand: configuredRemoteCommand?.isEmpty == true ? nil : configuredRemoteCommand,
             foregroundAuthToken: foregroundAuthToken?.isEmpty == true ? nil : foregroundAuthToken,

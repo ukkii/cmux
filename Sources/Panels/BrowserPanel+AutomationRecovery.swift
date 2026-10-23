@@ -1,5 +1,4 @@
 import CmuxCore
-import CmuxCloud
 import AppKit
 import CmuxBrowser
 import WebKit
@@ -204,42 +203,14 @@ extension BrowserPanel {
         profileID: UUID,
         websiteDataStore: WKWebsiteDataStore
     ) -> CmuxWebView {
-        let replacementStore: WKWebsiteDataStore
-        if cloudAccess.model?.usesBrowserProxy == true {
-            if let endpoint = cloudAccess.model?.browserProxy,
-               let address = cloudAccess.model?.target.host {
-                websiteDataStore.proxyConfigurations = [
-                    CloudBrowserRouting.configuration(endpoint: endpoint, address: address, remoteNetwork: cloudAccess.model?.usesRemoteNetwork == true)
-                ]
-                replacementStore = websiteDataStore
-            } else {
-                // Keep the Cloud store unused until its first network session
-                // can be created with the authenticated proxy already set.
-                replacementStore = .nonPersistent()
-            }
-        } else {
-            replacementStore = websiteDataStore
-        }
         let replacement = Self.makeWebView(
             profileID: profileID,
-            websiteDataStore: replacementStore
+            websiteDataStore: websiteDataStore
         )
         for userScript in browserAutomationUserScripts {
             replacement.configuration.userContentController.addUserScript(userScript)
         }
         browserEmulation.install(on: replacement)
-        if cloudAccess.model?.usesBrowserProxy == true, let host = cloudAccess.model?.target.host {
-            replacement.configuration.userContentController.addUserScript(WKUserScript(
-                source: RemoteLoopbackRuntimeBridge.scriptSource(
-                    aliasHost: cloudAccess.model?.usesRemoteNetwork == true ? RemoteLoopbackProxyAlias.aliasHost : host,
-                    preservesSubdomains: false, allOrigins: cloudAccess.model?.usesRemoteNetwork == true
-                ),
-                injectionTime: .atDocumentStart, forMainFrameOnly: false
-            ))
-            if let endpoint = cloudAccess.model?.browserProxy {
-                CloudBrowserRouting.installWebSocketBridge(endpoint: endpoint, address: host, on: replacement, remoteNetwork: cloudAccess.model?.usesRemoteNetwork == true)
-            }
-        }
         return replacement
     }
 

@@ -9,8 +9,7 @@ import os
 ///
 /// Resolution semantics (flags must never break the app):
 /// - A value from the injected `remoteFlagValueProvider` (a test seam; the app
-///   provides none) is authoritative when present. The legacy Cloud definition
-///   is kept only for tagged debug tooling and is not in `allFlags`.
+///   provides none) is authoritative when present.
 /// - Otherwise a permitted local override applies, then the explicit per-flag
 ///   default.
 ///
@@ -22,25 +21,13 @@ import os
 final class CmuxFeatureFlags {
     static let shared = CmuxFeatureFlags(publishesOffMainSnapshot: true)
 
-    private static let mobileConnectButtonDefault = false
-    private static let sidebarAccountButtonDefault = true
-
     private static let agentChatUIDefault = false
-    #if DEBUG
-    private nonisolated static let mobileWorkspaceChangesDefault = true
-    #else
-    private nonisolated static let mobileWorkspaceChangesDefault = false
-    #endif
     private static let sidebarWorkspaceAgentSpinnerDefault = false
     private static let computerUseUXDefault = true
     private nonisolated static let simulatorDefault = true
     private static let workspaceTodoControlsDefault = false
     private static let appKitSidebarListDefault = true
-    private static let mobileTerminalFilesChipDefault = true
-    private nonisolated static let mobileTaskComposerDefault = true
-    private static let goPlanDefault = false
     private static let agentInboxQuickViewDefault = false
-    nonisolated static let cloudMachinesDefault = true
     private nonisolated static let conversationSidebarDefault = false
 
     private static let overrideKeyPrefix = "cmux.flags.override."
@@ -67,51 +54,11 @@ final class CmuxFeatureFlags {
         defaultWhenUnavailable: CmuxFeatureFlags.appKitSidebarListDefault
     )
 
-    // FLAG(key: mobile-workspace-changes-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2027-01-19, defaultWhenUnavailable: false)
-    // Serves the iOS diff viewer: advertises workspace.changes.v1 to phones
-    // and answers the mobile.workspace.changes.* RPCs behind it. Every iOS
-    // entry point (workspace-row chip, toolbar button, one-time hint, Changes
-    // sheet, summary polling) feature-detects on that capability, so this one
-    // Mac-side flag turns the whole feature off end to end. Release builds
-    // keep it off unless a local override enables it; DEBUG keeps it on for
-    // dogfood.
-    nonisolated static let mobileWorkspaceChangesFlag = CmuxFeatureFlagDefinition(
-        key: "mobile-workspace-changes-enabled-release",
-        title: String(
-            localized: "featureFlags.mobileWorkspaceChanges.title",
-            defaultValue: "Mobile diff viewer"
-        ),
-        flagDescription: String(
-            localized: "featureFlags.mobileWorkspaceChanges.description",
-            defaultValue: "Serves workspace diffs to paired phones: the iOS changes chip, toolbar button, and Changes sheet."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.mobileWorkspaceChangesDefault
-    )
-
-    // FLAG(key: ios-artifact-chip-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2027-02-01, defaultWhenUnavailable: true)
-    // Controls the fully integrated terminal Files chip on iOS. The enabled
-    // fallback preserves the shipping behavior.
-    static let mobileTerminalFilesChipFlag = CmuxFeatureFlagDefinition(
-        key: "ios-artifact-chip-enabled-release",
-        title: String(
-            localized: "featureFlags.mobileTerminalFilesChip.title",
-            defaultValue: "Mobile terminal Files chip"
-        ),
-        flagDescription: String(
-            localized: "featureFlags.mobileTerminalFilesChip.description",
-            defaultValue: "Shows the Files chip over iOS terminals and runs its visible-path count scan."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.mobileTerminalFilesChipDefault
-    )
-
     // FLAG(key: simulator-enabled-release, owner: lawrencecchen,
     //      reviewBy: 2027-02-16, defaultWhenUnavailable: true)
     // Controls every Simulator entrypoint and active pane. The enabled
-    // fallback preserves access. Declared nonisolated so
-    // the mobile host's off-main capability list can gate the advertised
-    // simulator capabilities on the same flag as RPC dispatch.
+    // fallback preserves access. Declared nonisolated so off-main readers
+    // can gate on the same flag as RPC dispatch.
     nonisolated static let simulatorFlag = CmuxFeatureFlagDefinition(
         key: "simulator-enabled-release",
         title: String(
@@ -123,39 +70,6 @@ final class CmuxFeatureFlags {
             defaultValue: "Enables iPhone and iPad Simulator panes, commands, and automation."
         ),
         defaultWhenUnavailable: CmuxFeatureFlags.simulatorDefault
-    )
-
-    // FLAG(key: mobile-task-composer-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2026-12-15, defaultWhenUnavailable: true)
-    // Controls the iOS Task Composer from the Mac host. When off, the Mac stops
-    // advertising task-create/model/directory/attachment capabilities and
-    // task-specific RPCs fail with capability_disabled, so paired phones hide
-    // the composer without needing a user-visible Beta toggle.
-    nonisolated static let mobileTaskComposerFlag = CmuxFeatureFlagDefinition(
-        key: "mobile-task-composer-enabled-release",
-        title: String(
-            localized: "featureFlags.mobileTaskComposer.title",
-            defaultValue: "Mobile Task Composer"
-        ),
-        flagDescription: String(
-            localized: "featureFlags.mobileTaskComposer.description",
-            defaultValue: "Enables the iOS New Task composer, including task model discovery, directory picking, and attachment staging."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.mobileTaskComposerDefault
-    )
-
-    // FLAG(key: go-plan-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2026-12-01, defaultWhenUnavailable: false)
-    // Controls the $10/month Go plan rollout. Keep this off until capacity and
-    // support are ready; existing Go subscribers keep their entitlements.
-    static let goPlanFlag = CmuxFeatureFlagDefinition(
-        key: "go-plan-enabled-release",
-        title: String(localized: "featureFlags.goPlan.title", defaultValue: "Go plan"),
-        flagDescription: String(
-            localized: "featureFlags.goPlan.description",
-            defaultValue: "Shows and sells the $10/month Go personal Cloud VM plan."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.goPlanDefault
     )
 
     // FLAG(key: agent-inbox-quick-view-enabled-release, owner: lawrencecchen,
@@ -188,24 +102,6 @@ final class CmuxFeatureFlags {
         defaultWhenUnavailable: CmuxFeatureFlags.conversationSidebarDefault
     )
 
-    // FLAG(key: mac-account-directory-release, owner: lawrencecchen,
-    //      reviewBy: 2027-01-31, defaultWhenUnavailable: true)
-    // Lets My Devices find and admit the same user's Macs across teams through
-    // the per-user account directory. Off falls back to team-only discovery
-    // and admission; the enabled fallback keeps the shipping behavior.
-    nonisolated static let macAccountDirectoryFlag = CmuxFeatureFlagDefinition(
-        key: "mac-account-directory-release",
-        title: String(
-            localized: "featureFlags.macAccountDirectory.title",
-            defaultValue: "Cross-team My Devices"
-        ),
-        flagDescription: String(
-            localized: "featureFlags.macAccountDirectory.description",
-            defaultValue: "Finds and connects your Macs signed in to the same account even when they selected different teams."
-        ),
-        defaultWhenUnavailable: true
-    )
-
     // FLAG(key: window-hints-release, owner: teamleaderleo,
     //      reviewBy: 2027-01-31, defaultWhenUnavailable: false)
     // Hint mode (Show Hints, Cmd-J): labels every clickable control in the
@@ -219,35 +115,6 @@ final class CmuxFeatureFlags {
             defaultValue: "Labels every clickable control in the window so typing a label clicks it."
         ),
         defaultWhenUnavailable: false
-    )
-
-    // FLAG(key: mobile-connect-button-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2026-12-15, defaultWhenUnavailable: false)
-    // Shows the bottom-left sidebar iPhone button that opens the Tailscale
-    // Pairing workspace. It stays hidden until the remote flag or a
-    // local debug override enables it.
-    static let mobileConnectButtonFlag = CmuxFeatureFlagDefinition(
-        key: "mobile-connect-button-enabled-release",
-        title: String(localized: "featureFlags.mobileConnect.title", defaultValue: "Mobile Pairing button"),
-        flagDescription: String(
-            localized: "featureFlags.mobileConnect.description",
-            defaultValue: "Shows the Mobile Pairing button in the sidebar footer."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.mobileConnectButtonDefault
-    )
-
-    // FLAG(key: sidebar-account-button-enabled-release, owner: lawrencecchen,
-    //      reviewBy: 2027-02-16, defaultWhenUnavailable: true)
-    // Shows the account control in the bottom-left sidebar footer. The
-    // Settings account section remains available when this shortcut is off.
-    static let sidebarAccountButtonFlag = CmuxFeatureFlagDefinition(
-        key: "sidebar-account-button-enabled-release",
-        title: String(localized: "featureFlags.sidebarAccount.title", defaultValue: "Sidebar account button"),
-        flagDescription: String(
-            localized: "featureFlags.sidebarAccount.description",
-            defaultValue: "Shows the profile and sign-in control in the sidebar footer."
-        ),
-        defaultWhenUnavailable: CmuxFeatureFlags.sidebarAccountButtonDefault
     )
 
     // FLAG(key: agent-chat-ui-enabled-release, owner: lawrencecchen,
@@ -318,35 +185,20 @@ final class CmuxFeatureFlags {
     // Registry order is used only for remote loading; accessors bind to named definitions.
     static let allFlags: [CmuxFeatureFlagDefinition] = {
         [
-            CmuxFeatureFlags.mobileConnectButtonFlag,
-            CmuxFeatureFlags.sidebarAccountButtonFlag,
             CmuxFeatureFlags.agentChatUIFlag,
             CmuxFeatureFlags.sidebarWorkspaceAgentSpinnerFlag,
             CmuxFeatureFlags.computerUseUXFlag,
             CmuxFeatureFlags.simulatorFlag,
             CmuxFeatureFlags.workspaceTodoControlsFlag,
             CmuxFeatureFlags.appKitSidebarListFlag,
-            CmuxFeatureFlags.mobileWorkspaceChangesFlag,
-            CmuxFeatureFlags.mobileTerminalFilesChipFlag,
-            CmuxFeatureFlags.mobileTaskComposerFlag,
-            CmuxFeatureFlags.goPlanFlag,
             CmuxFeatureFlags.agentInboxQuickViewFlag,
             CmuxFeatureFlags.conversationSidebarFlag,
-            CmuxFeatureFlags.macAccountDirectoryFlag,
             CmuxFeatureFlags.windowHintsFlag
         ]
     }()
 
-    var isMobileConnectButtonEnabled: Bool {
-        effectiveValue(for: Self.mobileConnectButtonFlag)
-    }
-
     var isAgentChatUIEnabled: Bool {
         effectiveValue(for: Self.agentChatUIFlag)
-    }
-
-    var isSidebarAccountButtonEnabled: Bool {
-        effectiveValue(for: Self.sidebarAccountButtonFlag)
     }
 
     var isSidebarWorkspaceAgentSpinnerEnabled: Bool {
@@ -366,22 +218,6 @@ final class CmuxFeatureFlags {
         effectiveValue(for: Self.appKitSidebarListFlag)
     }
 
-    var isMobileWorkspaceChangesEnabled: Bool {
-        effectiveValue(for: Self.mobileWorkspaceChangesFlag)
-    }
-
-    var isMobileTerminalFilesChipEnabled: Bool {
-        effectiveValue(for: Self.mobileTerminalFilesChipFlag)
-    }
-
-    var isMobileTaskComposerEnabled: Bool {
-        effectiveValue(for: Self.mobileTaskComposerFlag)
-    }
-
-    var isGoPlanEnabled: Bool {
-        effectiveValue(for: Self.goPlanFlag)
-    }
-
     var isAgentInboxQuickViewEnabled: Bool {
         effectiveValue(for: Self.agentInboxQuickViewFlag)
     }
@@ -394,9 +230,8 @@ final class CmuxFeatureFlags {
         effectiveValue(for: Self.conversationSidebarFlag)
     }
 
-    /// Effective values mirrored for nonisolated readers: the mobile host
-    /// serves status payloads (which carry the capability list) off the main
-    /// actor. Written only by the shared instance so test instances cannot
+    /// Effective values mirrored for nonisolated readers that run off the
+    /// main actor. Written only by the shared instance so test instances cannot
     /// stomp process-wide state. Before the shared instance exists, readers
     /// get the per-flag compile-time default (fail-closed for release flags).
     private nonisolated static let offMainEffectiveValues = OSAllocatedUnfairLock(
@@ -443,30 +278,11 @@ final class CmuxFeatureFlags {
         self.publishesOffMainSnapshot = publishesOffMainSnapshot
         self.pinsFlagsToLocalValues = pinsFlagsToLocalValues
         self.remoteFlagValueProvider = remoteFlagValueProvider
-        // Cloud's local value is now a first-use activation marker, so it must
-        // survive tagged debug artifact reloads just like any other persisted
-        // product state. The explicit dogfood marker may still opt a fresh
-        // debug artifact in; only the temporary remote override is reset when
-        // a tagged artifact is reopened.
-        if overrideCapability.enablesCloudDogfood {
-            defaults.set(true, forKey: BetaFeaturesCatalogSection().cloudMachines.userDefaultsKey)
-            defaults.set(true, forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
-        } else if overrideCapability.isTaggedDebugArtifact {
-            defaults.removeObject(forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
-            if overrideCapability.hasCloudDogfoodMarker {
-                defaults.set(false, forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
-            }
-        }
         Self.removeLegacyRemoteState(defaults: defaults)
         localOverridesByKey = Self.allFlags.reduce(into: [:]) { values, definition in
             if let value = Self.storedOverrideValue(for: definition.key, defaults: defaults) {
                 values[definition.key] = value
             }
-        }
-        // Cloud is retired from remote delivery but tagged debug artifacts
-        // still use its persisted local override as a compatibility control.
-        if let value = Self.storedOverrideValue(for: Self.cloudMachinesFlag.key, defaults: defaults) {
-            localOverridesByKey[Self.cloudMachinesFlag.key] = value
         }
         recomputeEffectiveValues()
     }
@@ -523,10 +339,6 @@ final class CmuxFeatureFlags {
             }
             defaults.removeObject(forKey: Self.overrideDefaultsKey(for: definition.key))
         }
-        if localOverridesByKey.removeValue(forKey: Self.cloudMachinesFlag.key) != nil {
-            clearedAnyOverride = true
-        }
-        defaults.removeObject(forKey: Self.overrideDefaultsKey(for: Self.cloudMachinesFlag.key))
         guard clearedAnyOverride else { return }
         recomputeEffectiveValues()
         postChangeIfNeeded(previousResolutions: previousResolutions)

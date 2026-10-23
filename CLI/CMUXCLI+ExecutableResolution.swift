@@ -213,10 +213,8 @@ extension CMUXCLI {
     func shouldDispatchCmuxSubcommandHelp(command: String, commandArgs: [String]) -> Bool {
         switch command {
         case "agent":
-            return CmuxTuiRemoteRouting.vmAgentRequestsHelp(commandArgs)
-        case "vm", "cloud", "coderouter":
-            return !CmuxTuiRemoteRouting.isAgentSubcommand(commandArgs.first)
-                || CmuxTuiRemoteRouting.vmAgentRequestsHelp(Array(commandArgs.dropFirst()))
+            // Only help flags before `--` belong to cmux; later tokens are message text.
+            return commandArgs.prefix { $0 != "--" }.contains { $0 == "--help" || $0 == "-h" }
         case "claude-teams", "codex-teams":
             return false
         case "omo", "omx", "omc":

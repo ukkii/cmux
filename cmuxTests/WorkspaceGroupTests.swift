@@ -932,7 +932,7 @@ struct WorkspaceGroupTests {
         let anchor = try #require(manager.tabs.first { $0.id == generatedAnchor })
 
         _ = anchor.dockSplit
-        anchor._dockSplit?.panels[UUID()] = CloudVMLoadingPanel(workspaceId: anchor.id)
+        anchor._dockSplit?.panels[UUID()] = MarkdownPanel(workspaceId: anchor.id, filePath: "/tmp/cmux-dock-anchor.md")
         manager.addWorkspaceToGroup(workspaceId: realMemberId, groupId: groupId)
         manager.removeWorkspaceFromGroup(workspaceId: realMemberId)
 

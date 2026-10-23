@@ -1,4 +1,3 @@
-import CmuxCloud
 import AppKit
 import CmuxFoundation
 import CmuxSettings
@@ -427,13 +426,13 @@ extension AppDelegate {
         )
     }
 
-    func claimAuthCallbackURLSchemes() {
-        // Pin the current build's callback scheme so auth, SSH, and navigation deeplinks
+    func claimAppURLScheme() {
+        // Pin the current build's URL scheme so SSH and navigation deeplinks
         // route back to this app instead of an unrelated LaunchServices entry.
         let bundleURL = Bundle.main.bundleURL
         NSWorkspace.shared.setDefaultApplication(
             at: bundleURL,
-            toOpenURLsWithScheme: AuthEnvironment.callbackScheme
+            toOpenURLsWithScheme: CmuxAppURLScheme.current
         ) { _ in }
     }
 
@@ -721,7 +720,7 @@ extension AppDelegate {
             ? String(localized: "dialog.textURL.prompt.title", defaultValue: "Paste a Prompt From an External Link?")
             : String(localized: "dialog.textURL.rules.title", defaultValue: "Paste Rules From an External Link?")
 
-        let scheme = request.originalURL.scheme ?? AuthEnvironment.callbackScheme
+        let scheme = request.originalURL.scheme ?? CmuxAppURLScheme.current
         let messageFormat = request.kind == .prompt
             ? String(
                 localized: "dialog.textURL.prompt.message",

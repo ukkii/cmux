@@ -96,10 +96,10 @@ extension KeyboardShortcutSettings.Action {
              .diffViewerNextHunk, .diffViewerPreviousHunk, .diffViewerToggleViewed:
             .focusResolved
 
-        case .openSettings, .openTeamPicker, .reloadConfiguration,
+        case .openSettings, .reloadConfiguration,
              .showHideAllWindows, .globalSearch,
              .newWindow, .closeWindow, .toggleFullScreen, .quit,
-             .toggleSidebar, .focusSidebar, .showWindowHints, .newTab, .newLocalWorkspace, .newBrowserWorkspace, .newCloudWorkspace, .newCloudMachine,
+             .toggleSidebar, .focusSidebar, .showWindowHints, .newTab, .newLocalWorkspace, .newBrowserWorkspace,
              .saveLayoutTemplate, .openFolder,
              .reopenPreviousSession, .goToWorkspace,
              .commandPalette, .agentInbox, .openChief,
@@ -112,7 +112,6 @@ extension KeyboardShortcutSettings.Action {
              .switchRightSidebarToSessions,
              .switchRightSidebarToFeed,
              .switchRightSidebarToDock,
-             .switchRightSidebarToMachines,
              .nextSidebarTab, .prevSidebarTab,
              .nextSidebarTabInGroup, .prevSidebarTabInGroup,
              .moveWorkspaceUp, .moveWorkspaceDown,
@@ -123,7 +122,6 @@ extension KeyboardShortcutSettings.Action {
              .newWorkspaceGroup, .groupSelectedWorkspaces,
              .toggleFocusedWorkspaceGroupCollapsed,
              .reopenClosedWorkspace,
-             .sizeTerminalToMyWindow,
              .increaseWorkspaceTerminalFontSize,
              .decreaseWorkspaceTerminalFontSize,
              .resetWorkspaceTerminalFontSize,

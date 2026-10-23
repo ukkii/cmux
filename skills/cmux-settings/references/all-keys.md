@@ -28,7 +28,6 @@ General app preferences from Settings > App.
 | `app.devWindowDisplay` | string | `""` | DEBUG-only display name used when opening new windows. An empty value uses the system default. |
 | `app.reorderOnNotification` | boolean or `off`, `notifications`, `agentActivity` | `true` | Move workspaces with new notifications toward the top. `agentActivity` also moves them when a prompt is sent or an agent finishes a turn, needs input, or fails, throttled and never while the pointer is over the sidebar. |
 | `app.iMessageMode` | boolean | `false` | Move a workspace to the top and show the submitted message when sending an agent prompt. |
-| `app.sendAnonymousTelemetry` | boolean | `true` | Allow anonymous telemetry. |
 | `app.warnBeforeQuit` | boolean | `true` | Show a confirmation before quitting cmux. |
 | `app.warnBeforeClosingTab` | boolean | `true` | Show a confirmation before closing a tab. |
 | `app.warnBeforeClosingAgentSession` | boolean | `true` | Show a confirmation before closing an agent session while it is mid-turn. |
@@ -133,7 +132,6 @@ Sidebar content and metadata visibility from Settings > Sidebar.
 | `sidebar.pathLastSegmentOnly` | boolean | `false` | Truncate sidebar paths from the start, showing as much of the trailing path as fits with a leading …/. When false, full paths are abbreviated with ~/. |
 | `sidebar.showNotificationMessage` | boolean | `true` | Show the latest notification text in the sidebar. |
 | `sidebar.showBranchDirectory` | boolean | `true` | Show the workspace working directory. |
-| `sidebar.showCloudDeviceIcons` | boolean | `true` | Show Cloud machine and device icons beside remote workspace titles independently of Git branch and directory details. |
 | `sidebar.showPullRequests` | boolean | `true` | Show pull request metadata in the sidebar. |
 | `sidebar.makePullRequestsClickable` | boolean | `true` | Allow sidebar pull request metadata to open links when clicked. |
 | `sidebar.openPullRequestLinksInCmuxBrowser` | boolean | `true` | Open sidebar pull request links in the embedded cmux browser. |

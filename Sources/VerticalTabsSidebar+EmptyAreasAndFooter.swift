@@ -1,6 +1,5 @@
 import AppKit
 import CmuxAppKitSupportUI
-import CmuxCloud
 import CmuxFoundation
 import CmuxSettingsUI
 import CmuxSidebar
@@ -36,53 +35,12 @@ enum SidebarFooterButtonMetrics {
     static let profileIconSize = accountAndHelpVisualSize
     static let mobileIconSize: CGFloat = 12
     static let helpIconSize = accountAndHelpVisualSize
-    static let cloudIconSize = accountAndHelpVisualSize
-    /// The cloud glyph is 2.5 pt wider than the 14 pt account and help glyphs,
-    /// so half that keeps the visible gap after Help equal to the one before it.
-    static let cloudLeadingInset: CGFloat = 1.5
     static let hoverOpacity = 0.08
 }
 
-enum SidebarAccountButtonVisual: Equatable {
-    case profilePicture
-    case profileIcon(systemName: String)
-}
-
-struct SidebarAccountButtonPresentation: Equatable {
-    static let defaultProfileIconSystemName = "person.crop.circle"
-
-    let visual: SidebarAccountButtonVisual
-    let size: CGFloat
-
-    static func resolve(
-        isSignedIn: Bool,
-        prefersProfileIcon: Bool,
-        hasProfilePicture: Bool = false
-    ) -> SidebarAccountButtonPresentation {
-        if isSignedIn, hasProfilePicture, !prefersProfileIcon {
-            return SidebarAccountButtonPresentation(
-                visual: .profilePicture,
-                size: SidebarFooterButtonMetrics.profilePictureSize
-            )
-        }
-        return SidebarAccountButtonPresentation(
-            visual: .profileIcon(systemName: defaultProfileIconSystemName),
-            size: SidebarFooterButtonMetrics.profileIconSize
-        )
-    }
-
-    var showsProfilePicture: Bool {
-        visual == .profilePicture
-    }
-}
-
 enum SidebarFooterControl: CaseIterable, Equatable {
-    case account
-    case mobileConnect
     case help
-    case cloud
     case shortcutDiscovery
-    case upgrade
     case extensions
 }
 
@@ -91,14 +49,7 @@ enum SidebarFooterPresentationPolicy {
         _ control: SidebarFooterControl,
         presentationMode: WorkspacePresentationModeSettings.Mode
     ) -> Bool {
-        presentationMode != .minimal || control == .upgrade
-    }
-
-    static func isUpgradeVisible(
-        isProActive: Bool,
-        isProStatusKnown: Bool = true
-    ) -> Bool {
-        isProStatusKnown && !isProActive
+        presentationMode != .minimal
     }
 }
 
@@ -239,127 +190,6 @@ struct SidebarFooterHelpIcon: View {
 
     var body: some View {
         SidebarFooterCircularIcon(systemName: systemName, style: style)
-    }
-}
-
-struct SidebarAccountAvatar: View {
-    let avatarURL: URL?
-    let displayName: String
-    let email: String
-    let isSignedIn: Bool
-    let size: CGFloat
-#if DEBUG
-    @AppStorage(SidebarFooterProfileIconDebugSettings.iconKey)
-    private var debugIcon = SidebarFooterProfileIconDebugSettings.defaultIcon.rawValue
-#endif
-
-    private var signedOutSystemName: String {
-#if DEBUG
-        SidebarFooterProfileIconDebugChoice(rawValue: debugIcon)?.rawValue
-            ?? SidebarFooterProfileIconDebugSettings.defaultIcon.rawValue
-#else
-        SidebarAccountButtonPresentation.defaultProfileIconSystemName
-#endif
-    }
-
-    var body: some View {
-        if isSignedIn {
-            StackAccountAvatarView(
-                avatarURL: avatarURL,
-                displayName: displayName,
-                email: email,
-                size: size,
-                loadingSystemName: signedOutSystemName
-            )
-        } else {
-            SidebarFooterCircularIcon(
-                systemName: signedOutSystemName,
-                style: SidebarFooterCircularIconStyle.standard.resized(to: size)
-            )
-            .frame(width: size, height: size, alignment: .center)
-        }
-    }
-
-}
-
-struct SidebarMobileConnectButton: View {
-    @EnvironmentObject private var tabManager: TabManager
-    private let title = String(localized: "command.mobileConnect.title", defaultValue: "Open Mobile Pairing")
-#if DEBUG
-    @AppStorage(SidebarFooterMobileIconDebugSettings.sizeKey)
-    private var debugIconSize = SidebarFooterMobileIconDebugSettings.defaultSize
-#endif
-
-    private var iconSize: CGFloat {
-#if DEBUG
-        CGFloat(debugIconSize)
-#else
-        SidebarFooterButtonMetrics.mobileIconSize
-#endif
-    }
-
-    var body: some View {
-        // Hidden under a managed remote-control disable: pairing cannot open
-        // (chokepoint in performMobileConnectWorkspaceAction), so showing the
-        // button would be a dead affordance.
-        if MobileRemoteControlPolicy.isEnabled {
-            Button {
-                _ = AppDelegate.shared?.performMobileConnectWorkspaceAction(
-                    tabManager: tabManager,
-                    debugSource: "sidebar.mobileConnect"
-                )
-            } label: {
-                CmuxSystemSymbolImage(systemName: "iphone", pointSize: iconSize, weight: .medium, tint: .secondary)
-                    .frame(
-                        width: SidebarFooterButtonMetrics.buttonSize,
-                        height: SidebarFooterButtonMetrics.buttonSize
-                    )
-            }
-            .buttonStyle(SidebarFooterIconButtonStyle())
-            .frame(
-                width: SidebarFooterButtonMetrics.buttonSize,
-                height: SidebarFooterButtonMetrics.buttonSize
-            )
-            .safeHelp(title)
-            .hintableAccessibilityLabel(title)
-            .accessibilityIdentifier("SidebarMobileConnectButton")
-        }
-    }
-}
-
-/// Opens Cloud Machines in the right sidebar, introducing Cloud first while
-/// it is off. Follows the "Show Cloud and Device Icons in Sidebar" setting and
-/// stays hidden when managed policy disables Cloud.
-struct SidebarCloudButton: View {
-    @LiveSetting(\.sidebar.showCloudDeviceIcons) private var showsCloudDeviceIcons
-    @State private var anchorView: NSView?
-    private let title = String(localized: "sidebar.cloud.button", defaultValue: "Cloud")
-
-    var body: some View {
-        if showsCloudDeviceIcons, CloudMachinesFeature.isAvailable {
-            Button {
-                AppDelegate.shared?.performSidebarCloudButtonAction(preferredWindow: anchorView?.window)
-            } label: {
-                SidebarFooterCircularIcon(
-                    systemName: "cloud",
-                    style: SidebarFooterCircularIconStyle.standard.resized(to: SidebarFooterButtonMetrics.cloudIconSize)
-                )
-                .frame(
-                    width: SidebarFooterButtonMetrics.buttonSize,
-                    height: SidebarFooterButtonMetrics.buttonSize
-                )
-            }
-            .buttonStyle(SidebarFooterIconButtonStyle())
-            .frame(
-                width: SidebarFooterButtonMetrics.buttonSize,
-                height: SidebarFooterButtonMetrics.buttonSize
-            )
-            .background(TitlebarControlAnchorView { anchorView = $0 })
-            .safeHelp(title)
-            .hintableAccessibilityLabel(title)
-            .accessibilityIdentifier("SidebarCloudButton")
-            .padding(.leading, SidebarFooterButtonMetrics.cloudLeadingInset)
-        }
     }
 }
 

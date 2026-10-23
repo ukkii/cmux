@@ -100,14 +100,14 @@ struct SidebarSnapshotOwnerTests {
         #expect(await converge(window) { Set(cache.snapshotsById.keys) == Set(manager.tabs.map(\.id)) })
         for cycle in 0..<5 {
             let workspace = manager.addWorkspace(
-                initialSurface: .cloudVMLoading, select: false,
+                initialSurface: .browser, select: false,
                 autoWelcomeIfNeeded: false, autoRefreshMetadata: false
             )
             #expect(await converge(window) { cache.value(for: workspace.id) != nil })
             workspace.setCustomTitle("Updated \(cycle)")
             // Membership reconciliation must preserve an already queued title update.
             let sibling = manager.addWorkspace(
-                initialSurface: .cloudVMLoading, select: false,
+                initialSurface: .browser, select: false,
                 autoWelcomeIfNeeded: false, autoRefreshMetadata: false
             )
             #expect(await converge(window) { cache.value(for: workspace.id)?.title == "Updated \(cycle)" })

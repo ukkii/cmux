@@ -94,15 +94,14 @@ struct FileDropOverlayDragCompletionTests {
         }
     }
 
-    @Test("Cloud workspace and terminal drags never become file-drop hints", arguments: [
-        NSPasteboard.PasteboardType.cloudSidebarRow,
+    @Test("Surface resource drags never become file-drop hints", arguments: [
         DragOverlayRoutingPolicy.surfaceResourceTransferType
     ], [false, true])
-    func cloudRowsDismissFileHints(type: NSPasteboard.PasteboardType, terminal: Bool) throws {
+    func surfaceResourceDragsDismissFileHints(type: NSPasteboard.PasteboardType, terminal: Bool) throws {
         try withBrowserDrag { _, overlay, webView, drag in
             // A row's identity is authoritative even if another representation
             // contains a file URL. These are workspace/terminal moves, not files.
-            drag.draggingPasteboard.setString("cloud-row", forType: type)
+            drag.draggingPasteboard.setString("surface-resource", forType: type)
             if terminal {
                 drag.draggingPasteboard.setString("pane-transfer", forType: DragOverlayRoutingPolicy.bonsplitTabTransferType)
             }

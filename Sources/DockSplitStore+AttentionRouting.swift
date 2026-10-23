@@ -64,7 +64,6 @@ extension DockSplitStore {
                   mountedTerminal === terminal else {
                 return
             }
-            TerminalController.shared.noteLocalTerminalSizingActivity(surfaceID: terminal.id)
             TerminalController.shared.noteAcceptedAgentInput(surfaceID: terminal.id)
             AgentAutoResumeCoordinator.shared.userDidInput(surfaceId: terminal.id)
             // The user (or a socket client) took over the pane: never replay a

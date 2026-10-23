@@ -15,12 +15,16 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../CMUXAgentLaunch"),
+        .package(path: "../CmuxFoundation"),
+        .package(path: "../../Shared/CmuxAgentChat"),
     ],
     targets: [
         .target(
             name: "CmuxAgentSessionStore",
             dependencies: [
                 .product(name: "CMUXAgentLaunch", package: "CMUXAgentLaunch"),
+                .product(name: "CmuxFoundation", package: "CmuxFoundation"),
+                .product(name: "CmuxAgentChat", package: "CmuxAgentChat"),
             ],
             swiftSettings: [
                 .swiftLanguageMode(.v6),

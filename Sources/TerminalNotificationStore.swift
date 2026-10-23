@@ -1,4 +1,4 @@
-import CmuxCloud
+import CmuxSurfaceCatalogModel
 import CmuxFoundation
 import CmuxNotifications
 import AppKit
@@ -15,15 +15,6 @@ nonisolated private let terminalNotificationLogger = Logger(
     category: "notification"
 )
 
-extension TerminalNotificationStore {
-    nonisolated static func shouldAttemptPhoneForward(
-        effects _: TerminalNotificationPolicyEffects,
-        phoneForwardingEnabled: Bool,
-        categoryAllowsDelivery: Bool
-    ) -> Bool {
-        phoneForwardingEnabled && categoryAllowsDelivery
-    }
-}
 @MainActor
 final class TerminalNotificationStore: ObservableObject {
     private struct TabSurfaceKey: Hashable {
@@ -145,7 +136,7 @@ final class TerminalNotificationStore: ObservableObject {
 
     /// Phone-banner dismissals for superseded notifications, deferred until the
     /// replacement banner push for the same tab/surface is actually queued.
-    /// ``PhonePushClient/forward(_:badgeCount:)`` throttles per tab/surface, so
+    /// The phone push lane throttled per tab/surface, so
     /// dismissing the old banner unconditionally could strand the phone with no
     /// banner at all for a still-unread notification when the replacement push
     /// was dropped. When a replacement forward is expected, the store stashes
@@ -181,37 +172,12 @@ final class TerminalNotificationStore: ObservableObject {
             .map(\.uuidString)
     }
 
-    /// Forwards a dismiss/clear to the user's phone. Call only from the
-    /// change-confirmed branch of a user-driven read/clear/remove path, so the
-    /// Mac→iOS→Mac echo can't loop. Session restore / surface rebind paths must
-    /// NOT call this: they reassign ids on churn and would clear a phone banner
-    /// that should persist.
-    ///
-    /// Two lanes share this chokepoint: the instant peer event for a
-    /// live-attached phone, and a silent APNs badge push (the cold lane) so a
-    /// pocketed phone still drops the banner and badge. Both carry the
-    /// authoritative unread count.
-    ///
-    /// The cold lane is sent UNCONDITIONALLY (never gated on live subscribers):
-    /// the push route fans out to every iOS device token registered for the
-    /// user, so one live-attached phone must not starve an offline second
-    /// device of its dismiss. The push is idempotent on a device that already
-    /// handled the live event — removing an already-removed banner is a no-op
-    /// and the badge is an absolute SET — and bursts coalesce in
-    /// ``PhonePushClient/forwardDismissed(ids:badgeCount:)``.
+    /// Records a user-driven dismiss/clear in the tombstone ring. Call only
+    /// from the change-confirmed branch of a user-driven read/clear/remove
+    /// path; session restore / surface rebind paths must not call this.
     private func emitNotificationsDismissed(ids: [String]) {
         guard !ids.isEmpty else { return }
         recordDismissTombstones(ids: ids.compactMap { UUID(uuidString: $0) })
-        let unreadCount = indexes.unreadCount
-        // Live lane: nonisolated static fan-out; short-circuits when no phone is
-        // subscribed.
-        MobileHostService.emitEvent(
-            topic: Self.dismissedEventTopic,
-            payload: ["ids": ids, "unread_count": unreadCount]
-        )
-        // Cold lane: mirror the dismiss through APNs for every registered
-        // device, attached or not (no-op unless phone forwarding is on).
-        PhonePushClient.shared.forwardDismissed(ids: ids, badgeCount: unreadCount)
     }
 
     /// A user-driven dismiss emit that also carries any stale superseded-banner
@@ -227,26 +193,6 @@ final class TerminalNotificationStore: ObservableObject {
         }
         let extra = drainedSuperseded.filter { !ids.contains($0) }
         emitNotificationsDismissed(ids: ids + extra)
-    }
-
-    /// The last unread count pushed over ``badgeEventTopic``, so the chokepoint
-    /// only emits on real transitions.
-    private var lastEmittedPhoneBadgeCount: Int?
-
-    /// Pushes the authoritative unread count to an attached phone whenever it
-    /// changes. Runs from ``refreshUnreadPresentation()`` — the same chokepoint
-    /// that refreshes the Mac Dock badge — so every mutation lane (markRead,
-    /// markUnread, record, restore, clear) keeps the phone badge correct without
-    /// per-call-site emits. Cheap when nothing is attached (subscriber
-    /// short-circuit inside `emitEvent`).
-    private func emitUnreadBadgeEventIfChanged() {
-        let count = indexes.unreadCount
-        guard count != lastEmittedPhoneBadgeCount else { return }
-        lastEmittedPhoneBadgeCount = count
-        MobileHostService.emitEvent(
-            topic: Self.badgeEventTopic,
-            payload: ["unread_count": count]
-        )
     }
 
     private enum AuthorizationRequestOrigin: String {
@@ -387,12 +333,7 @@ final class TerminalNotificationStore: ObservableObject {
         )
         notificationFeedHistory = NotificationFeedHistoryStore(
             fileURL: NotificationFeedHistoryStore.defaultFileURL()
-        ) { revision in
-            MobileHostService.emitEvent(
-                topic: Self.feedChangedEventTopic,
-                payload: ["revision": revision]
-            )
-        }
+        ) { _ in }
         indexes = Self.buildIndexes(for: notifications)
         userDefaultsObserver = NotificationCenter.default.addUserDefaultsObserver(object: nil) { [weak self] in
             Task { @MainActor [weak self] in
@@ -579,7 +520,6 @@ final class TerminalNotificationStore: ObservableObject {
             manualUnreadSurfaceIdsByOwnerId: manualUnreadSurfaceIdsByOwnerId
         )
         refreshDockBadge()
-        emitUnreadBadgeEventIfChanged()
     }
 
     /// Publishes one per-window Dock surface mutation without rebuilding the
@@ -625,7 +565,6 @@ final class TerminalNotificationStore: ObservableObject {
             notificationMenuSnapshot = nextMenuSnapshot
         }
         refreshDockBadge()
-        emitUnreadBadgeEventIfChanged()
     }
 
     /// Builds the per-workspace unread summaries the sidebar renders. Mirrors
@@ -1764,22 +1703,6 @@ final class TerminalNotificationStore: ObservableObject {
             tabId: notification.tabId,
             surfaceId: notification.surfaceId
         )
-        // `suppressWhenAppFocused` only withholds the desktop banner: the Mac
-        // may be frontmost with nobody at it, so phone forwarding keeps the
-        // exact focused-surface gate.
-        let shouldAttemptPhone = !isFocusedSurfaceArrival
-            && Self.shouldAttemptPhoneForward(
-                effects: effects,
-                phoneForwardingEnabled: PhonePushClient.shared
-                    .configuration().forwardingEnabled,
-                categoryAllowsDelivery: true
-            )
-        if shouldAttemptPhone {
-            PhonePushClient.shared.forward(
-                notification,
-                badgeCount: indexes.unreadCount
-            )
-        }
         let superseded = supersededPhoneDismissBuffer.flush(forKey: key)
         if !superseded.isEmpty {
             // The replacement enqueue above and this dismissal enter the same
@@ -3068,12 +2991,7 @@ final class TerminalNotificationStore: ObservableObject {
         TerminalMutationBus.shared.discardPendingNotifications()
         recordedAgentCorrelationKeys.removeAll()
         self.notifications = notifications
-        notificationFeedHistory = NotificationFeedHistoryStore(fileURL: nil) { revision in
-            MobileHostService.emitEvent(
-                topic: Self.feedChangedEventTopic,
-                payload: ["revision": revision]
-            )
-        }
+        notificationFeedHistory = NotificationFeedHistoryStore(fileURL: nil) { _ in }
         clearWorkspaceManualUnread()
         clearSurfaceManualUnread()
         clearPanelDerivedWorkspaceUnread()
@@ -3095,5 +3013,44 @@ final class TerminalNotificationStore: ObservableObject {
             runTag: TaggedRunBadgeSettings.normalizedTag()
         )
         NSApp?.dockTile.badgeLabel = label
+    }
+}
+
+extension TerminalNotificationPolicyEffects {
+    /// Applies the admitted workspace-reorder effect under the live setting.
+    /// `off` never reorders, `notifications` moves the workspace at once, and
+    /// `agentActivity` routes the move through the shared activity throttle,
+    /// which moves the workspace itself.
+    @MainActor
+    func applySidebarOrdering(
+        defaults: UserDefaults,
+        workspaceId: UUID,
+        controller: WorkspaceActivityReorderController? = nil,
+        moveLocalWorkspace: () -> Void
+    ) {
+        guard reorderWorkspace else { return }
+        switch UserDefaultsSettingsClient(defaults: defaults).value(for: SettingCatalog().app.reorderOnNotification) {
+        case .off:
+            return
+        case .notifications:
+            moveLocalWorkspace()
+        case .agentActivity:
+            (controller ?? .shared).notificationRequestsReorder(workspaceId: workspaceId)
+        }
+    }
+}
+
+extension TerminalNotificationStore {
+    /// Both notification effect lanes use the same ordering path. The caller
+    /// already applied mute, cooldown, effect policy, and the reorder setting.
+    func applySidebarOrdering(for notification: TerminalNotification, effects: TerminalNotificationPolicyEffects) {
+        effects.applySidebarOrdering(
+            defaults: .standard,
+            workspaceId: notification.tabId,
+            moveLocalWorkspace: {
+                AppDelegate.shared?.tabManagerFor(tabId: notification.tabId)?
+                    .moveTabToTopForNotification(notification.tabId)
+            }
+        )
     }
 }

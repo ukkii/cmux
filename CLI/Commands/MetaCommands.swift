@@ -75,11 +75,6 @@ struct PingCommand: LegacyMetaCommand {
     static let configuration = CommandConfiguration(commandName: "ping", helpNames: [])
 }
 
-struct IrohDiagnosticsCommand: LegacyMetaCommand {
-    @Argument(parsing: .allUnrecognized) var arguments: [String] = []
-    static let configuration = CommandConfiguration(commandName: "iroh-diag", helpNames: [])
-}
-
 struct HelpCommand: LegacyMetaCommand {
     @Argument(parsing: .allUnrecognized) var arguments: [String] = []
     static let configuration = CommandConfiguration(commandName: "help", helpNames: [])

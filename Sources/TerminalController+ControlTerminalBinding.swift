@@ -161,14 +161,14 @@ extension TerminalController {
 
     /// Resolves a mobile terminal request to its structural workspace and
     /// canonical live socket target in one main-actor hop.
-    func mobileCanonicalTerminalTarget(
+    func socketCanonicalTerminalTarget(
         params: [String: Any]
     ) -> (
         workspace: Workspace,
         surfaceID: UUID,
         target: ControlTerminalSocketTarget
     )? {
-        guard let resolved = mobileResolveWorkspaceAndSurface(
+        guard let resolved = socketResolveWorkspaceAndSurface(
             params: params,
             requireTerminal: true
         ), let surfaceID = resolved.surfaceId,
