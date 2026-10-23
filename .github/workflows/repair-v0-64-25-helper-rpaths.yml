@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Type v0.64.25 to replace the GitHub release asset and stable R2 appcast; any other value is a dry run
+        description: Type v0.64.25 to replace the GitHub release asset; any other value is a dry run
         required: false
         default: ""
         type: string
@@ -72,7 +72,6 @@ jobs:
       REPAIR_ROOT: ${{ github.workspace }}/.cmux-v0.64.25-repair
       APP_PATH: ${{ github.workspace }}/.cmux-v0.64.25-repair/cmux.app
       DMG_PATH: ${{ github.workspace }}/cmux-macos.dmg
-      APPCAST_PATH: ${{ github.workspace }}/appcast.xml
     steps:
       - name: Checkout repair tooling
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -271,17 +270,6 @@ jobs:
       - name: Gate repaired app with syspolicy_check
         run: syspolicy_check distribution "$APP_PATH"
 
-      - name: Regenerate signed Sparkle appcast
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          test -n "$SPARKLE_PRIVATE_KEY"
-          ./scripts/sparkle_generate_appcast.sh "$DMG_PATH" "$TARGET_TAG" "$APPCAST_PATH"
-          test -s "$APPCAST_PATH"
-          grep -q 'sparkle:edSignature' "$APPCAST_PATH"
-          grep -q 'cmux-macos.dmg' "$APPCAST_PATH"
-
       - name: Upload dry-run artifacts
         if: inputs.confirmation != 'v0.64.25'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -289,7 +277,6 @@ jobs:
           name: cmux-v0.64.25-rpath-repair-dry-run
           path: |
             cmux-macos.dmg
-            appcast.xml
           if-no-files-found: error
           retention-days: 7
 
@@ -299,31 +286,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release upload "$TARGET_TAG" "$DMG_PATH" "$APPCAST_PATH" \
+          gh release upload "$TARGET_TAG" "$DMG_PATH" \
             --repo "$GITHUB_REPOSITORY" --clobber
-
-      - name: Replace stable R2 appcast when v0.64.25 is current
-        if: inputs.confirmation == 'v0.64.25'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-          R2_ENDPOINT: "https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
-        run: |
-          set -euo pipefail
-          latest="$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases --json tagName -q '.[].tagName' | sort -V | tail -1)"
-          if [ "$latest" != "$TARGET_TAG" ]; then
-            echo "Skipping stable R2 replacement: $TARGET_TAG is not the latest release ($latest)"
-            exit 0
-          fi
-          python3 scripts/ci/upload-r2-object.py \
-            --file "$APPCAST_PATH" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --bucket cmux-binaries \
-            --key stable/appcast.xml \
-            --content-type application/xml \
-            --cache-control 'no-cache, no-store, must-revalidate'
 
       - name: Cleanup signing keychain
         if: always()

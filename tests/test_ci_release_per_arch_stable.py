@@ -6,11 +6,7 @@ Pins the release.yml shape that keeps existing installs and download links safe:
   Homebrew links that point at it keep working;
 - both thin variants are cut from the stripped universal app before signing and
   are signed, smoke tested, notarized and stapled like nightly's;
-- each DMG gets its own signed appcast, and the legacy appcast.xml is composed
-  from all three (scripts/ci/compose_stable_appcast.py) so existing installs
-  move onto their architecture in one update;
-- the per-architecture feeds are published before the legacy feed, on GitHub
-  and on R2, so the legacy feed never sends an install to a missing feed.
+- every DMG is published as an immutable release asset.
 """
 
 from __future__ import annotations
@@ -84,7 +80,6 @@ class ReleasePerArchStableTest(unittest.TestCase):
             self.assertIn("./scripts/ci/signing-keychain.sh create", imported)
             self.assertLess(order("Notarize app"), order(f"Import signing cert for the {arch} DMG"))
             self.assertLess(order(f"Import signing cert for the {arch} DMG"), order(f"Notarize thin {arch} stable DMG"))
-            self.assertLess(order(f"Notarize thin {arch} stable DMG"), order("Generate Sparkle appcast"))
             # The DMG around the stapled app: submitted without a wait, finished together.
             self.assertIn(f'CMUX_STAPLED_DMG_HANDOFF_FILE="$RUNNER_TEMP/stapled-app-$arch.handoff"', body)
             self.assertLess(order(f"Notarize thin {arch} stable DMG"), order("Finish the stapled-app thin DMGs"))
@@ -95,58 +90,26 @@ class ReleasePerArchStableTest(unittest.TestCase):
         self.assertIn("CMUX_STAPLED_DMG_WAIT_TIMEOUT: 25m", finish)
         self.assertLess(order("Finish the stapled-app thin DMGs"), order("Gate distribution with syspolicy_check"))
 
-    def test_appcasts_are_generated_per_dmg_and_composed(self):
-        body = steps()["Generate Sparkle appcast"]
-        self.assertIn('sparkle_generate_appcast.sh cmux-macos.dmg "$GITHUB_REF_NAME" appcast-universal.xml', body)
-        for arch in ARCHS:
-            self.assertIn(
-                f'sparkle_generate_appcast.sh cmux-macos-{arch}.dmg "$GITHUB_REF_NAME" appcast-{arch}.xml', body
-            )
-        self.assertIn(
-            "compose_stable_appcast.py --universal appcast-universal.xml"
-            " --arm64 appcast-arm64.xml --x86_64 appcast-x86_64.xml --out appcast.xml",
-            body,
-        )
-        for feed in ("appcast.xml", "appcast-arm64.xml", "appcast-x86_64.xml"):
-            self.assertIn(f"test -s {feed}", body)
-            self.assertIn(f"grep -q 'sparkle:edSignature' {feed}", body)
-
-    def test_universal_dmg_and_legacy_feed_url_stay_for_existing_links(self):
+    def test_universal_dmg_stays_for_existing_links(self):
         self.assertIn('DMG_RELEASE="cmux-macos.dmg"', WORKFLOW)
-        # Thin builds resolve their own feed at runtime from this legacy URL.
-        self.assertIn(
-            "SUFeedURL string https://github.com/manaflow-ai/cmux/releases/latest/download/appcast.xml", WORKFLOW
-        )
 
-    def test_dry_run_artifact_carries_every_dmg_and_feed(self):
+    def test_dry_run_artifact_carries_every_dmg(self):
         body = steps()["Upload build artifacts (dry-run)"]
         for name in (
             "cmux-macos.dmg",
             "cmux-macos-arm64.dmg",
             "cmux-macos-x86_64.dmg",
-            "appcast.xml",
-            "appcast-arm64.xml",
-            "appcast-x86_64.xml",
         ):
             self.assertRegex(body, rf"(?m)^\s+{re.escape(name)}$")
 
-    def test_github_publish_uploads_every_dmg_then_the_legacy_feed_last(self):
+    def test_github_publish_uploads_every_dmg(self):
         body = steps()["Upload release asset"]
         for dmg in ("cmux-macos.dmg", "cmux-macos-arm64.dmg", "cmux-macos-x86_64.dmg"):
             self.assertIn(f"--immutable {dmg}", body)
-        feeds = re.findall(r"--feed (\S+)", body)
-        self.assertEqual(feeds, ["appcast-arm64.xml", "appcast-x86_64.xml", "appcast.xml"])
-
-    def test_r2_publishes_per_arch_feeds_before_the_legacy_feed(self):
-        body = steps()["Upload release appcast to R2"]
-        keys = re.findall(r"--key (stable/\S+)", body)
-        self.assertEqual(keys, ["stable/appcast-$arch.xml", "stable/appcast.xml"])
-        self.assertIn("for arch in arm64 x86_64", body)
+        self.assertNotIn("--feed", body)
 
     def test_only_the_highest_release_becomes_latest(self):
-        # Thin installs read releases/latest/download/appcast-<arch>.xml. A backport
-        # published after a newer release must not become latest, or those installs
-        # would read an older release (one from before thin builds has no such feed).
+        # A backport published after a newer release must not become latest.
         decide = steps().get("Decide whether this release is latest", "")
         self.assertIn("--exclude-drafts --exclude-pre-releases", decide)
         self.assertIn("sort -V", decide)
@@ -156,15 +119,6 @@ class ReleasePerArchStableTest(unittest.TestCase):
         self.assertIn('--make-latest "$MAKE_LATEST"', publish)
         self.assertLess(order("Decide whether this release is latest"), order("Publish verified release"))
 
-    def test_local_release_publishes_per_arch_feeds(self):
-        # scripts/build-sign-upload.sh builds only the universal DMG. It still has
-        # to publish both per-arch feeds, holding the universal item, so a thin
-        # install updates instead of finding no feed.
-        script = (ROOT / "scripts/build-sign-upload.sh").read_text(encoding="utf-8")
-        for arch in ARCHS:
-            self.assertIn(f"cp appcast.xml appcast-{arch}.xml", script)
-        self.assertRegex(script, r"gh release create .*appcast\.xml appcast-arm64\.xml appcast-x86_64\.xml")
-        self.assertRegex(script, r"gh release upload \"\$TAG\" cmux-macos\.dmg appcast\.xml appcast-arm64\.xml appcast-x86_64\.xml")
 
 
 if __name__ == "__main__":

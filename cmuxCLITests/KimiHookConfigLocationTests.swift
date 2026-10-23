@@ -408,7 +408,6 @@ struct KimiHookConfigLocationTests {
         environment.removeValue(forKey: "KIMI_CODE_HOME")
         environment["HOME"] = fixture.home.path
         environment["PATH"] = "\(fixture.bin.path):/usr/bin:/bin:/usr/sbin:/sbin"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment.merge(environmentOverrides) { _, override in override }
 
         process.environment = environment

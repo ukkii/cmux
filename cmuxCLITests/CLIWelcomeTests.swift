@@ -7,7 +7,6 @@ struct CLIWelcomeTests {
     func welcomeShowsShortcutList() throws {
         let cliPath = try BundledCLITestSupport.bundledCLIPath(for: CLITestBundleAnchor.self)
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["AppleLanguages"] = "(en)"
         environment["AppleLocale"] = "en_US"
 
@@ -42,7 +41,7 @@ struct CLIWelcomeTests {
         #expect(output.contains(expectedShortcuts), Comment(rawValue: output))
         #expect(output.contains("Run cmux shortcuts to edit shortcuts."), Comment(rawValue: output))
         #expect(output.contains("Run cmux --help for all commands."), Comment(rawValue: output))
-        #expect(output.contains("Run cmux feedback to report a bug."), Comment(rawValue: output))
+        #expect(!output.contains("cmux feedback"), Comment(rawValue: output))
         #expect(!output.contains("Default shortcuts"), Comment(rawValue: output))
         #expect(!output.contains("Rebound something?"), Comment(rawValue: output))
     }

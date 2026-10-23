@@ -6,7 +6,7 @@ import Foundation
 /// Gatekeeper decides whether to show the "downloaded from the Internet"
 /// dialog from the raw `com.apple.quarantine` extended attribute, so this type
 /// probes and removes that attribute directly with `getxattr(2)` and
-/// `removexattr(2)`, the same way Sparkle releases an installed update. It
+/// `removexattr(2)`. It
 /// never assigns `URLResourceValues.quarantineProperties`: that setter writes
 /// a quarantine record rather than removing one, and what `nil` produces
 /// depends on the OS release. macOS 26.4.1 stores an empty record

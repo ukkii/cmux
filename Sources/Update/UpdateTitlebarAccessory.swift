@@ -2758,7 +2758,6 @@ private struct NotificationsPopoverView: View {
 
 @MainActor
 final class UpdateTitlebarAccessoryController {
-    private let updateLog: UpdateLogStore
     private let settingsRuntime: SettingsRuntime?
     private let layoutModel: TitlebarControlsLayoutModel
     private var didStart = false
@@ -2773,11 +2772,9 @@ final class UpdateTitlebarAccessoryController {
     private var detachedNotificationsPopoverDelegate: DetachedNotificationsPopoverDelegate?
 
     init(
-        updateLog: UpdateLogStore,
         settingsRuntime: SettingsRuntime?,
         layoutModel: TitlebarControlsLayoutModel
     ) {
-        self.updateLog = updateLog
         self.settingsRuntime = settingsRuntime
         self.layoutModel = layoutModel
     }
@@ -2922,14 +2919,6 @@ final class UpdateTitlebarAccessoryController {
                 Task { @MainActor [weak self] in
                     self?.attachToExistingWindows()
                 }
-#if DEBUG
-                let env = ProcessInfo.processInfo.environment
-                if env["CMUX_UI_TEST_MODE"] == "1" {
-                    let ids = NSApp.windows.map { $0.identifier?.rawValue ?? "<nil>" }
-                    let delayText = String(format: "%.2f", delay)
-                    self?.updateLog.append("startup window scan (delay=\(delayText)) count=\(NSApp.windows.count) ids=\(ids.joined(separator: ","))")
-                }
-#endif
             }
             startupScanWorkItems.append(item)
             DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
@@ -2986,14 +2975,6 @@ final class UpdateTitlebarAccessoryController {
 
         attachedWindows.add(window)
         applyAccessoryVisibility(for: window)
-
-#if DEBUG
-        let env = ProcessInfo.processInfo.environment
-        if env["CMUX_UI_TEST_MODE"] == "1" {
-            let ident = window.identifier?.rawValue ?? "<nil>"
-            updateLog.append("attached titlebar accessories to window id=\(ident)")
-        }
-#endif
     }
 
     private func applyAccessoryVisibility(for window: NSWindow) {
@@ -3044,14 +3025,6 @@ final class UpdateTitlebarAccessoryController {
             window.contentView?.superview?.layoutSubtreeIfNeeded()
             window.invalidateShadow()
         }
-
-#if DEBUG
-        let env = ProcessInfo.processInfo.environment
-        if env["CMUX_UI_TEST_MODE"] == "1" {
-            let ident = window.identifier?.rawValue ?? "<nil>"
-            updateLog.append("removed titlebar accessories from window id=\(ident)")
-        }
-#endif
     }
 
     private func isSettingsWindow(_ window: NSWindow) -> Bool {

@@ -37,8 +37,7 @@
 #      signed the same way (scripts/sign-cmux-tui-ssh-payloads.sh).
 #   2. The nested cmux Computer Use app with the Developer ID identity.
 #   3. Each nested plugin under Contents/PlugIns/* with --deep.
-#   4. Each nested framework under Contents/Frameworks/* with --deep
-#      (covers Sparkle's XPCServices and Updater.app).
+#   4. Each nested framework under Contents/Frameworks/* with --deep.
 #   4b. The Cloud tunnel system extension under
 #      Contents/Library/SystemExtensions/* with its own entitlements and its
 #      own embedded provisioning profile. The extension is signed with the
@@ -145,8 +144,7 @@ if [[ "$SIGN_MODE" == "all" || "$SIGN_MODE" == "all-except-computer-use" ]]; the
     for helper in "$APP_PATH/Contents/Resources/$helper_dir"/*; do
       [[ -f "$helper" && -x "$helper" ]] || continue
       # Scripts are sealed by the bundle signature. Code-signing them directly
-      # stores the signature in an extended attribute, which Sparkle's
-      # BinaryDelta refuses to diff, so it would block delta updates.
+      # would store the signature in an extended attribute instead.
       if ! /usr/bin/file -b "$helper" | grep -q 'Mach-O'; then
         echo "==> leaving non-Mach-O helper $(basename "$helper") to the bundle seal"
         continue
@@ -180,7 +178,6 @@ if [[ "$SIGN_MODE" == "all" || "$SIGN_MODE" == "all-except-computer-use" ]]; the
 
   # 4. Frameworks
   if [[ -d "$APP_PATH/Contents/Frameworks" ]]; then
-    "$SCRIPT_DIR/remove-sparkle-sandbox-xpc-services.sh" "$APP_PATH"
     while IFS= read -r -d '' framework; do
       echo "==> signing framework $(basename "$framework")"
       /usr/bin/codesign "${COMMON[@]}" --deep "$framework"

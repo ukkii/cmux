@@ -42,7 +42,6 @@ func runCLI(
     for key in Array(environmentVariables.keys) where key.hasPrefix("CMUX_") || key.hasPrefix("CMUXD_") {
         environmentVariables.removeValue(forKey: key)
     }
-    environmentVariables["CMUX_CLI_SENTRY_DISABLED"] = "1"
     environmentVariables["HOME"] = home.path
     environmentVariables["CFFIXED_USER_HOME"] = home.path
     environmentVariables.merge(environment) { _, new in new }

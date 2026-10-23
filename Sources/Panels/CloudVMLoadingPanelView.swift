@@ -1,6 +1,5 @@
 import SwiftUI
 import CmuxAppKitSupportUI
-import CmuxFeedback
 
 struct CloudVMLoadingPanelView: View {
     @ObservedObject var panel: CloudVMLoadingPanel
@@ -77,18 +76,6 @@ struct CloudVMLoadingPanelView: View {
                                 .cmuxFont(size: 12, weight: .semibold)
                             }
                             .buttonStyle(.borderedProminent)
-                            .controlSize(.small)
-
-                            Button {
-                                FeedbackComposerBridge().openComposer()
-                            } label: {
-                                Label(
-                                    String(localized: "panel.cloudVM.loading.failed.feedback", defaultValue: "Send Feedback"),
-                                    systemImage: "bubble.left.and.text.bubble.right"
-                                )
-                                .cmuxFont(size: 12, weight: .semibold)
-                            }
-                            .buttonStyle(.bordered)
                             .controlSize(.small)
                         }
                         Text(String(format: String(

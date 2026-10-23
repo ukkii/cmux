@@ -1,9 +1,8 @@
 import Foundation
 
 /// Which in-app surface opened the upgrade flow. The raw value travels to the
-/// web as `cmux_source`, is stored on the Stripe Checkout Session, and comes
-/// back on every PostHog billing event, so a paid subscription can be traced to
-/// the button that started it. Raw values are lowercase `[a-z0-9_]` tokens;
+/// web as `cmux_source` and is stored on the Stripe Checkout Session, so a paid
+/// subscription can be traced to the button that started it. Raw values are lowercase `[a-z0-9_]` tokens;
 /// the server drops anything else.
 public enum ProUpgradeSource: String, CaseIterable, Sendable {
     /// "Upgrade" capsule in the sidebar footer.

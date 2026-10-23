@@ -532,7 +532,6 @@ struct CLIRelayQueuedHookRegressionTests {
                 "CMUX_AGENT_HOOK_RELAY_ORIGIN": "1",
                 "CMUX_AGENT_HOOK_ROUTE_SNAPSHOT": "1",
                 "CMUX_AGENT_HOOK_STATE_DIR": (stateDirectory ?? root).path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             standardInput: payload,
             timeout: 10
@@ -584,7 +583,6 @@ struct CLIRelayQueuedHookRegressionTests {
             "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
             "CMUX_RELAY_ID": RelayQueuedHookMockServer.relayID,
             "CMUX_RELAY_TOKEN": String(repeating: "a", count: 64),
-            "CMUX_CLI_SENTRY_DISABLED": "1",
         ]
         environment.merge(extra, uniquingKeysWith: { _, value in value })
         return environment

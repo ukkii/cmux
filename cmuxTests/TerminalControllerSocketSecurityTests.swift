@@ -381,13 +381,6 @@ final class TerminalControllerSocketSecurityTests {
         XCTAssertTrue(settingsOpen.insideSuppressed)
         XCTAssertFalse(settingsOpen.insideAllowsFocus)
 
-        let feedbackOpen = TerminalController.debugSocketCommandPolicySnapshot(
-            commandKey: "feedback.open",
-            isV2: true
-        )
-        XCTAssertTrue(feedbackOpen.insideSuppressed)
-        XCTAssertFalse(feedbackOpen.insideAllowsFocus)
-
         let debugType = TerminalController.debugSocketCommandPolicySnapshot(
             commandKey: "debug.type",
             isV2: true

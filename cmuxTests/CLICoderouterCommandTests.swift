@@ -118,7 +118,6 @@ import Testing
             process.arguments = ["--socket", socketPath] + arguments
             var environment = ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("CMUX_") }
             environment["HOME"] = directory.path
-            environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
             process.environment = environment
             process.standardOutput = handle
             process.standardError = handle
@@ -288,7 +287,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment.removeValue(forKey: "CLAUDE_CODE_OAUTH_TOKEN")
         environment.removeValue(forKey: "ANTHROPIC_API_KEY")
         for (key, value) in extraEnvironment {

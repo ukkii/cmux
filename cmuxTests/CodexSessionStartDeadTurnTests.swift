@@ -119,7 +119,6 @@ struct CodexSessionStartDeadTurnTests {
                 "CMUX_WORKSPACE_ID": workspaceID,
                 "CMUX_SURFACE_ID": surfaceID,
                 "CMUX_AGENT_HOOK_STATE_DIR": root.path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
                 "CMUX_CODEX_PID": String(incomingPID),
             ],
             standardInput: #"{"session_id":"\#(sessionID)","cwd":"\#(root.path)","transcript_path":"\#(transcriptURL.path)","hook_event_name":"SessionStart"}"#,

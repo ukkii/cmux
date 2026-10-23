@@ -107,7 +107,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = staleSurfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CODEX_HOME"] = root.appendingPathComponent("codex-home", isDirectory: true).path
         environment["CMUX_CODEX_TURN_LEDGER_PATH"] = ledgerPath.path
         environment.removeValue(forKey: "CMUX_CODEX_PID")
@@ -296,7 +295,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = staleSurfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CODEX_HOME"] = root.appendingPathComponent("codex-home", isDirectory: true).path
         environment["CMUX_CODEX_TURN_LEDGER_PATH"] = ledgerPath.path
         // Keep this deterministic fixture in-process; retry scheduling is

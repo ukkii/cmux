@@ -4054,7 +4054,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CODEX_HOME"] = "/tmp/codex home"
         environment["PATH"] = "/tmp/custom-bin:/usr/bin"
         environment["SHELL"] = "/bin/zsh"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -4115,7 +4114,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CODEX_HOME"] = codexHome.path
 
         let hookInput = """
@@ -4185,7 +4183,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-3","transcript_path":"\(transcriptURL.path)","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null}
@@ -4256,7 +4253,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CODEX_HOME"] = codexHome.path
 
         let unavailableTranscriptURL = root.appendingPathComponent("missing-\(sessionId).jsonl")
@@ -4320,7 +4316,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CODEX_HOME"] = root.appendingPathComponent("codex-home", isDirectory: true).path
 
         let firstInput = """
@@ -4389,7 +4384,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-4","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null,"message":"Try again later.","codex_error_info":"server_overloaded"}
@@ -4445,7 +4439,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-structured","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null,"message":"Try again later.","codex_error_info":{"code":"server_overloaded","retryable":true}}
@@ -4501,7 +4494,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-5","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null,"message":"Try again later.","codexErrorInfo":"server_overloaded"}
@@ -4557,7 +4549,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-6","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null,"type":"error","message":"Try again later."}
@@ -4613,7 +4604,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-explicit-error","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null,"error":"quota exceeded"}
@@ -4683,7 +4673,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-2","transcript_path":"\(transcriptURL.path)","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":"Done"}
@@ -4755,7 +4744,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-payload-error","transcript_path":"\(transcriptURL.path)","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":"Partial answer","type":"error","message":"Try again later."}
@@ -4824,7 +4812,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-no-final","transcript_path":"\(transcriptURL.path)","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null}
@@ -4894,7 +4881,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-scoped-assistant","transcript_path":"\(transcriptURL.path)","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null}
@@ -4959,7 +4945,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = workspaceId
         environment["CMUX_SURFACE_ID"] = surfaceId
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let hookInput = """
         {"session_id":"\(sessionId)","turn_id":"turn-current","transcript_path":"\(transcriptURL.path)","cwd":"\(root.path)","hook_event_name":"Stop","model":"gpt-5.5","permission_mode":"default","stop_hook_active":false,"last_assistant_message":null}
@@ -5028,7 +5013,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -5108,7 +5092,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -5189,7 +5172,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let process = Process()
         let stdoutPipe = Pipe()
@@ -5284,7 +5266,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let process = Process()
         let stdoutPipe = Pipe()
@@ -5381,7 +5362,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CODEX_HOME"] = codexHome.path
 
         let result = runProcess(
@@ -5461,7 +5441,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let process = Process()
         let stdoutPipe = Pipe()
@@ -6268,8 +6247,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"
         environment["CMUX_SURFACE_ID"] = staleSurface
         environment["TMUX"] = "/tmp/tmux-current,123,0"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -6346,8 +6323,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -6455,8 +6430,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_WORKSPACE_ID"] = staleWorkspace
         environment["CMUX_SURFACE_ID"] = staleSurface
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -6535,8 +6508,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
         // Caller context would otherwise become workspace_id / surface_id params.
         environment.removeValue(forKey: "CMUX_WORKSPACE_ID")
         environment.removeValue(forKey: "CMUX_SURFACE_ID")
@@ -6681,8 +6652,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = staleWorkspace
         environment["CMUX_SURFACE_ID"] = staleSurface
         environment["CMUX_CLI_TTY_NAME"] = callerTTY
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -6755,8 +6724,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_SURFACE_ID"] = staleSurface
         environment["CMUX_CLI_TTY_NAME"] = callerTTY
         environment["TMUX"] = "/tmp/tmux-current,123,0"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -6887,8 +6854,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_WORKSPACE_ID"] = staleWorkspace
         environment["CMUX_SURFACE_ID"] = staleSurface
         environment["CMUX_CLI_TTY_NAME"] = callerTTY
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -7030,8 +6995,6 @@ final class CLINotifyProcessIntegrationTests: XCTestCase {
         environment["CMUX_SURFACE_ID"] = staleSurface
         environment["CMUX_CLI_TTY_NAME"] = callerTTY
         environment["TMUX"] = "/tmp/tmux-current,123,0"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,

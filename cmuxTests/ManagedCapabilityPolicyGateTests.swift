@@ -254,11 +254,6 @@ struct ManagedCapabilityPolicyGateTests {
         #expect(TabManager.isCloudVMWorkspaceSnapshotForManagedPolicy(tuiBound))
     }
 
-    @Test(arguments: [(true, false, true), (true, true, false), (false, false, false), (false, true, false)])
-    func telemetryHonorsTheManagedPolicyOverTheOptIn(optIn: Bool, forced: Bool, expected: Bool) {
-        #expect(TelemetrySettings.resolveEnabled(userOptIn: optIn, policy: policy(.disableTelemetry, disabled: forced)) == expected)
-    }
-
     @Test func tlsTrustBypassIsNeitherOfferedNorHonoredUnderThePolicy() throws {
         let allowed = PolicyFlag(value: true)
         let state = BrowserSSLTrustBypassState(isBypassAllowed: { allowed.value })
@@ -361,8 +356,8 @@ struct ManagedCapabilityPolicyGateTests {
         )
         #expect(recorder.enforcements == 0)
 
-        // A telemetry push is Settings-visible only.
-        defaults.set(true, forKey: ManagedDevicePolicyKey.disableTelemetry.rawValue)
+        // An automation-webhook push is Settings-visible only.
+        defaults.set(true, forKey: ManagedDevicePolicyKey.disableAutomationWebhooks.rawValue)
         observer.reevaluate()
         #expect(recorder.changeSignals == 1)
         #expect(recorder.enforcements == 0)

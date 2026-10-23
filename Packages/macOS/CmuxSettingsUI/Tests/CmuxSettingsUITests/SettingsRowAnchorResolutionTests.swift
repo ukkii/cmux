@@ -55,7 +55,6 @@ struct SettingsRowAnchorResolutionTests {
         "app.preferredEditor",
         "app.renameSelectsExistingName",
         "app.reorderOnNotification",
-        "app.sendAnonymousTelemetry",
         "app.warnBeforeClosingAgentSession",
         "app.warnBeforeClosingTab",
         "app.warnBeforeClosingTabXButton",

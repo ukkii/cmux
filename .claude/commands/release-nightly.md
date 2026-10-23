@@ -12,6 +12,6 @@ Replace steps 9 through 11 of `/release` with:
 ./scripts/build-sign-upload.sh vX.Y.Z
 ```
 
-The script does GhosttyKit build, xcodebuild, Sparkle key injection, codesigning, notarization of app and DMG, appcast generation, GitHub release upload of `cmux-macos.dmg` and `appcast.xml`, homebrew cask update, cleanup, and `say "cmux release complete"` on success. Pass `--allow-overwrite` only to replace existing assets on the same tag during an emergency reroll.
+The script does GhosttyKit build, xcodebuild, codesigning, notarization of app and DMG, GitHub release upload of `cmux-macos.dmg`, homebrew cask update, cleanup, and `say "cmux release complete"` on success. Pass `--allow-overwrite` only to replace existing assets on the same tag during an emergency reroll.
 
 If the script fails, run `say "cmux release failed"`.

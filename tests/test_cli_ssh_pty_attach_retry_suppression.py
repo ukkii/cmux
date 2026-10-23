@@ -105,7 +105,6 @@ def run(cli: str, can_retry: bool, socket_path: str, home: str) -> subprocess.Co
         if not key.startswith(("CMUX_", "CMUXD_"))
     }
     env.update({
-        "CMUX_CLI_SENTRY_DISABLED": "1",
         "CMUX_SOCKET_PATH": socket_path,
         "HOME": home,
         "CFFIXED_USER_HOME": home,

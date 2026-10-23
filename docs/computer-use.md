@@ -60,7 +60,7 @@ socket and can perceive the desktop through screenshots and accessibility
 trees and act with click, type, scroll, hotkey, drag, app, window, cursor, and
 diagnostic tools.
 cmux's injection disables the upstream cmux-cua engine's telemetry and self-update
-checks; cmux manages application updates through Sparkle.
+checks.
 
 The first functional `$cmux-cua` request from a current cmux agent session opens
 the existing onboarding window when setup is required. This is an explicit

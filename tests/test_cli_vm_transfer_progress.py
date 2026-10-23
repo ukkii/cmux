@@ -89,8 +89,7 @@ class TransferProgressTests(unittest.TestCase):
                 environment = {key: value for key, value in os.environ.items() if not key.startswith("CMUX")}
                 environment.update({
                     "HOME": root, "CFFIXED_USER_HOME": root,
-                    "CMUX_SOCKET_PATH": socket_path, "CMUX_CLI_SENTRY_DISABLED": "1",
-                    "AppleLanguages": "(en)", "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8",
+                    "CMUX_SOCKET_PATH": socket_path, "AppleLanguages": "(en)", "LANG": "en_US.UTF-8", "LC_ALL": "en_US.UTF-8",
                 })
                 args = [cli, "vm", direction, "probe-machine"]
                 args += [str(local_path), "payload"] if direction == "push" else ["payload", str(Path(root, "received"))]

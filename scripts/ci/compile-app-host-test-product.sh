@@ -112,7 +112,7 @@ fingerprint() {
 # evaluating all 91 again, which took 18 to 44 s per admission.
 #
 # `build` disables package resolution, so a resolve that reports success
-# without the Sparkle and Sentry binary artifacts would fail it. A restored
+# without the Sentry binary artifact would fail it. A restored
 # source-packages cache can do that, and a failed resolve can leave a partial
 # clone behind, so every retry starts from an empty package directory.
 #
@@ -158,7 +158,6 @@ resolve() {
       -packageCachePath "$source_packages/.package-cache" \
       -skipPackageUpdates \
       -resolvePackageDependencies \
-      && [ -d "$source_packages/artifacts/sparkle/Sparkle/Sparkle.xcframework" ] \
       && [ -d "$source_packages/artifacts/sentry-cocoa/Sentry/Sentry.xcframework" ]; then
       [ -z "$stamp" ] || printf '%s\n' "$stamp" > "$source_packages/$RESOLVED_STAMP"
       return 0
@@ -173,8 +172,7 @@ resolve() {
       -clonedSourcePackagesDirPath "$source_packages" \
       -packageCachePath "$source_packages/.package-cache" \
       -resolvePackageDependencies; then
-      if [ -d "$source_packages/artifacts/sparkle/Sparkle/Sparkle.xcframework" ] \
-        && [ -d "$source_packages/artifacts/sentry-cocoa/Sentry/Sentry.xcframework" ]; then
+      if [ -d "$source_packages/artifacts/sentry-cocoa/Sentry/Sentry.xcframework" ]; then
         [ -z "$stamp" ] || printf '%s\n' "$stamp" > "$source_packages/$RESOLVED_STAMP"
         return 0
       fi

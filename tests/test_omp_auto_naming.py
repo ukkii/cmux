@@ -87,7 +87,6 @@ def run_case(cli, agent, override=None):
                 "CMUX_AGENT_HOOK_STATE_DIR": temporary,
                 "CMUX_CLAUDE_HOOK_STATE_PATH": str(store),
                 "CMUX_SOCKET_PATH": socket_path,
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             }
             result = subprocess.run([
                 cli, "--socket", socket_path, "--password", FIXTURE_SOCKET_PASSWORD,

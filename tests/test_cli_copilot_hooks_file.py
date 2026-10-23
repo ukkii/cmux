@@ -67,7 +67,6 @@ class CopilotHooksFileTests(unittest.TestCase):
             'CFFIXED_USER_HOME': str(self.home),
             'PATH': f'{self.bin_dir}:/usr/bin:/bin:/usr/sbin:/sbin',
             'TMPDIR': os.environ.get('TMPDIR', '/tmp'),
-            'CMUX_CLI_SENTRY_DISABLED': '1',
             'CMUX_SOCKET_PATH': str(Path(self.temp.name) / 'no-socket.sock'),
         }
         env.update(extra_env or {})

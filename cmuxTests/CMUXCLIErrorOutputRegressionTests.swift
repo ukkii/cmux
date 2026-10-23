@@ -58,8 +58,7 @@ import Testing
         // a shell reports a signalled child as an ordinary exit with status 128+signal — which would
         // hide the very crash this test exists to catch.
         let result = runShell(
-            "CMUX_CLI_SENTRY_DISABLED=1 "
-                + "CMUX_SOCKET_PATH=\(shellSingleQuote(socketPath)) "
+            "CMUX_SOCKET_PATH=\(shellSingleQuote(socketPath)) "
                 + "CFFIXED_USER_HOME=\(shellSingleQuote(home.path)) "
                 + "HOME=\(shellSingleQuote(home.path)) "
                 + "exec \(shellSingleQuote(cliPath)) definitely-not-a-command 2>&-",
@@ -157,7 +156,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let before = runProcess(
             executablePath: cliPath,
@@ -280,7 +278,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -407,7 +404,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -448,7 +444,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_WORKSPACE_ID"] = workspaceID
         environment["CMUX_SURFACE_ID"] = surfaceID
 
@@ -528,7 +523,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_CLI_TTY_NAME"] = "ttys9258"
 
@@ -626,7 +620,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["HOME"] = root.path
         environment["CODEX_HOME"] = codexHome.path
@@ -708,7 +701,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["HOME"] = root.path
         environment["CFFIXED_USER_HOME"] = root.path
@@ -771,7 +763,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = UUID().uuidString
 
@@ -1040,7 +1031,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = UUID().uuidString
 
@@ -1099,7 +1089,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = UUID().uuidString
         environment["SHELL"] = "/bin/sh"
@@ -1145,7 +1134,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = UUID().uuidString
         environment["SHELL"] = "/bin/sh"
@@ -1208,7 +1196,6 @@ import Testing
             for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
                 environment.removeValue(forKey: key)
             }
-            environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
             environment["CMUX_SOCKET_PATH"] = socketPath
             environment["CMUX_WORKSPACE_ID"] = workspaceID
             environment["CMUX_CLI_TTY_NAME"] = "ttys9624"
@@ -1286,7 +1273,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_WORKSPACE_ID"] = workspaceID
         environment["CMUX_SURFACE_ID"] = surfaceID
@@ -1352,7 +1338,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_WORKSPACE_ID"] = workspaceID
         environment["CMUX_SURFACE_ID"] = staleSurfaceID
@@ -1414,7 +1399,6 @@ import Testing
             for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
                 environment.removeValue(forKey: key)
             }
-            environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
             environment["CMUX_SOCKET_PATH"] = socketPath
 
             let result = runProcess(
@@ -1444,7 +1428,6 @@ import Testing
             response: recordResponse
         )
         defer { duplicateResponder.stop() }
-        duplicateEnvironment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         duplicateEnvironment["CMUX_SOCKET_PATH"] = duplicateSocketPath
         let duplicateResult = runProcess(
             executablePath: cliPath,
@@ -1488,7 +1471,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
 
         let result = runProcess(
@@ -1540,7 +1522,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = UUID().uuidString
 
@@ -1572,7 +1553,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = runProcess(
             executablePath: cliPath,
@@ -1648,7 +1628,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_DEBUG_LOG"] = debugLogPath
         environment["CMUX_SURFACE_ID"] = surfaceID
@@ -1748,7 +1727,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_DEBUG_LOG"] = debugLogPath
         environment["CMUX_SURFACE_ID"] = surfaceID
@@ -1837,7 +1815,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = responder.endpoint
         environment["CMUX_RELAY_ID"] = relayID
         environment["CMUX_RELAY_TOKEN"] = String(repeating: "11", count: 32)
@@ -1915,7 +1892,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = staleSurfaceID
         environment["CMUX_CLI_TTY_NAME"] = "ttys9380"
@@ -1965,7 +1941,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = responder.endpoint
         environment["CMUX_RELAY_ID"] = relayID
         environment["CMUX_RELAY_TOKEN"] = String(repeating: "11", count: 32)
@@ -2036,7 +2011,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_WORKSPACE_ID"] = workspaceID
         environment["CMUX_SURFACE_ID"] = surfaceID
@@ -2108,7 +2082,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_CLI_TTY_NAME"] = "ttys9380"
         environment["TTY"] = "/dev/ttys-stale"
@@ -2184,7 +2157,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = responder.endpoint
         environment["CMUX_RELAY_ID"] = relayID
         environment["CMUX_RELAY_TOKEN"] = String(repeating: "11", count: 32)
@@ -2266,7 +2238,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = responder.endpoint
         environment["CMUX_RELAY_ID"] = relayID
         environment["CMUX_RELAY_TOKEN"] = String(repeating: "11", count: 32)
@@ -2331,7 +2302,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = UUID().uuidString
         environment["CMUX_CLI_TTY_NAME"] = "ttys9380"
@@ -2393,7 +2363,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SOCKET_PATH"] = socketPath
         environment["CMUX_SURFACE_ID"] = UUID().uuidString
         environment["CMUXTERM_CLI_RESPONSE_TIMEOUT_SEC"] = "0.2"
@@ -2643,7 +2612,6 @@ import Testing
             (["restore", "codex", UUID().uuidString.lowercased()], "restore: cmux is still opening."),
             (["fork", "pi", UUID().uuidString.lowercased()], "fork: cmux is still opening."),
             (["restore-session", "--invalid"], "restore-session: unknown flag '--invalid'"),
-            (["feedback", "--invalid"], "feedback: unknown flag '--invalid'"),
         ]
 
         for testCase in cases {
@@ -2711,7 +2679,6 @@ import Testing
             }
             let cmuxKeys = Set(environment.keys.filter { $0.hasPrefix("CMUX") })
             #expect(cmuxKeys == [
-                "CMUX_CLI_SENTRY_DISABLED",
                 BundledCLITestSupport.isolatedSocketDiscoveryEnvironmentKey,
             ])
         }
@@ -3544,7 +3511,6 @@ import Testing
             "CFFIXED_USER_HOME=\(shellSingleQuote(root.path))",
             "CMUX_SOCKET_PATH=\(shellSingleQuote(socketPath))",
             "CMUX_BUNDLE_ID=\(shellSingleQuote(bundleIdentifier))",
-            "CMUX_CLI_SENTRY_DISABLED=1",
             "PATH=/usr/bin:/bin",
             "/usr/bin/script",
             "-q",
@@ -3613,7 +3579,6 @@ import Testing
             "HOME=\(shellSingleQuote(root.path))",
             "CFFIXED_USER_HOME=\(shellSingleQuote(root.path))",
             "CMUX_SOCKET_PATH=\(shellSingleQuote(socketPath))",
-            "CMUX_CLI_SENTRY_DISABLED=1",
             "PATH=/usr/bin:/bin",
             "/usr/bin/script",
             "-q",
@@ -3647,7 +3612,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUXTERM_CLI_RESPONSE_TIMEOUT_SEC"] = "0.1"
 
         let result = runProcess(
@@ -3721,7 +3685,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUXTERM_CLI_RESPONSE_TIMEOUT_SEC"] = "0.1"
 
         let result = runProcess(
@@ -3783,7 +3746,6 @@ import Testing
         environment["CMUX_SURFACE_ID"] = "surface:stale"
         environment["CMUX_TAB_ID"] = "tab:stale"
         environment["CMUX_TAG"] = "keepme"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_TEST_OPEN_TOOL_PATH"] = fakeOpenURL.path
         environment["CMUX_TEST_OPEN_LOG"] = openLogURL.path
         environment["CMUX_TEST_OPEN_ENV_LOG"] = openEnvLogURL.path
@@ -3855,7 +3817,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_TEST_OPEN_TOOL_PATH"] = fakeOpenURL.path
         environment["CMUX_TEST_OPEN_LOG"] = openLogURL.path
 
@@ -3903,7 +3864,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_TEST_OPEN_TOOL_PATH"] = fakeOpenURL.path
         environment["CMUX_TEST_OPEN_LOG"] = openLogURL.path
 
@@ -3950,7 +3910,6 @@ import Testing
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_TEST_OPEN_TOOL_PATH"] = fakeOpenURL.path
         environment["CMUX_TEST_OPEN_LOG"] = openLogURL.path
 
@@ -3998,7 +3957,6 @@ import Testing
         for key in Array(environment.keys) where key.hasPrefix("CMUX_") {
             environment.removeValue(forKey: key)
         }
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_TEST_OPEN_TOOL_PATH"] = fakeOpenURL.path
         environment["CMUX_TEST_OPEN_LOG"] = openLogURL.path
 

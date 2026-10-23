@@ -137,8 +137,6 @@ struct CLIVaultForkSelectorTests {
     private static func runCLI(cliPath: String, socketPath: String, arguments: [String]) -> ProcessRunResult {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let process = Process()
         let stdoutPipe = Pipe()

@@ -101,7 +101,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         // while it still has retries left.
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_SSH_PTY_ATTACH_WRAPPER_CAN_RETRY"] = "1"
         environment["CMUX_SSH_PTY_ATTACH_MANAGED_RECONNECT"] = "1"
         environment["CMUX_SURFACE_ID"] = surfaceId

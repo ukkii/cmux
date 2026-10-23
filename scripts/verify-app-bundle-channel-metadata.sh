@@ -5,7 +5,7 @@ usage() {
   cat <<'EOF'
 usage: verify-app-bundle-channel-metadata.sh <app-path> <stable|nightly|rc>
 
-Verifies the built app bundle metadata that LaunchServices and Sparkle use for
+Verifies the built app bundle metadata that LaunchServices uses for
 system prompts. This intentionally checks the final bundle artifact, not the
 checked-in plist template.
 EOF

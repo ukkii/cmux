@@ -12,8 +12,8 @@ grep -Fq 'group: stable-appcast-publication' "$RELEASE_WORKFLOW"
 grep -Fq 'cancel-in-progress: false' "$WORKFLOW"
 grep -Fq 'cancel-in-progress: false' "$RELEASE_WORKFLOW"
 grep -Fq "if: inputs.confirmation != 'v0.64.25'" "$WORKFLOW"
-if [ "$(grep -Fc "if: inputs.confirmation == 'v0.64.25'" "$WORKFLOW")" -lt 2 ]; then
-  echo 'FAIL: replacement steps must require the exact v0.64.25 confirmation' >&2
+if [ "$(grep -Fc "if: inputs.confirmation == 'v0.64.25'" "$WORKFLOW")" -lt 1 ]; then
+  echo 'FAIL: the replacement step must require the exact v0.64.25 confirmation' >&2
   exit 1
 fi
 
@@ -21,9 +21,7 @@ for required in \
   './scripts/strip-cmux-cua-rpaths.sh' \
   './scripts/verify-bundle-load-commands.sh' \
   'syspolicy_check distribution "$APP_PATH"' \
-  './scripts/sparkle_generate_appcast.sh "$DMG_PATH" "$TARGET_TAG" "$APPCAST_PATH"' \
-  'gh release upload "$TARGET_TAG" "$DMG_PATH" "$APPCAST_PATH"' \
-  'scripts/ci/upload-r2-object.py'; do
+  'gh release upload "$TARGET_TAG" "$DMG_PATH"'; do
   if ! grep -Fq "$required" "$WORKFLOW"; then
     echo "FAIL: repair workflow is missing required operation: $required" >&2
     exit 1
@@ -32,10 +30,8 @@ done
 
 dry_run_line="$(grep -n 'name: Upload dry-run artifacts' "$WORKFLOW" | cut -d: -f1)"
 release_replace_line="$(grep -n 'name: Replace v0.64.25 GitHub release assets' "$WORKFLOW" | cut -d: -f1)"
-r2_replace_line="$(grep -n 'name: Replace stable R2 appcast when v0.64.25 is current' "$WORKFLOW" | cut -d: -f1)"
-if [ -z "$dry_run_line" ] || [ -z "$release_replace_line" ] || [ -z "$r2_replace_line" ] \
-  || [ "$dry_run_line" -ge "$release_replace_line" ] \
-  || [ "$release_replace_line" -ge "$r2_replace_line" ]; then
+if [ -z "$dry_run_line" ] || [ -z "$release_replace_line" ] \
+  || [ "$dry_run_line" -ge "$release_replace_line" ]; then
   echo 'FAIL: dry-run and publication steps are out of order' >&2
   exit 1
 fi

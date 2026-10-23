@@ -76,8 +76,6 @@ struct SSHConfiguredRemoteCommandHostTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let result = processSupport.runProcess(
             executablePath: cliPath,
@@ -165,8 +163,6 @@ struct SSHConfiguredRemoteCommandHostTests {
 
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         var arguments = [
             "ssh",
@@ -276,8 +272,6 @@ struct SSHConfiguredRemoteCommandHostTests {
 
         var captureEnvironment = ProcessInfo.processInfo.environment
         captureEnvironment["CMUX_SOCKET_PATH"] = socketPath
-        captureEnvironment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        captureEnvironment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         let captureResult = processSupport.runProcess(
             executablePath: cliPath,

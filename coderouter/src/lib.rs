@@ -6,7 +6,6 @@ mod loading;
 mod oauth;
 mod process;
 mod status;
-mod telemetry;
 mod tui;
 
 use std::ffi::OsString;
@@ -45,7 +44,6 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> i32 {
             return 1;
         }
     }
-    let telemetry = telemetry::CommandTelemetry::start(&args);
     let result = cli::run(args);
     let exit_code = match &result {
         Ok(code) => *code,
@@ -54,7 +52,6 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> i32 {
             1
         }
     };
-    telemetry.finish(&result, exit_code);
     exit_code
 }
 

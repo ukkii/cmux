@@ -76,7 +76,7 @@ final class CloudWorkspaceProjectionCoordinator {
     private var lastPlanShape: [SurfaceMachineID: CloudWorkspaceProjectionPlanShape] = [:]
 
     /// Reports non-convergence once per daemon generation, so a trigger outside
-    /// this loop that keeps restarting it cannot flood crash reporting.
+    /// this loop that keeps restarting it cannot flood the debug log.
     private func reportNonConvergence(machine: SurfaceMachineID, state: CloudVMState, budget: CloudWorkspaceReconcileBudget) {
 #if DEBUG
         cmuxDebugLog("cloudWorkspace.projection.nonConvergent machine=\(machine.rawValue) passes=\(budget.passes) idle=\(budget.idlePasses)")
@@ -84,16 +84,6 @@ final class CloudWorkspaceProjectionCoordinator {
         let generation = state.cursor?.generation ?? ""
         guard reportedNonConvergence[machine] != generation else { return }
         reportedNonConvergence[machine] = generation
-        var data: [String: Any] = [
-            "passes": budget.passes, "idlePasses": budget.idlePasses,
-            "generation": generation, "revision": state.cursor?.revision ?? 0,
-        ]
-        if let shape = lastPlanShape[machine] { data.merge(shape.sentryData) { current, _ in current } }
-        sentryCaptureWarning(
-            "Cloud workspace projection did not converge",
-            category: "cloud.projection",
-            data: data
-        )
     }
 
     /// A bound mirror may not recreate a view that the accepted graph removed.
@@ -252,12 +242,6 @@ struct CloudWorkspaceProjectionPlanShape: Equatable {
 
     private static func kind(_ kind: SurfaceResourceKind, tab: String?, workspace: String?) -> String {
         "\(kind.rawValue):\(tab == nil ? "untabbed" : "tab"):\(workspace == nil ? "unplaced" : "placed")"
-    }
-
-    var sentryData: [String: Any] {
-        ["missing": missing.count, "obsolete": obsolete.count,
-         "missingKinds": missing.sorted().joined(separator: ","),
-         "obsoleteKinds": obsolete.sorted().joined(separator: ",")]
     }
 }
 

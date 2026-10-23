@@ -297,7 +297,6 @@ final class SettingsComputersBehaviorUITests: SettingsUITestCase {
         process.arguments = arguments
         var environment = ProcessInfo.processInfo.environment
         environment["CMUXTERM_CLI_RESPONSE_TIMEOUT_SEC"] = "5"
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         process.environment = environment
         let pipe = Pipe()
         process.standardOutput = pipe

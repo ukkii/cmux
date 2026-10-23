@@ -518,7 +518,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CMUX_WORKSPACE_ID"] = fixture.workspaceID
         environment["CMUX_SURFACE_ID"] = fixture.surfaceID
         environment["CMUX_AGENT_HOOK_STATE_DIR"] = fixture.root.path
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_AGENT_LAUNCH_KIND"] = "codex"
         environment["CMUX_AGENT_LAUNCH_EXECUTABLE"] = "/usr/local/bin/codex"
         environment["CMUX_AGENT_LAUNCH_ARGV_B64"] = base64NULSeparated(launchArguments)

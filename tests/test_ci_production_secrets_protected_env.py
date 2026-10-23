@@ -47,7 +47,6 @@ RELEASE_JOBS = {
     "ios-appstore-upload.yml": ["set-testflight-notes", "assign-internal"],
     "repair-v0-64-25-helper-rpaths.yml": ["repair"],
     "iroh-release-gate.yml": ["simulator-e2e"],
-    "repair-nightly-appcast-content-types.yml": ["repair"],
     "update-homebrew.yml": ["update-cask"],
 }
 

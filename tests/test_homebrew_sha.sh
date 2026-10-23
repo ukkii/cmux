@@ -29,7 +29,7 @@ trap 'rm -f "$TMPFILE"' EXIT
 # Download with retries + timeouts so a transient GitHub/CDN hiccup (5xx,
 # connection reset, DNS blip, truncated transfer) soft-skips instead of
 # flaking. Only a successfully downloaded DMG whose SHA mismatches is a real
-# failure. Mirrors the soft-pass pattern in test_ci_sparkle_build_monotonic.sh.
+# failure.
 HTTP_CODE=$(curl -sL \
   --retry 3 --retry-delay 2 --retry-all-errors \
   --connect-timeout 20 --max-time 120 \

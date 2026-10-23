@@ -176,12 +176,12 @@ if grep -Eq 'current_head_(prebuild|postbuild)|still_current' "$WORKFLOW_FILE"; 
   exit 1
 fi
 
-R2_UPLOAD_LINE="$(grep -nF -- '- name: Upload nightly appcasts to R2' "$WORKFLOW_FILE" | cut -d: -f1 || true)"
+METADATA_LINE="$(grep -nF -- '- name: Publish verified nightly release metadata' "$WORKFLOW_FILE" | cut -d: -f1 || true)"
 MARKER_LINE="$(grep -nF -- '- name: Record verified nightly publication' "$WORKFLOW_FILE" | cut -d: -f1 || true)"
 TAG_MOVE_LINE="$(grep -nF -- '- name: Move channel release tag to built commit' "$WORKFLOW_FILE" | cut -d: -f1 || true)"
-if [ -z "$R2_UPLOAD_LINE" ] || [ -z "$MARKER_LINE" ] || [ -z "$TAG_MOVE_LINE" ] \
-  || [ "$MARKER_LINE" -le "$R2_UPLOAD_LINE" ] || [ "$TAG_MOVE_LINE" -le "$MARKER_LINE" ]; then
-  echo "FAIL: the nightly publication marker and tag must move only after GitHub and R2 publication succeed"
+if [ -z "$METADATA_LINE" ] || [ -z "$MARKER_LINE" ] || [ -z "$TAG_MOVE_LINE" ] \
+  || [ "$MARKER_LINE" -le "$METADATA_LINE" ] || [ "$TAG_MOVE_LINE" -le "$MARKER_LINE" ]; then
+  echo "FAIL: the nightly publication marker and tag must move only after GitHub publication succeeds"
   exit 1
 fi
 
@@ -276,20 +276,6 @@ if ! awk '
 fi
 
 if ! awk '
-  /^  build-nightly-app:/ { job="build"; next }
-  /^  prepare-nightly-variant:/ { job="publish"; next }
-  /^  build-sign-notarize-nightly:/ { job="publish"; next }
-  /^  [a-zA-Z0-9_-]+:/ { job="" }
-  job == "build" && /^      - name: Derive Sparkle public key from private key/ { derived_in_build=1 }
-  job == "publish" && /^      - name: Derive Sparkle public key from private key/ { derived_in_publish=1 }
-  job == "publish" && /echo "SPARKLE_PUBLIC_KEY=\$DERIVED_PUBLIC_KEY" >> "\$GITHUB_ENV"/ { exported_in_publish=1 }
-  END { exit !(!derived_in_build && derived_in_publish && exported_in_publish) }
-' "$WORKFLOW_FILE"; then
-  echo "FAIL: the publishing job must derive and export the Sparkle public key it consumes"
-  exit 1
-fi
-
-if ! awk '
   /^  prepare-nightly-variant:/ { job="publish"; next }
   /^  build-sign-notarize-nightly:/ { job="publish"; next }
   /^  [a-zA-Z0-9_-]+:/ { job="" }
@@ -328,56 +314,6 @@ if ! grep -Fq "bundleId: 'com.cmuxterm.app.nightly'," "$WORKFLOW_FILE" || ! grep
   exit 1
 fi
 
-if ! grep -Fq 'cp appcast.xml appcast-universal.xml' "$WORKFLOW_FILE"; then
-  echo "FAIL: nightly workflow must keep the compatibility appcast-universal.xml feed"
-  exit 1
-fi
-
-if ! grep -Fq './scripts/sparkle_generate_appcast.sh "$NIGHTLY_DMG_IMMUTABLE" "$CHANNEL_RELEASE_TAG" "$NIGHTLY_APPCAST"' "$WORKFLOW_FILE"; then
-  echo "FAIL: nightly workflow must generate one appcast per variant"
-  exit 1
-fi
-if ! awk '
-  /^  build-sign-notarize-nightly:/ { job="sign"; next }
-  /^  generate-nightly-deltas:/ { job="delta"; next }
-  /^  [a-zA-Z0-9_-]+:/ { job="" }
-  job == "sign" && /SPARKLE_PREVIOUS_ARCHIVES_DIR|SPARKLE_MAXIMUM_DELTAS/ { initial_delta=1 }
-  job == "delta" && /--count 1/ { saw_previous=1 }
-  job == "delta" && /SPARKLE_MAXIMUM_DELTAS=1/ { saw_max=1 }
-  job == "delta" && /name: cmux-nightly-deltas-\$\{\{ matrix\.variant \}\}/ { saw_artifact=1 }
-  END { exit !(saw_previous && saw_max && saw_artifact && !initial_delta) }
-' "$WORKFLOW_FILE"; then
-  echo "FAIL: initial appcasts must be full-only and delta generation must run later per variant"
-  exit 1
-fi
-
-if ! awk '
-  /^  generate-nightly-deltas:/ { delta=NR; next }
-  /^  republish-nightly-deltas:/ { republish=NR; next }
-  /^  publish-nightly:/ { publish=NR; next }
-  /^  report-nightly-failure:/ { report=NR; next }
-  END { exit !(publish && delta && republish && publish < delta && delta < republish && report > republish) }
-' "$WORKFLOW_FILE"; then
-  echo "FAIL: Sparkle deltas must be downstream of first publication and before failure closeout"
-  exit 1
-fi
-
-if ! awk '
-  /^  generate-nightly-deltas:/ { job="delta"; next }
-  /^  republish-nightly-deltas:/ { job="republish"; next }
-  /^  [a-zA-Z0-9_-]+:/ { job="" }
-  job == "delta" && /needs: \[decide, build-nightly-app, publish-nightly\]/ { saw_publish_need=1 }
-  job == "delta" && /fail-fast: false/ { saw_matrix=1 }
-  job == "republish" && /needs: \[decide, build-nightly-app, publish-nightly, generate-nightly-deltas\]/ { saw_delta_need=1 }
-  job == "republish" && /gh api .*commits\/\$CHANNEL_RELEASE_TAG/ { saw_guard=1 }
-  job == "republish" && /publish-release-assets\.py/ { saw_republish=1 }
-  job == "republish" && /Upload revised appcasts to R2/ { saw_r2=1 }
-  END { exit !(saw_publish_need && saw_matrix && saw_delta_need && saw_guard && saw_republish && saw_r2) }
-' "$WORKFLOW_FILE"; then
-  echo "FAIL: post-publication delta generation must be matrixed, stale-guarded, and republished to GitHub and R2"
-  exit 1
-fi
-
 if ! awk '
   /^  build-nightly-app:/ { job="app"; next }
   /^  build-sign-notarize-nightly:/ { job="sign"; next }
@@ -405,15 +341,12 @@ if ! awk '
 fi
 
 if ! awk '
-  /NIGHTLY_APPCAST="appcast-\$\{NIGHTLY_VARIANT\}\.xml"/ { saw_thin_feed=1 }
-  /NIGHTLY_APPCAST="appcast\.xml"/ { saw_legacy_feed=1 }
-  /"\$\{CHANNEL_FEED_BASE\}\/\$\{NIGHTLY_APPCAST\}"/ { saw_feed_injection=1 }
   /feedBase: .https:\/\/files\.cmux\.com\/nightly.,/ { saw_nightly_feed_base=1 }
   /feedBase: .https:\/\/files\.cmux\.com\/rc.,/ { saw_rc_feed_base=1 }
   /NIGHTLY_DMG_IMMUTABLE="\$\{CHANNEL_DMG_PREFIX\}-\$\{NIGHTLY_VARIANT\}-\$\{NIGHTLY_BUILD\}\.dmg"/ { saw_immutable_name=1 }
-  END { exit !(saw_thin_feed && saw_legacy_feed && saw_feed_injection && saw_nightly_feed_base && saw_rc_feed_base && saw_immutable_name) }
+  END { exit !(saw_nightly_feed_base && saw_rc_feed_base && saw_immutable_name) }
 ' "$WORKFLOW_FILE"; then
-  echo "FAIL: each variant must bake its own feed URL and immutable DMG name"
+  echo "FAIL: each variant must bake its immutable DMG name"
   exit 1
 fi
 
@@ -424,7 +357,7 @@ if ! awk '
   in_legacy && /\$\{CHANNEL_DMG_PREFIX\}-x86_64\.dmg" "\$\{CHANNEL_DMG_PREFIX\}\.dmg/ { saw_intel_legacy=1 }
   END { exit !(saw_universal_legacy && !saw_intel_legacy) }
 ' "$WORKFLOW_FILE"; then
-  echo "FAIL: the legacy nightly DMG and feed must stay universal: browsers cannot pick an architecture, the app can"
+  echo "FAIL: the legacy nightly DMG must stay universal: browsers cannot pick an architecture"
   exit 1
 fi
 
@@ -433,7 +366,7 @@ if ! grep -Fq "const variants = fastBuild ? ['arm64'] : ['arm64', 'x86_64', 'uni
   exit 1
 fi
 
-if ! grep -Fq 'description: Build one arm64 dogfood DMG without Intel or Sparkle delta work' "$WORKFLOW_FILE"; then
+if ! grep -Fq 'description: Build one arm64 dogfood DMG without Intel work' "$WORKFLOW_FILE"; then
   echo "FAIL: workflow dispatch must expose the fast arm64 dogfood build"
   exit 1
 fi
@@ -584,18 +517,6 @@ assert 'outer_state="$RUNNER_TEMP/cmux-outer-dmg-notarization.state"' in auto
 assert "poll-outer:" in auto and "staple-outer:" in auto
 assert "outer-notarization-metadata-" in auto
 assert "fromJSON(needs.poll-outer.outputs.outer_variants)" in auto
-generate_deltas = re.search(
-    r"^  generate-deltas:\n(.*?)(?=^  republish-deltas:)",
-    auto,
-    re.MULTILINE | re.DOTALL,
-)
-assert generate_deltas, "missing continuation delta job"
-for key in (
-    "NIGHTLY_SPARKLE_KEY: ${{ vars.NIGHTLY_SPARKLE_KEY }}",
-    "SHARED_SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}",
-    "NIGHTLY_SPARKLE_PRIVATE_KEY: ${{ secrets.NIGHTLY_SPARKLE_PRIVATE_KEY }}",
-):
-    assert key in generate_deltas.group(1), f"continuation delta job must provide {key}"
 assert "workflow_run:" in auto
 assert "workflow_dispatch:" in auto
 assert "source_run_id:" in auto and "source_run_attempt:" in auto
@@ -636,7 +557,6 @@ assert "matrix:" in auto and "[arm64, x86_64, universal]" in auto
 assert "needs.wait-and-staple.result == 'success'" in auto
 assert "CMUX_NOTARY_WAIT_TIMEOUT=2m" in auto
 assert "publish-release-assets.py" in auto
-assert "--replace-feeds" in auto
 assert "resolve-notarization-recovery.py" in auto
 assert "Reject stale continuation before publication" in auto
 assert "fetch-depth: 0" in auto
@@ -646,7 +566,6 @@ assert "final_dmg_sha256" in auto
 assert 'if branch == "nightly-next":' in auto and "nightly-next-continues-on-its-own-track" in auto
 assert "eligible=false" in auto and "source-branch-is-not-published" in auto
 assert "published: ${{ steps.publication-result.outputs.published }}" in auto
-assert "needs.publish.outputs.published == 'true'" in auto
 assert "const label = `${process.env.CHANNEL}-failure`;" in auto
 assert "Notarization continuation accepted and published ${process.env.SOURCE_HEAD_SHA}" in auto
 assert "if (!(issue.body || '').toLowerCase().includes(process.env.SOURCE_HEAD_SHA.toLowerCase())) continue;" not in auto
@@ -661,9 +580,6 @@ assert 'cp "verified/$IMMUTABLE_NAME" "verified/$ALIAS_NAME"' not in auto
 assert "duplicate DMG alias" in auto
 assert 'cp "$dir/$immutable" "nightly-out/${DMG_PREFIX}-${variant}.dmg"' in auto
 assert 'cp "$dir/${DMG_PREFIX}-${variant}.dmg"' not in auto
-assert "  generate-deltas:" in auto
-assert "  republish-deltas:" in auto
-assert "fetch-previous-nightly-dmgs.py" in auto
 PY
 then
   echo "FAIL: fast dogfood must skip notarization and distribution policy only after retaining signing and smoke"
@@ -865,10 +781,9 @@ if ! awk '
   in_upload && /if: needs\.decide\.outputs\.should_publish != '\''true'\''/ { saw_if=1 }
   in_upload && /uses: actions\/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7/ { saw_upload=1 }
   in_upload && /\$\{\{ needs\.decide\.outputs\.dmg_prefix \}\}\*\.dmg/ { saw_arm_artifacts=1 }
-  in_upload && /appcast\*\.xml/ { saw_appcasts=1 }
-  END { exit !(saw_if && saw_upload && saw_arm_artifacts && saw_appcasts) }
+  END { exit !(saw_if && saw_upload && saw_arm_artifacts) }
 ' "$WORKFLOW_FILE"; then
-  echo "FAIL: non-main nightly runs must upload every nightly DMG and appcast"
+  echo "FAIL: non-main nightly runs must upload every nightly DMG"
   exit 1
 fi
 
@@ -927,10 +842,9 @@ if ! awk '
   in_publish && /--immutable .*x86_64-.*NIGHTLY_BUILD/ { saw_immutable_intel=1 }
   in_publish && /--immutable .*universal-.*NIGHTLY_BUILD/ { saw_immutable_universal=1 }
   in_publish && /--alias .*CHANNEL_DMG_PREFIX.*\.dmg/ { alias_count++ }
-  in_publish && /--feed nightly-out\/appcast/ { feed_count++ }
-  END { exit !(saw_publish_if && saw_publisher && saw_immutable_arm && saw_immutable_intel && saw_immutable_universal && alias_count == 4 && feed_count == 4) }
+  END { exit !(saw_publish_if && saw_publisher && saw_immutable_arm && saw_immutable_intel && saw_immutable_universal && alias_count == 4) }
 ' "$WORKFLOW_FILE"; then
-  echo "FAIL: nightly publication must verify every architecture and publish all aliases before the four feeds"
+  echo "FAIL: nightly publication must verify every architecture and publish all aliases"
   exit 1
 fi
 

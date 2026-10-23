@@ -138,64 +138,13 @@ public struct VMRequestTelemetryRecord: Sendable, Equatable {
     var referenceTraceId: String { outcome.serverTraceId ?? trace.traceId }
 }
 
-public enum VMRequestFailureSeverity: String, Sendable {
-    case error
-    case warning
-}
-
-/// Client-side telemetry for the Cloud VM control plane. Sinks:
-///
-/// - `os.log` (subsystem `com.cmuxterm.app`, category `CloudVM`) for every
-///   request, readable from release builds with `log show`;
-/// - a Sentry breadcrumb for every request and a Sentry event for failures
-///   (5xx and transport failures are `error`, 4xx are `warning`);
-/// - PostHog `cmux_cloud_vm_request` for every failure and for the successes a
-///   user waits on (create, attach, base open, ...), with the duration;
-/// - an injected record observer, which the app maps to product funnel events.
-///
-/// The app injects the PostHog and Sentry sinks (`VMClientTelemetry+Live.swift`);
-/// the defaults drop events so tests and previews report nothing.
-///
-/// Failures are throttled per operation and error code so a polling loop
-/// during an outage yields one event per window instead of hundreds. Every
-/// event carries the trace id and client request id.
+/// Client-side diagnostics for the Cloud VM control plane: every request is
+/// written to `os.log` (subsystem `com.cmuxterm.app`, category `CloudVM`),
+/// readable from release builds with `log show`. Nothing leaves the machine.
 public final class VMClientTelemetry: @unchecked Sendable {
-    public static let postHogEvent = "cmux_cloud_vm_request"
-    public static let sentryCategory = "cloud_vm"
-    public static let postHogFailureThrottle: TimeInterval = 60
-    public static let sentryFailureThrottle: TimeInterval = 300
-
-    public typealias Capture = @Sendable (String, [String: Any]) -> Void
-    public typealias SentryCapture = @Sendable (String, VMRequestFailureSeverity, [String: Any]) -> Void
-    public typealias Breadcrumb = @Sendable (String, [String: Any]) -> Void
-    public typealias RecordObserver = @Sendable (VMRequestTelemetryRecord) -> Void
-
     private let logger = Logger(subsystem: "com.cmuxterm.app", category: "CloudVM")
-    private let capturePostHog: Capture
-    private let captureSentry: SentryCapture
-    private let addBreadcrumb: Breadcrumb
-    private let observeRecord: RecordObserver
-    private let now: @Sendable () -> Date
-    private let channel: String
-    private let lock = NSLock()
-    private var lastPostHogFailure: [String: Date] = [:]
-    private var lastSentryFailure: [String: Date] = [:]
 
-    public init(
-        capturePostHog: @escaping Capture = { _, _ in },
-        captureSentry: @escaping SentryCapture = { _, _, _ in },
-        addBreadcrumb: @escaping Breadcrumb = { _, _ in },
-        observeRecord: @escaping RecordObserver = { _ in },
-        now: @escaping @Sendable () -> Date = { Date() },
-        channel: String = BuildFlavor.current.rawValue
-    ) {
-        self.capturePostHog = capturePostHog
-        self.captureSentry = captureSentry
-        self.addBreadcrumb = addBreadcrumb
-        self.observeRecord = observeRecord
-        self.now = now
-        self.channel = channel
-    }
+    public init() {}
 
     /// Identity headers sent with every request so server spans and events can
     /// be broken down by client, version, build and channel.
@@ -215,38 +164,9 @@ public final class VMClientTelemetry: @unchecked Sendable {
 
     public func record(_ record: VMRequestTelemetryRecord) {
         log(record)
-        // Unthrottled: product analytics derives funnel events (machine
-        // created, plan limit hit) from every outcome and dedupes itself.
-        observeRecord(record)
-        addBreadcrumb(
-            "\(record.operation) \(record.outcome.isSuccess ? "ok" : "failed")",
-            Self.breadcrumbData(record)
-        )
-        if Self.shouldCaptureToPostHog(record), allow(record, in: &lastPostHogFailure, window: Self.postHogFailureThrottle) {
-            capturePostHog(Self.postHogEvent, Self.postHogProperties(record, channel: channel))
-        }
-        if let severity = Self.sentrySeverity(record),
-           allow(record, in: &lastSentryFailure, window: Self.sentryFailureThrottle) {
-            captureSentry(
-                "cloud VM \(record.operation) failed: \(record.outcome.errorCode ?? "unknown")",
-                severity,
-                Self.sentryData(record)
-            )
-        }
     }
 
-    // MARK: - Decisions (pure, tested)
-
-    /// Reads a client polls on a timer. Their successes stay out of PostHog.
-    public static func isPolledOperation(method: String, route: String) -> Bool {
-        guard method.uppercased() == "GET" else { return false }
-        switch route {
-        case "/api/vm", "/api/vm/{id}", "/api/vm/{id}/stats", "/api/vm/{id}/sessions", "/api/vm/tunnel":
-            return true
-        default:
-            return false
-        }
-    }
+    // MARK: - Routes
 
     /// `/api/vm/<machine id>/exec` -> `/api/vm/{id}/exec`. Machine ids are the
     /// segment after `/api/vm/` unless it is a fixed sub-resource.
@@ -257,81 +177,6 @@ public final class VMClientTelemetry: @unchecked Sendable {
             segments[2] = "{id}"
         }
         return "/" + segments.joined(separator: "/")
-    }
-
-    public static func shouldCaptureToPostHog(_ record: VMRequestTelemetryRecord) -> Bool {
-        if !record.outcome.isSuccess { return true }
-        return !isPolledOperation(method: record.method, route: record.route)
-    }
-
-    /// Server faults and transport failures are errors. Client-side
-    /// preconditions (not signed in, cancelled) are not incidents. 4xx are the
-    /// caller's fault and stay visible as warnings.
-    public static func sentrySeverity(_ record: VMRequestTelemetryRecord) -> VMRequestFailureSeverity? {
-        switch record.outcome {
-        case .response(let status, _, _):
-            if status < 400 { return nil }
-            return status >= 500 ? .error : .warning
-        case .transportFailure(let kind, _):
-            switch kind {
-            case .notSignedIn, .sessionRefreshFailed, .cancelled:
-                return nil
-            case .backendUnreachable, .malformedResponse, .urlError, .unknown:
-                return .error
-            }
-        }
-    }
-
-    static func throttleKey(_ record: VMRequestTelemetryRecord) -> String {
-        "\(record.operation)|\(record.outcome.errorCode ?? "ok")"
-    }
-
-    public static func postHogProperties(_ record: VMRequestTelemetryRecord, channel: String) -> [String: Any] {
-        var properties: [String: Any] = [
-            "operation": record.operation,
-            "method": record.method,
-            "route": record.route,
-            "success": record.outcome.isSuccess,
-            "duration_ms": (record.durationMs * 100).rounded() / 100,
-            "retry_count": record.retryCount,
-            "trace_id": record.referenceTraceId,
-            "client_trace_id": record.trace.traceId,
-            "client_request_id": record.trace.clientRequestId,
-            "channel": channel,
-            "schema_version": 1,
-        ]
-        if let status = record.outcome.httpStatus {
-            properties["status"] = status
-        }
-        if let errorCode = record.outcome.errorCode {
-            properties["error_code"] = errorCode
-            properties["operator_fault"] = sentrySeverity(record) == .error
-        }
-        if case .transportFailure(let kind, _) = record.outcome {
-            properties["transport_failure"] = kind.rawValue
-        }
-        return properties
-    }
-
-    public static func sentryData(_ record: VMRequestTelemetryRecord) -> [String: Any] {
-        var data = postHogProperties(record, channel: "")
-        data.removeValue(forKey: "channel")
-        data.removeValue(forKey: "schema_version")
-        if case .transportFailure(_, let detail) = record.outcome {
-            data["detail"] = String(detail.prefix(300))
-        }
-        return data
-    }
-
-    static func breadcrumbData(_ record: VMRequestTelemetryRecord) -> [String: Any] {
-        var data: [String: Any] = [
-            "duration_ms": (record.durationMs * 100).rounded() / 100,
-            "trace_id": record.referenceTraceId,
-            "client_request_id": record.trace.clientRequestId,
-        ]
-        if let status = record.outcome.httpStatus { data["status"] = status }
-        if let errorCode = record.outcome.errorCode { data["error_code"] = errorCode }
-        return data
     }
 
     // MARK: - Private
@@ -348,19 +193,5 @@ public final class VMClientTelemetry: @unchecked Sendable {
         case .transportFailure(let kind, let detail):
             logger.error("\(record.operation, privacy: .public) \(kind.rawValue, privacy: .public) \(duration)ms trace=\(record.trace.traceId, privacy: .public) req=\(record.trace.clientRequestId, privacy: .public) detail=\(detail, privacy: .public)")
         }
-    }
-
-    /// Successes always pass; failures pass once per key per window.
-    private func allow(_ record: VMRequestTelemetryRecord, in table: inout [String: Date], window: TimeInterval) -> Bool {
-        guard !record.outcome.isSuccess else { return true }
-        let key = Self.throttleKey(record)
-        let current = now()
-        lock.lock()
-        defer { lock.unlock() }
-        if let last = table[key], current.timeIntervalSince(last) < window {
-            return false
-        }
-        table[key] = current
-        return true
     }
 }

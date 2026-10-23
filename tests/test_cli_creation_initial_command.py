@@ -172,7 +172,6 @@ def invoke_cli(
     list[tuple[str, dict[str, object]]],
 ]:
     env = cli_environment()
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
     request_start = state.request_count()
     proc = subprocess.run(

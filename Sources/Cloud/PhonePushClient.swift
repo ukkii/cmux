@@ -583,14 +583,6 @@ final class PhonePushClient {
         guard now - lastEncryptionUnavailableLogEpochSeconds >= 60 else { return }
         lastEncryptionUnavailableLogEpochSeconds = now
         phonePushLog.error("push encryption unavailable; no trusted recipient key")
-        sentryCaptureWarning(
-            "Phone push encryption unavailable",
-            category: "phone-push",
-            data: [
-                "reason": "missing_trusted_recipient",
-                "protocol": "notification-e2e-v1",
-            ]
-        )
     }
 
     private struct PhonePushRecipientResponse: Decodable {

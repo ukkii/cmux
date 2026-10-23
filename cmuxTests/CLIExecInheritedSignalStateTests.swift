@@ -59,7 +59,6 @@ struct CLIExecInheritedSignalStateTests {
             "CFFIXED_USER_HOME": root.path,
             "SHELL": "/bin/sh",
             "CMUX_SOCKET_PATH": socketPath,
-            "CMUX_CLI_SENTRY_DISABLED": "1"
         ]
         let result = runner.runProcess(
             executablePath: cliPath,

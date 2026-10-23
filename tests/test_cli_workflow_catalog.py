@@ -77,8 +77,6 @@ def run_cli(cli_path: str, args: list[str], language: str = "en") -> subprocess.
         "CMUX_TAB_ID",
     ]:
         env.pop(key, None)
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
-    env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
     with tempfile.TemporaryDirectory(prefix="cmux-workflow-catalog-") as tmpdir:
         env["CMUX_SOCKET_PATH"] = os.path.join(

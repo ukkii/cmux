@@ -1449,10 +1449,6 @@ path = "tests/test_remote_daemon_release_verification.py"
 lane = "linux-guard"
 
 [[test]]
-path = "tests/test_repair_nightly_appcast_content_types.py"
-lane = "linux-guard"
-
-[[test]]
 path = "tests/test_shell_histfile_ghostty_zdotdir_regression.py"
 lane = "legacy"
 
@@ -1490,10 +1486,6 @@ lane = "legacy"
 
 [[test]]
 path = "tests/test_swift_testing_require_not_nested.py"
-lane = "linux-guard"
-
-[[test]]
-path = "tests/test_terminal_hang_release_gate.py"
 lane = "linux-guard"
 
 [[test]]
@@ -1895,10 +1887,6 @@ lane = "linux-guard"
 
 [[test]]
 path = "tests/test_ci_release_per_arch_stable.py"
-lane = "linux-guard"
-
-[[test]]
-path = "tests/test_compose_stable_appcast.py"
 lane = "linux-guard"
 
 [[test]]

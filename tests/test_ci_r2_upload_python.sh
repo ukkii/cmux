@@ -43,17 +43,9 @@ assert len(headers["x-amz-content-sha256"]) == 64, headers
 PY
 
 if grep -R "resolve-aws-cli.sh" "$ROOT_DIR/.github/workflows/nightly.yml" "$ROOT_DIR/.github/workflows/release.yml"; then
-  echo "FAIL: appcast R2 uploads must not depend on an AWS CLI resolver"
+  echo "FAIL: R2 uploads must not depend on an AWS CLI resolver"
   exit 1
 fi
 
-if ! grep -Fq "scripts/ci/upload-r2-object.py" "$ROOT_DIR/.github/workflows/nightly.yml"; then
-  echo "FAIL: nightly workflow must use the Python R2 uploader"
-  exit 1
-fi
-if ! grep -Fq "scripts/ci/upload-r2-object.py" "$ROOT_DIR/.github/workflows/release.yml"; then
-  echo "FAIL: release workflow must use the Python R2 uploader"
-  exit 1
-fi
 
-echo "PASS: Python R2 uploader signs appcast uploads without awscli"
+echo "PASS: Python R2 uploader signs uploads without awscli"

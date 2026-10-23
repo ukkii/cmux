@@ -45,7 +45,6 @@ struct CMUXCLIForkLegacyFallbackTests {
             !$0.key.hasPrefix("CMUX_") && !$0.key.hasPrefix("CMUXD_")
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["HOME"] = home.path
         environment["CFFIXED_USER_HOME"] = home.path
         environment["AppleLanguages"] = "(en)"
@@ -121,7 +120,6 @@ struct CMUXCLIForkLegacyFallbackTests {
             !$0.key.hasPrefix("CMUX_") && !$0.key.hasPrefix("CMUXD_")
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["HOME"] = root.path
         environment["CFFIXED_USER_HOME"] = root.path
         environment["AppleLanguages"] = "(en)"

@@ -5,7 +5,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
     func testLocalTmuxLifecycleRejectsAttachmentOptions() throws {
         let cliPath = try bundledCLIPath()
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment.removeValue(forKey: "CMUX_SOCKET")
         environment.removeValue(forKey: "CMUX_SOCKET_PATH")
 
@@ -46,7 +45,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
     func testLocalTmuxAliasRejectsNonAttachActions() throws {
         let cliPath = try bundledCLIPath()
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment.removeValue(forKey: "CMUX_SOCKET")
         environment.removeValue(forKey: "CMUX_SOCKET_PATH")
 
@@ -157,7 +155,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         defer { try? FileManager.default.removeItem(at: root) }
 
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = root.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment.removeValue(forKey: "CMUX_SOCKET")
@@ -194,7 +191,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         XCTAssertEqual(chmod(fakeTmuxURL.path, 0o755), 0)
 
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = fakeTmuxURL.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment.removeValue(forKey: "CMUX_SOCKET")
@@ -244,7 +240,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         XCTAssertEqual(chmod(fakeTmuxURL.path, 0o755), 0)
 
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = fakeTmuxURL.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment["FAKE_TMUX_MODE"] = "create"
@@ -335,7 +330,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         try Data("#!/bin/sh\necho unavailable >&2\nexit 1\n".utf8).write(to: fakeTmuxURL)
         XCTAssertEqual(chmod(fakeTmuxURL.path, 0o755), 0)
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = fakeTmuxURL.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment.removeValue(forKey: "CMUX_SOCKET")
@@ -388,7 +382,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         XCTAssertEqual(chmod(wrapperURL.path, 0o755), 0)
 
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = fakeTmuxURL.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment["EXISTING_TMUX_CWD"] = root.path
@@ -455,7 +448,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         XCTAssertEqual(chmod(fakeTmuxURL.path, 0o755), 0)
 
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = fakeTmuxURL.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment["FAKE_TMUX_MODE"] = "create"
@@ -540,7 +532,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         XCTAssertEqual(chmod(fakeTmuxURL.path, 0o755), 0)
 
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = fakeTmuxURL.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment.removeValue(forKey: "CMUX_SOCKET")

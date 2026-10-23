@@ -13,12 +13,11 @@
 /// recovery paths) or the listener queue (accept drain and path monitor);
 /// they must be safe to call from any thread and must not block.
 public struct SocketControlServerEvents: Sendable {
-    /// Emits a non-fatal telemetry breadcrumb (`sentryBreadcrumb` in the app).
+    /// Emits a non-fatal diagnostic breadcrumb (a no-op in the app).
     public let breadcrumb: @Sendable (_ message: String, _ data: [String: any Sendable]) -> Void
 
-    /// Reports a listener failure. The host decides whether to escalate the
-    /// breadcrumb to a captured error (the app dedupes through
-    /// ``SocketListenerFailureCaptureGate``).
+    /// Reports a listener failure. The host decides what to do with it (the
+    /// app drops it).
     /// `data` already contains the listener-state snapshot fields plus
     /// `stage`/`errno` entries; `stage` and `errnoCode` are passed discretely
     /// so the host can build its dedupe key without re-parsing the dictionary.

@@ -269,7 +269,7 @@ def test_paths_that_reach_the_app_still_build() -> None:
         "skills/cmux-cua/SKILL.md",
         # Nightly signs and publishes; those helpers run in no PR lane.
         "scripts/sign-cmux-bundle.sh",
-        "scripts/sparkle_generate_appcast.sh",
+        "scripts/ci/notarize-nightly-dmg.sh",
         ".github/workflows/nightly.yml",
         # Bundled into cmux.app and published beside it; no pull-request
         # macOS lane builds either, so the router alone calls them neutral.

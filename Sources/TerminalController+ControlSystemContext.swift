@@ -1,7 +1,6 @@
 import AppKit
 import Bonsplit
 import CmuxControlSocket
-import CmuxFeedback
 import CmuxWorkspaces
 import Foundation
 
@@ -9,7 +8,7 @@ import Foundation
 /// `v2SystemTree` tree walk, `v2WorkspaceAction` / `v2TabAction` mutation
 /// switches, `v2ExtensionSidebarSnapshot`, `v2SessionRestorePrevious`, the
 /// `session.import` / `session.export` session transfer,
-/// `v2SettingsOpen`, `v2FeedbackOpen`, and the DEBUG-only
+/// `v2SettingsOpen`, and the DEBUG-only
 /// `v2MobileDevStackAuthConfigure`, minus the per-read `v2MainSync` hops (the
 /// coordinator already runs on the main actor inside the socket-command policy
 /// scope). `system.identify` and `surface.split_off` stay shared app-side
@@ -262,7 +261,7 @@ extension TerminalController: ControlSystemContext {
         }
     }
 
-    // MARK: - auth.login / session / settings / feedback
+    // MARK: - auth.login / session / settings
 
     func controlAuthPasswordRequired() -> Bool {
         socketServer.accessMode.requiresPasswordAuth
@@ -510,34 +509,6 @@ extension TerminalController: ControlSystemContext {
             return .opened(target: navigationTarget?.rawValue ?? "general")
         case .failed(let reason):
             return .failed(message: reason)
-        }
-    }
-
-    func controlFeedbackOpen(workspaceID: UUID?, windowID: UUID?, requestedActivate: Bool) {
-        let shouldActivate = v2FocusAllowed(requested: requestedActivate)
-        DispatchQueue.main.async {
-            let targetWindow: NSWindow?
-            if let windowID, let app = AppDelegate.shared {
-                targetWindow = app.mainWindow(for: windowID)
-            } else if let workspaceID, let app = AppDelegate.shared {
-                targetWindow = app.mainWindowContainingWorkspace(workspaceID)
-            } else {
-                targetWindow = nil
-            }
-
-            if shouldActivate {
-                if let targetWindow {
-                    _ = AppDelegate.shared?.focusWindowForAppActivation(targetWindow, reason: .feedback)
-                } else {
-                    // The legacy body also passed .activateIgnoringOtherApps; the
-                    // option is deprecated and documented as a no-op on macOS 14+
-                    // (this target's minimum), so dropping it is behavior-neutral
-                    // and keeps this file deprecation-warning-free.
-                    NSRunningApplication.current.activate(options: [.activateAllWindows])
-                }
-            }
-
-            FeedbackComposerBridge().openComposer(in: targetWindow)
         }
     }
 

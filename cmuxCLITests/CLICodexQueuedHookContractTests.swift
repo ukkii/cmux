@@ -20,7 +20,6 @@ struct CLICodexQueuedHookContractTests {
                 "HOME": root.path,
                 "CODEX_HOME": root.appendingPathComponent(".codex").path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             timeout: 3
         )
@@ -70,7 +69,6 @@ struct CLICodexQueuedHookContractTests {
                 "HOME": root.path,
                 "CODEX_HOME": root.appendingPathComponent(".codex").path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             timeout: 3
         )
@@ -84,7 +82,6 @@ struct CLICodexQueuedHookContractTests {
             "CMUX_SURFACE_ID": "surface-codex-hook-failure",
             "CMUX_CODEX_HOOK_CMUX_BIN": "/usr/bin/false",
             "CMUX_BUNDLED_CLI_PATH": "/usr/bin/true",
-            "CMUX_CLI_SENTRY_DISABLED": "1",
         ]
         let payload = #"{"session_id":"codex-hook-failure","tool_name":"Write"}"#
 
@@ -172,7 +169,6 @@ struct CLICodexQueuedHookContractTests {
                 "HOME": root.path,
                 "CODEX_HOME": root.appendingPathComponent(".codex").path,
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-                "CMUX_CLI_SENTRY_DISABLED": "1",
             ],
             timeout: 3
         )

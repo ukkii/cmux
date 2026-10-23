@@ -1,4 +1,3 @@
-import CmuxProductAnalytics
 import CmuxSSHClipboardTrust
 import AppKit
 import CmuxAgentChat
@@ -281,16 +280,6 @@ class TabManager: ObservableObject {
     func workspaceTabsWillChange(to newValue: [Workspace]) {
         objectWillChange.send()
         tabsPublisher.send(newValue)
-        if newValue.count != tabs.count, ProductAnalytics.app.isEnabled {
-            // A window that already had a workspace gaining one, outside
-            // restore, is a created workspace (whatever entrypoint created it).
-            // A new window's first workspace is not.
-            if newValue.count > tabs.count, !tabs.isEmpty, !isRestoringSessionSnapshot {
-                ProductAnalytics.app.reach(.firstWorkspace)
-            }
-            // After the commit, so the count reads the new list. Reorders skip this.
-            Task { @MainActor in AppDelegate.shared?.refreshProductAnalyticsActivityContext() }
-        }
     }
 
     /// Legacy `@Published workspaceGroups` willSet.
@@ -367,9 +356,6 @@ class TabManager: ObservableObject {
             if let selectedTabId {
                 workspacesById[selectedTabId]?.admitStartupRestoresAwaitingFirstVisit()
             }
-            sentryBreadcrumb("workspace.switch", data: [
-                "tabCount": tabs.count
-            ])
             let previousTabId = oldValue
             if let previousTabId,
                let previousPanelId = focusedPanelId(for: previousTabId) {
@@ -1468,7 +1454,6 @@ class TabManager: ObservableObject {
             maybeMutateSelectionDuringWorkspaceCreationForDev(snapshot: snapshot)
 #endif
             let nextTabCount = snapshot.tabs.count + 1
-            sentryBreadcrumb("workspace.create", data: ["tabCount": nextTabCount])
             let explicitWorkingDirectory = normalizedWorkingDirectory(overrideWorkingDirectory)
             let workingDirectory = WorkspaceCreationWorkingDirectoryPolicy(
                 inheritanceEnabled: inheritanceEnabled
@@ -2674,7 +2659,6 @@ class TabManager: ObservableObject {
         guard tabs.contains(where: { $0.id == workspace.id }) else { return }
         MachineCreateCoordinator.shared.cancelOperations(forPresentationWorkspace: workspace.id)
         panelTitleUpdateCoalescer.flushNow()
-        sentryBreadcrumb("workspace.close", data: ["tabCount": tabs.count - 1])
         // Closing a mirrored remote tmux workspace DETACHES from the remote session,
         // leaving it alive on the server for resume. Killing the session is never a
         // side effect of closing a tab (PR #7264 review); it is only ever an explicit
@@ -7490,7 +7474,6 @@ extension Notification.Name {
     static let agentInboxReplyFieldFocusChanged = Notification.Name("cmux.agentInboxReplyFieldFocusChanged")
     static let commandPaletteRenameInputInteractionRequested = Notification.Name("cmux.commandPaletteRenameInputInteractionRequested")
     static let commandPaletteRenameInputDeleteBackwardRequested = Notification.Name("cmux.commandPaletteRenameInputDeleteBackwardRequested")
-    static let feedbackComposerRequested = Notification.Name("cmux.feedbackComposerRequested")
     static let agentInboxRequested = Notification.Name("cmux.agentInboxRequested")
     static let ghosttyDidSetTitle = Notification.Name("ghosttyDidSetTitle")
     static let ghosttyDidFocusTab = Notification.Name("ghosttyDidFocusTab")

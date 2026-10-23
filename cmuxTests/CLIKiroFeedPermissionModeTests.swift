@@ -59,7 +59,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
                     "CMUX_SURFACE_ID": "44444444-4444-4444-4444-444444444444",
                     "CMUX_KIRO_PID": "525252",
                     "CMUX_KIRO_NOTIFICATION_LEVEL": "standard",
-                    "CMUX_CLI_SENTRY_DISABLED": "1",
                 ],
                 standardInput: #"{"hook_event_name":"preToolUse","session_id":"kiro-session-mode","cwd":"\#(root.path)","tool_name":"fs_write","tool_input":{"operations":[{"mode":"Line","path":"\#(root.appendingPathComponent("README.md").path)"}]}}"#,
                 timeout: 5

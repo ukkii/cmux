@@ -55,7 +55,7 @@ class NewWindowNameTests(unittest.TestCase):
 
     def run_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
         environment = {k: v for k, v in os.environ.items() if not k.startswith("CMUX")}
-        environment.update({"CMUX_CLI_SENTRY_DISABLED": "1", "AppleLanguages": "(en)"})
+        environment.update({"AppleLanguages": "(en)"})
         return subprocess.run([self.cli, "--socket", self.path, "new-window", *args],
                               env=environment, stdin=subprocess.DEVNULL,
                               capture_output=True, text=True, timeout=10, check=False)

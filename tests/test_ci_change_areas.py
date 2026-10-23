@@ -468,7 +468,6 @@ def test_package_lane_reads_the_job_package_list_from_the_workflow() -> None:
         "CmuxCloudTunnelCore",
         "CMUXDebugLog",
         "CmuxExtensionKit",
-        "CmuxFeedback",
         "CmuxLiveEval",
         "CmuxPanes",
         "CmuxPhonePush",
@@ -479,7 +478,6 @@ def test_package_lane_reads_the_job_package_list_from_the_workflow() -> None:
         "CmuxSwiftRender",
         "CmuxSwiftRenderUI",
         "CmuxTestSupport",
-        "CmuxUpdaterUI",
         "CmuxWindowing",
     ):
         assert name in packages, name
@@ -574,11 +572,7 @@ def test_terminal_sources_the_hang_jobs_build_run_the_diagnostics() -> None:
         "cmuxTests/TerminalPortalReconciliationReentrancyTests.swift",
         "tests/run_terminal_portal_reconciliation_tests.sh",
         "Packages/Shared/CMUXMobileCore/Sources/CMUXMobileCore/TerminalWorkInterval.swift",
-        "Packages/Shared/CmuxSentryTelemetry/Sources/CmuxSentryTelemetry/TerminalWorkSentryContext.swift",
-        "cmux.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
         "scripts/select-ci-xcode.sh",
-        "scripts/terminal-hang-release-gate.py",
-        "tests/test_terminal_hang_release_gate.py",
         ".github/workflows/terminal-hang-diagnostics.yml",
     ):
         assert runs_hang_diagnostics(path), path
@@ -892,7 +886,7 @@ def test_publishing_changes_keep_daemon_linux_checks_without_native_rerun() -> N
     script = workflow_job_step_script("changes", "Route standalone project workflows")
     script = script.replace("/tmp/cmux-ci-changed-files.txt", '\"$CHANGED_FILES\"')
     cases = (
-        (".github/workflows/nightly.yml\nscripts/sparkle_generate_appcast.sh\n", "false"),
+        (".github/workflows/nightly.yml\nscripts/build-sign-upload.sh\n", "false"),
         (".github/workflows/release.yml\n", "false"),
         (".github/workflows/nightly.yml\ndaemon/remote/main.go\n", "true"),
         ("daemon/remote/go.mod\n", "true"),
@@ -1436,7 +1430,7 @@ def test_workflow_changes_run_everything() -> None:
 
 
 def test_publishing_helpers_skip_unrelated_product_builds() -> None:
-    helpers = ["scripts/ci/download-run-artifact.py", "scripts/prebuild_sparkle_deltas.sh", "scripts/sparkle_generate_appcast.sh", "scripts/build-sign-upload.sh"]
+    helpers = ["scripts/ci/download-run-artifact.py", "scripts/build-sign-upload.sh"]
     for path in helpers:
         actual = module.classify_files([path])
         assert not any((actual.macos, actual.web, actual.agent_session_web, actual.cli, actual.swift_packages, actual.release_build)), (path, actual)
@@ -1444,7 +1438,7 @@ def test_publishing_helpers_skip_unrelated_product_builds() -> None:
     assert actual.macos and actual.release_build
     actual = module.classify_files(helpers + ["scripts/ci/unknown_publishing_helper.py"])
     assert actual.macos and actual.release_build and actual.web
-    result, outputs = run_detect_step_for_paths(helpers + [".github/workflows/nightly.yml", "tests/test_sparkle_generate_appcast_no_deltas.sh"])
+    result, outputs = run_detect_step_for_paths(helpers + [".github/workflows/nightly.yml"])
     assert outputs == ["macos=false", "web=false", "agent_session_web=false", "cli=false", "swift_packages=false", "release_build=false"], (result.stdout, outputs)
 
 

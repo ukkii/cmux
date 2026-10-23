@@ -56,16 +56,6 @@ public enum ManagedDevicePolicyKey: String, CaseIterable, Sendable {
     /// transport itself, including the paths that are not remote control.
     case disableIrohNetworking = "DisableIrohNetworking"
 
-    /// Disables analytics and crash reporting (PostHog, Sentry) and the remote
-    /// feature-flag fetch, all of which carry the install's anonymous id off
-    /// the Mac. Read once at launch, like the user opt-in it overrides.
-    case disableTelemetry = "DisableTelemetry"
-
-    /// Disables Sparkle: no scheduled or launch-time update checks and no
-    /// downloads, and "Check for Updates…" explains the managed state. Read
-    /// at launch; the fleet's MDM deploys app versions instead.
-    case disableAutoUpdate = "DisableAutoUpdate"
-
     /// Disables the `webhook` action of automation rules, which posts event
     /// payloads with caller-supplied headers to any http(s) URL.
     case disableAutomationWebhooks = "DisableAutomationWebhooks"

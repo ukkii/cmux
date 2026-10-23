@@ -222,7 +222,7 @@ print('Test run with 4 tests in 1 suite passed after 0.1 seconds.')
         self.assertNotEqual(result.returncode, 0, result.stdout)
         ran = {Path(args[args.index('--package-path') + 1]).name for args in calls}
         self.assertIn("CmuxTerminal", ran)
-        self.assertIn("CmuxUpdater", ran)
+        self.assertIn("CmuxWorkspaces", ran)
         self.assertIn(
             "::error title=Swift package tests failed::CMUXAgentLaunch failed with exit status 1",
             result.stdout,
@@ -230,7 +230,7 @@ print('Test run with 4 tests in 1 suite passed after 0.1 seconds.')
         self.assertEqual(result.stdout.count("::error title=Swift package tests failed::"), 1)
         table = result.stdout.split("Swift package test results:\n", 1)[1]
         self.assertRegex(table, r"CMUXAgentLaunch +failed \(exit 1\)")
-        self.assertRegex(table, r"CmuxUpdater +passed")
+        self.assertRegex(table, r"CmuxWorkspaces +passed")
         self.assertIn("1 of ", result.stdout)
 
 

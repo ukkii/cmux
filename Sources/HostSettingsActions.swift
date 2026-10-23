@@ -6,7 +6,6 @@ import CmuxWorkspaces
 import CmuxSettings
 import CmuxSettingsUI
 import CmuxSwiftRenderUI
-import CmuxUpdater
 import CmuxFoundation
 import Foundation
 import OSLog

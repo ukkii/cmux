@@ -161,7 +161,6 @@ select_packages() {
     CmuxTerminalCore
     CmuxTerminalImport
     CmuxTerminalPrediction
-    CmuxUpdater
     CmuxWorkspaces
     CMUXAgentLaunch
     CmuxAgentJournal
@@ -174,7 +173,6 @@ select_packages() {
     CmuxCloudTunnelCore
     CMUXDebugLog
     CmuxExtensionKit
-    CmuxFeedback
     CmuxLiveEval
     CmuxPanes
     CmuxPhonePush
@@ -185,7 +183,6 @@ select_packages() {
     CmuxSwiftRender
     CmuxSwiftRenderUI
     CmuxTestSupport
-    CmuxUpdaterUI
     CmuxWindowing
     CmuxTextActions
   )

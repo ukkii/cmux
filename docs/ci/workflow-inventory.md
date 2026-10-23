@@ -100,7 +100,6 @@ Sorted by estimated runner minutes. Trigger abbreviations: pr = pull_request, pr
 | `merge-group-policy-checks.yml` | merge_group | gh-ubuntu | 34 | 34 / 0 / 0 / 0 | 3 | 2026-09-20 | teamleaderleo #13113 | Leo 2026-09-19 | REQUIRED: CLA checks in merge queue; 2 docs/tests | dormant, merge queue off since 09-20; keep (required checks) |
 | `ios-app-store.yml` | dispatch | blacksmith/macos | 1 | 0 / 1 / 0 / 0 | 3 | 2026-09-08 | azooz2003-bit #7644 | Abdulaziz Albahar 2026-09-18 | 1 docs/tests |  |
 | `cmux-tui-release-cut.yml` | dispatch | blacksmith | 1 | 0 / 1 / 0 / 0 | 2 | 2026-08-26 | lawrencecchen #7710 | lawrencecchen 2026-08-25 | 1 wf refs; 2 docs/tests |  |
-| `repair-nightly-appcast-content-types.yml` | pr dispatch (paths) | blacksmith | 3 | 3 / 0 / 0 / 0 | 2 | 2026-09-17 | austinywang #12281 | Austin Wang 2026-09-10 | none |  |
 | `vercel-auth-health.yml` | dispatch schedule | blacksmith | 8 | 8 / 0 / 0 / 0 | 1 | 2026-09-22 | lawrencecchen #8347 | Lawrence Chen 2026-07-17 | 1 docs/tests |  |
 | `ci-artifact-canary.yml` | dispatch | blacksmith | 1 | 0 / 1 / 0 / 0 | 1 | never | teamleaderleo #13268 | Leo Li 2026-09-20 | 1 wf refs; 1 docs/tests | **a** canary, 1 run, never succeeded |
 | `indexnow-tests.yml` | pr dispatch (paths) | blacksmith | 3 | 3 / 0 / 0 / 0 | 1 | 2026-09-18 | lawrencecchen #12909 | Lawrence Chen 2026-09-17 | none |  |

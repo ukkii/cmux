@@ -36,7 +36,6 @@ class CliEnvironmentTests(unittest.TestCase):
             self.assertNotIn(key, env)
         self.assertEqual(env["HOME"], "/Users/me")
         self.assertEqual(env["PATH"], "/usr/bin:/bin")
-        self.assertEqual(env["CMUX_CLI_SENTRY_DISABLED"], "1")
         self.assertNotIn("CMUX_PANEL_ID", env)
         self.assertNotIn("CMUX_PANE_ID", env)
 

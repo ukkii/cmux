@@ -181,8 +181,6 @@ def hook_environment(socket_path: str, extra: dict[str, str] | None = None) -> d
     env["CMUX_WORKSPACE_ID"] = "11111111-1111-1111-1111-111111111111"
     env["CMUX_CLAUDE_PID"] = str(os.getpid())
     env["CMUXTERM_CLI_RESPONSE_TIMEOUT_SEC"] = "0.5"
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
-    env["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
     if extra:
         env.update(extra)
     return env

@@ -53,7 +53,6 @@ def main() -> int:
     env = {
         "HOME": os.environ.get("HOME", "/tmp"),
         "PATH": "/usr/bin:/bin",
-        "CMUX_CLI_SENTRY_DISABLED": "1",
     }
     generated = subprocess.run(
         [cli, "hooks", "claude", "inject-settings"],

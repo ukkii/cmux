@@ -675,8 +675,6 @@ def live_syntax_errors(cli: str) -> list[str]:
             "CMUX_TAB_ID",
         ):
             environment.pop(key, None)
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
 
         def run(arguments: Sequence[str]) -> str:
             try:

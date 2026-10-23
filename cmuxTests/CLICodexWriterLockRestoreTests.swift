@@ -79,7 +79,7 @@ struct CLICodexWriterLockRestoreTests {
             defer { responder.stop() }
             var environment = [
                 "HOME": root.path, "CFFIXED_USER_HOME": root.path, "PATH": "/usr/bin:/bin",
-                "CMUX_SOCKET_PATH": socket, "CMUX_CLI_SENTRY_DISABLED": "1", "SHELL": "/bin/sh"
+                "CMUX_SOCKET_PATH": socket, "SHELL": "/bin/sh"
             ]
             // CI relocates test-built package frameworks. Preserve only those
             // loader overrides, so this CLI uses the same product as its host.
@@ -182,7 +182,7 @@ struct CLICodexWriterLockRestoreTests {
         defer { responder.stop() }
         var environment = [
             "HOME": root.path, "CFFIXED_USER_HOME": root.path, "PATH": "/usr/bin:/bin",
-            "CMUX_SOCKET_PATH": socket, "CMUX_CLI_SENTRY_DISABLED": "1", "SHELL": "/bin/sh"
+            "CMUX_SOCKET_PATH": socket, "SHELL": "/bin/sh"
         ]
         for key in ["DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH"] {
             environment[key] = ProcessInfo.processInfo.environment[key]

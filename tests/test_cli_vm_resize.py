@@ -96,7 +96,6 @@ class VMResizeTests(unittest.TestCase):
         environment = {key: value for key, value in os.environ.items() if not key.startswith("CMUX")}
         environment.update({
             "CMUX_SOCKET_PATH": path,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
             "AppleLanguages": "(en)",
             "LANG": "en_US.UTF-8",
             "LC_ALL": "en_US.UTF-8",

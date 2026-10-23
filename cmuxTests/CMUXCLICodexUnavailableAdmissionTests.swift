@@ -126,8 +126,7 @@ struct CMUXCLICodexUnavailableAdmissionTests {
             arguments: ["restore"] + (explicitSurface ? ["--surface", surfaceID] : []) + ["codex", checkpointID],
             environment: [
                 "HOME": root.path, "CFFIXED_USER_HOME": root.path,
-                "CMUX_SOCKET_PATH": socketPath, "CMUX_CLI_SENTRY_DISABLED": "1",
-                "CMUX_CLI_TTY_NAME": "ttys-restore-fixture", "PATH": "/usr/bin:/bin"
+                "CMUX_SOCKET_PATH": socketPath, "CMUX_CLI_TTY_NAME": "ttys-restore-fixture", "PATH": "/usr/bin:/bin"
             ]
         )
         let requests = try responder.receivedRequests.map { request in

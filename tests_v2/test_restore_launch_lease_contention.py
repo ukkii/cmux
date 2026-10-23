@@ -111,8 +111,7 @@ def exercise(cli: Path, reports_owner: bool, owner_cli: Path, launching: bool = 
         thread.start()
         environment = {
             "HOME": str(root), "CFFIXED_USER_HOME": str(root), "CODEX_HOME": str(home),
-            "CMUX_SOCKET_PATH": str(path), "CMUX_CLI_SENTRY_DISABLED": "1",
-            "SHELL": "/bin/sh", "PATH": "/usr/bin:/bin", "LANG": "en_US.UTF-8",
+            "CMUX_SOCKET_PATH": str(path), "SHELL": "/bin/sh", "PATH": "/usr/bin:/bin", "LANG": "en_US.UTF-8",
         }
         for key in ("DYLD_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH"):
             if key in os.environ:

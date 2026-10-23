@@ -571,12 +571,6 @@ final class MobileHostService {
 
     /// This Mac's authenticated Stack email, or `nil` when signed out or before
     /// the auth graph is configured.
-    ///
-    /// The mobile data plane only accepts same-account connections, so the
-    /// caller is this Mac's own Stack account. The privileged agent feedback
-    /// sink (`dogfood.feedback.submit`) checks this email's domain at the trust
-    /// boundary, so a crafted RPC from a non-privileged account is rejected
-    /// regardless of which route the phone UI chose.
     func currentAuthenticatedLocalUserEmail() async -> String? {
         guard let auth else { return nil }
         await auth.awaitBootstrapped()

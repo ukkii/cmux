@@ -165,7 +165,7 @@ LogLevel ERROR
         thread = threading.Thread(target=serve, daemon=True)
         thread.start()
         env = {k: v for k, v in os.environ.items() if not k.startswith("CMUX_")}
-        env.update(CMUX_SOCKET_PATH=str(root / "app.sock"), CMUX_CLI_SENTRY_DISABLED="1", CMUX_VM_PUSH_WATCH_ROUNDS="1")
+        env.update(CMUX_SOCKET_PATH=str(root / "app.sock"), CMUX_VM_PUSH_WATCH_ROUNDS="1")
 
         def push(local, remote, *args):
             return run([cli, "--json", "vm", "push", "test-vm", str(local), remote, *args], env=env)

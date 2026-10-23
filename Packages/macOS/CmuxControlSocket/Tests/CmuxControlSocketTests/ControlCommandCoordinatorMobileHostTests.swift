@@ -175,7 +175,7 @@ struct ControlCommandCoordinatorMobileHostTests {
     @Test func v2SurfaceMobileHostHandlerIgnoresDataPlaneOnlyVerbs() {
         let (coordinator, context) = makeCoordinator()
         // The mobile-host v2 dispatcher must NOT own the data-plane-only verbs
-        // (`mobile.chat.*`, `dogfood.feedback.submit`, the mobile workspace
+        // (`mobile.chat.*`, the mobile workspace
         // wrappers). The phone reaches those only through the mobile data-plane RPC
         // (`TerminalController.mobileHostHandleRPC`), which dispatches its
         // `v2Mobile*` bodies directly and never transits this coordinator.
@@ -186,7 +186,6 @@ struct ControlCommandCoordinatorMobileHostTests {
         // not the umbrella `handle(_:)`.)
         for method in [
             "mobile.chat.sessions",
-            "dogfood.feedback.submit",
             "mobile.attach_ticket.create",
             "workspace.action",
             "workspace.create",

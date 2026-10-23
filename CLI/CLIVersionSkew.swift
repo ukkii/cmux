@@ -167,10 +167,10 @@ enum CLIVersionSkew {
         } else if order == .orderedDescending || (peer != nil && peer?.app == nil && peer?.version == nil) {
             // The app is older, or answers identify without `app` and
             // `version` (both arrived together, so it predates them):
-            // usually an installed update waiting for a relaunch.
+            // usually a newer install waiting for a relaunch.
             fix = String(
                 localized: "cli.versionSkew.fix.appOlder",
-                defaultValue: "The running app is older than this CLI. Quit and reopen cmux to finish an installed update, or update it with cmux > Check for Updates.",
+                defaultValue: "The running app is older than this CLI. Quit and reopen cmux if a newer version was installed, or install a cmux release that matches this CLI.",
                 bundle: bundle
             )
         } else {

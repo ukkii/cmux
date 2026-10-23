@@ -55,7 +55,7 @@ on:
         required: false
         default: ""
       test_filter:
-        description: "Run specific UI test class (e.g. UpdatePillUITests) or empty for all"
+        description: "Run specific UI test class (e.g. SidebarHelpMenuUITests) or empty for all"
         required: false
         default: ""
       test_timeout:

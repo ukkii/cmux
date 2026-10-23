@@ -83,7 +83,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         environment["CFFIXED_USER_HOME"] = home.path
         environment["XDG_CONFIG_HOME"] = home.appendingPathComponent(".config").path
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         return environment
     }
 

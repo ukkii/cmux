@@ -56,7 +56,6 @@ exec opencode-node-helper "$@"
         env = os.environ.copy()
         env["HOME"] = str(root)
         env["PATH"] = "/usr/bin:/bin"
-        env["CMUX_CLI_SENTRY_DISABLED"] = "1"
         env["CMUX_SOCKET_PATH"] = str(root / "missing.sock")
         env["FAKE_PROVIDER_LOG"] = str(provider_log)
 
@@ -194,7 +193,6 @@ mkdir -p "$PWD/node_modules/oh-my-openagent"
         env = os.environ.copy()
         env["HOME"] = str(root)
         env["PATH"] = "/usr/bin:/bin"
-        env["CMUX_CLI_SENTRY_DISABLED"] = "1"
         env["CMUX_SOCKET_PATH"] = str(root / "missing.sock")
 
         proc = subprocess.run(
@@ -262,7 +260,6 @@ exec opencode-node-helper "$@"
         env = os.environ.copy()
         env["HOME"] = str(root)
         env["PATH"] = f"{stale_app_bin}:/usr/bin:/bin"
-        env["CMUX_CLI_SENTRY_DISABLED"] = "1"
         env["CMUX_SOCKET_PATH"] = str(root / "missing.sock")
 
         proc = subprocess.run(

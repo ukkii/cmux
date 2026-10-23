@@ -98,25 +98,6 @@ extension AppDelegate {
         }
     }
 
-    /// `DisableAutoUpdate`: a manual "Check for Updates…" explains the managed
-    /// state instead of silently doing nothing. Returns true when the check
-    /// may proceed.
-    func managedAutoUpdateAllowsCheck() -> Bool {
-        guard ManagedDevicePolicy().isEnforced(.disableAutoUpdate) else { return true }
-        let alert = NSAlert()
-        alert.messageText = String(
-            localized: "managedPolicy.autoUpdate.disabled",
-            defaultValue: "Software updates are managed by your organization."
-        )
-        alert.informativeText = String(
-            localized: "managedPolicy.autoUpdate.disabledDetail",
-            defaultValue: "cmux does not check for or install updates on this Mac. Your organization deploys new versions."
-        )
-        alert.alertStyle = .informational
-        alert.runModal()
-        return false
-    }
-
     /// `DisableRemoteConnections` activation. Every live cmux-created remote
     /// connection ends: remote workspaces (SSH, Mosh, and Cloud attachments)
     /// disconnect and drop their configuration so no reconnect path can

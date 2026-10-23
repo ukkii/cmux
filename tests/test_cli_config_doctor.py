@@ -38,7 +38,6 @@ def run_cli(
 ) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
     env["HOME"] = str(home)
-    env["CMUX_CLI_SENTRY_DISABLED"] = "1"
     env["CMUX_SOCKET_PATH"] = str(home / "missing.sock")
     env.pop("CMUX_SOCKET", None)
     env.pop("CMUX_SOCKET_PASSWORD", None)
@@ -124,7 +123,6 @@ def main() -> int:
         helper_env = dict(os.environ)
         helper_env["HOME"] = str(home)
         helper_env["CMUX_CLI_BIN"] = cli_path
-        helper_env["CMUX_CLI_SENTRY_DISABLED"] = "1"
         (home / "cmux.json").write_text('{"homeLevel": true,,}\n', encoding="utf-8")
         config_path = home / ".config" / "cmux" / "cmux.json"
         config_path.parent.mkdir(parents=True)
@@ -350,7 +348,6 @@ def main() -> int:
         helper_env = dict(os.environ)
         helper_env["HOME"] = str(home)
         helper_env["CMUX_CLI_BIN"] = cli_path
-        helper_env["CMUX_CLI_SENTRY_DISABLED"] = "1"
         helper_result = subprocess.run(
             [
                 sys.executable,

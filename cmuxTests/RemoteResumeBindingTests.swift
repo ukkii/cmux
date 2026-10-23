@@ -935,7 +935,6 @@ struct RemoteResumeBindingTests {
             "CMUX_AGENT_LAUNCH_EXECUTABLE": executable,
             "CMUX_AGENT_LAUNCH_ARGV_B64": base64NULSeparated(launchArguments),
             "CMUX_AGENT_LAUNCH_CWD": workingDirectory.path,
-            "CMUX_CLI_SENTRY_DISABLED": "1",
         ]
         let inputObject: [String: Any] = [
             "session_id": "kiro-remote-session",

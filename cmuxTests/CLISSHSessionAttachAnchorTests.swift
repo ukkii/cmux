@@ -308,8 +308,6 @@ struct CLISSHSessionAttachAnchorTests {
     private func cliEnvironment(socketPath: String) -> [String: String] {
         var environment = ProcessInfo.processInfo.environment
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
-        environment["CMUX_CLAUDE_HOOK_SENTRY_DISABLED"] = "1"
         environment.removeValue(forKey: "CMUX_SOCKET")
         environment.removeValue(forKey: "CMUX_SOCKET_PASSWORD")
         environment.removeValue(forKey: "CMUX_WINDOW_ID")

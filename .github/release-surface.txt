@@ -28,17 +28,14 @@ scripts/cmux-next/drop-cef-without-arch.sh
 scripts/cmux-next/write-cmux-tui-version.sh
 scripts/cmux-next/notices/**
 scripts/cmux-next/media/**
-scripts/derive_sparkle_public_key.swift
 scripts/import-apple-developer-id-intermediates.sh
 scripts/apple-developer-id-certs/**
 scripts/install-cmux-tui-client.sh
 scripts/normalize-system-extension-bundle.sh
 scripts/prune_nightly_release_assets.py
 scripts/reconcile-entitlements-with-profile.py
-scripts/remove-sparkle-sandbox-xpc-services.sh
 scripts/select-ci-xcode.sh
 scripts/smoke-*.sh
-scripts/sparkle_generate_appcast.sh
 scripts/strip-release-bundle.sh
 scripts/thin-app-bundle.sh
 scripts/verify*.sh

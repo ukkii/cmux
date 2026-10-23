@@ -29,7 +29,7 @@ The docs changelog page at `web/app/[locale]/(landing)/docs/changelog/page.tsx` 
 ./scripts/bump-version.sh 1.0.0    # explicit version
 ```
 
-This updates `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`. The build number auto-increments and must increase for Sparkle auto-update to work. Bump the minor version unless explicitly asked otherwise.
+This updates `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`. The build number auto-increments. Bump the minor version unless explicitly asked otherwise.
 
 ## Tagging
 
@@ -41,12 +41,11 @@ git push origin vX.Y.Z
 glaeda-gh wait run manaflow-ai/cmux/<run-id>
 ```
 
-If the pretag guard fails, run `./scripts/bump-version.sh`, commit the build-number bump, then retry.
 
 ## Release artifacts and secrets
 
-- The release assets are the universal `cmux-macos.dmg` and the thin `cmux-macos-arm64.dmg` and `cmux-macos-x86_64.dmg`, each with its own appcast. The README download button and the Homebrew cask point to the universal `releases/latest/download/cmux-macos.dmg`.
-- Installs read `appcast.xml`, which `scripts/ci/compose_stable_appcast.py` builds from all three items so each install moves onto its own architecture in one update. Thin installs then read `appcast-arm64.xml` or `appcast-x86_64.xml` from the latest release, so every stable release must publish both, and only the highest version may be marked latest. The local `scripts/build-sign-upload.sh` builds only the universal DMG and publishes it under both per-arch feeds.
+- The release assets are the universal `cmux-macos.dmg` and the thin `cmux-macos-arm64.dmg` and `cmux-macos-x86_64.dmg`. cmux has no built-in auto-updater, so releases publish no appcast. The README download button and the Homebrew cask point to the universal `releases/latest/download/cmux-macos.dmg`.
+- Only the highest stable version may be marked latest. The local `scripts/build-sign-upload.sh` builds only the universal DMG.
 - Signing requires the GitHub secrets `APPLE_CERTIFICATE_BASE64`, `APPLE_CERTIFICATE_PASSWORD` and `APPLE_SIGNING_IDENTITY`. CI notarization authenticates with the team App Store Connect API key (`ASC_API_KEY_ID`, `ASC_API_ISSUER_ID`, `ASC_API_KEY_P8_BASE64`) through `scripts/ci/lib/notary-auth.sh`, which decodes the key to a mode-600 temp file that the caller deletes. The local `scripts/build-sign-upload.sh` still uses an Apple ID and app-specific password.
 
 ## Detailed reference

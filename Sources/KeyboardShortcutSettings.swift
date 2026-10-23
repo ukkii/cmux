@@ -108,7 +108,6 @@ enum KeyboardShortcutSettings {
         case openChief
         case commandPaletteNext
         case commandPalettePrevious
-        case sendFeedback
         case showNotifications
         case jumpToUnread
         case jumpToLastPrompt
@@ -268,7 +267,6 @@ enum KeyboardShortcutSettings {
             case .openChief: return String(localized: "shortcut.openChief.label", defaultValue: "Open Chief")
             case .commandPaletteNext: return String(localized: "shortcut.commandPaletteNext.label", defaultValue: "Command Palette: Next")
             case .commandPalettePrevious: return String(localized: "shortcut.commandPalettePrevious.label", defaultValue: "Command Palette: Previous")
-            case .sendFeedback: return String(localized: "sidebar.help.sendFeedback", defaultValue: "Send Feedback")
             case .showNotifications: return String(localized: "shortcut.showNotifications.label", defaultValue: "Show Notifications")
             case .jumpToUnread: return String(localized: "shortcut.jumpToUnread.label", defaultValue: "Jump to Latest Unread")
             case .jumpToLastPrompt: return String(localized: "shortcut.jumpToLastPrompt.label", defaultValue: "Jump to Last Prompt")
@@ -495,8 +493,6 @@ enum KeyboardShortcutSettings {
                 return StoredShortcut(key: "n", command: false, shift: false, option: false, control: true)
             case .commandPalettePrevious:
                 return StoredShortcut(key: "p", command: false, shift: false, option: false, control: true)
-            case .sendFeedback:
-                return .unbound
             case .showNotifications:
                 return StoredShortcut(key: "i", command: true, shift: false, option: false, control: false)
             case .jumpToUnread:

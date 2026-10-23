@@ -94,7 +94,6 @@ extension CLINotifyProcessIntegrationRegressionTests {
         }
 
         var environment = ProcessInfo.processInfo.environment
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         environment["CMUX_LOCAL_TMUX_BIN"] = fakeTmuxURL.path
         environment["CMUX_LOCAL_TMUX_STATE_DIR"] = root.path
         environment["CMUX_SOCKET_PATH"] = socketPath

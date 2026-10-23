@@ -68,7 +68,6 @@ struct CLIVPNArgumentValidationTests {
                 environment: [
                     "CMUX_SOCKET_PATH": fixture.path,
                     "CMUX_SOCKET_PASSWORD": "",
-                    "CMUX_CLI_SENTRY_DISABLED": "1",
                     "PATH": ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin",
                 ],
                 timeout: 10
@@ -252,7 +251,6 @@ struct CLIAutomationArgumentValidationTests {
             "HOME": home.path,
             "CFFIXED_USER_HOME": home.path,
             "CMUX_TEST_ISOLATED_SOCKET_DISCOVERY": "1",
-            "CMUX_CLI_SENTRY_DISABLED": "1",
             "PATH": ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin",
         ]
         if let socketPath {

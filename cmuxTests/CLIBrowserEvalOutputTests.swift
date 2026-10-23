@@ -45,7 +45,6 @@ final class CLIBrowserEvalOutputTests {
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
         let surfaceID = UUID().uuidString
 
         let result = try runProcess(
@@ -96,7 +95,6 @@ final class CLIBrowserEvalOutputTests {
             environment.removeValue(forKey: key)
         }
         environment["CMUX_SOCKET_PATH"] = socketPath
-        environment["CMUX_CLI_SENTRY_DISABLED"] = "1"
 
         let result = try runProcess(
             executablePath: BundledCLITestSupport.bundledCLIPath(for: Self.self),

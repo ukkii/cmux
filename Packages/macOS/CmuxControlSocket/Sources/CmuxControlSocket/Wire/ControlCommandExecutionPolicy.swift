@@ -100,7 +100,6 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         "auth.team.invitations",
         "auth.team.accept_invite",
         "auth.team.decline_invite",
-        "feedback.submit",
         // `feed.jump` awaits its actor-owned hook-session lookup while the
         // socket worker waits for the response.
         "feed.jump",

@@ -9,7 +9,7 @@ import Foundation
 /// runtime (including its Bonjour LAN advertisement), the legacy TCP
 /// pairing listener, the universal transport-admission funnel, and the
 /// pairing flow. The policy gates the Mac acting as a *server*; outbound
-/// features (Sparkle updates, notification forwarding to the phone,
+/// features (notification forwarding to the phone,
 /// Mac-as-client SSH) and the local automation Unix socket are out of
 /// scope.
 enum MobileRemoteControlPolicy {

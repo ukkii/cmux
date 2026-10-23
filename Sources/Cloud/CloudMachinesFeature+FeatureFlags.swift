@@ -2,8 +2,7 @@ import CmuxCloud
 import CmuxSettings
 import Foundation
 
-/// The Cloud availability answers used by app entry points. Cloud no longer
-/// depends on the PostHog rollout payload; only managed policy and the local
+/// The Cloud availability answers used by app entry points. Only managed policy and the local
 /// first-use activation setting participate in these production gates.
 extension CloudMachinesFeature {
     /// Whether Cloud can be discovered on this Mac. This is the managed-policy
