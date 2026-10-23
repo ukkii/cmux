@@ -30,12 +30,24 @@ CMUX_CUA_HELPER_APP="${DEST}/../Library/cmux Computer Use.app"
 CMUX_CUA_HELPER_OWNER_MARKER="${CMUX_CUA_HELPER_APP}/Contents/Resources/.cmux-cua-managed-helper"
 CMUX_CUA_HELPER_EXEC="${CMUX_CUA_HELPER_APP}/Contents/MacOS/cmux-cua"
 INFO_PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+BUNDLE_REMOTE_DAEMONS="${SRCROOT}/scripts/bundle-remote-daemons.sh"
 
 run_git() (
   unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE
   unset GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_PREFIX
   command git "$@"
 )
+
+# Seal cross-compiled cmuxd-remote binaries and their manifest into the app so
+# `cmux ssh` never downloads a daemon. The script keeps its own source stamp
+# and must run on every build because it rewrites the processed Info.plist.
+bundle_remote_daemons() {
+  if [ -x "$BUNDLE_REMOTE_DAEMONS" ]; then
+    "$BUNDLE_REMOTE_DAEMONS"
+  else
+    echo "warning: cmuxd-remote bundling skipped: missing $BUNDLE_REMOTE_DAEMONS" >&2
+  fi
+}
 
 update_commit() {
   local commit
@@ -239,6 +251,7 @@ if [ -f "$STAMP" ] && [ -x "$GHOSTTY_HELPER_DEST" ] \
   && [ "$(cat "$STAMP")" = "$fingerprint" ] \
   && [ "$(cat "$OUTPUT_MANIFEST")" = "$output_fingerprint_value" ]; then
   update_commit
+  bundle_remote_daemons
   echo "Bundled resources unchanged; skipping helper rebuilds"
   exit 0
 fi
@@ -328,6 +341,7 @@ if [ ! -x "$CMUX_CUA_HELPER_EXEC" ]; then
   exit 1
 fi
 update_commit
+bundle_remote_daemons
 
 
 mkdir -p "$(dirname "$STAMP")"

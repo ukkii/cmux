@@ -51,7 +51,7 @@ import Testing
         return Fixture(runtime: runtime, defaults: UserDefaults(suiteName: suiteName)!)
     }
 
-    static func makeMountModel(initial: SettingsSectionID = .reset) -> SettingsSectionMountModel {
+    static func makeMountModel(initial: SettingsSectionID = .app) -> SettingsSectionMountModel {
         SettingsSectionMountModel(initial: initial, order: SettingsWindowRoot.mountOrder())
     }
 
@@ -110,8 +110,8 @@ import Testing
         let model = Self.makeMountModel()
         let window = Self.host(SettingsWindowRoot(runtime: fixture.runtime, mountModel: model), in: fixture)
         defer { window.orderOut(nil) }
-        let resetControls = Self.controlCount(in: window.contentView)
-        #expect(model.mounted == [.reset])
+        let appControls = Self.controlCount(in: window.contentView)
+        #expect(model.mounted == [.app])
 
         NotificationCenter.default.post(
             name: SettingsWindowRoot.navigationRequestName,
@@ -126,12 +126,12 @@ import Testing
         // selected one is in the hierarchy, so the window never carries
         // the couple of hundred controls of the full settings tree.
         #expect(!model.isMounted(.workspaceColors))
-        #expect(shortcutControls != resetControls, "pane did not switch: \(shortcutControls) controls")
+        #expect(shortcutControls != appControls, "pane did not switch: \(shortcutControls) controls")
         #expect(shortcutControls < 100, "inactive sections are in the hierarchy: \(shortcutControls) controls")
 
         // Returning to a section mounted on an earlier visit rebuilds its
         // pane, so the scroll still waits for that content to appear.
-        for section in [SettingsSectionID.reset, .keyboardShortcuts] {
+        for section in [SettingsSectionID.app, .keyboardShortcuts] {
             NotificationCenter.default.post(
                 name: SettingsWindowRoot.navigationRequestName,
                 object: nil,

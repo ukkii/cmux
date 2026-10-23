@@ -52,6 +52,10 @@ final class SurfaceCatalog {
     var pendingRestoredProjections = SurfaceProjectionRestoreStore()
     /// Focus/select behavior the app uses to bring an existing projection forward.
     var focusProjection: ((SurfaceProjection) -> Void)?
+    /// Resolves a local workspace by ID for destination and ownership checks. The app
+    /// reads the live workspace registry; tests substitute their own fixture workspaces.
+    @ObservationIgnored
+    var resolveWorkspace: (UUID) -> Workspace? = { Workspace.liveWorkspace(id: $0) }
     init(
         abandonedMaterializationTimeout: Duration = SurfaceCatalog.defaultAbandonedMaterializationTimeout,
         retiredMaterializationRetention: Duration = SurfaceCatalog.defaultRetiredMaterializationRetention,

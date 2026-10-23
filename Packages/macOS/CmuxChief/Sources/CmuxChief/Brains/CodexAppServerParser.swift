@@ -51,7 +51,7 @@ struct CodexAppServerParser: Sendable {
     private var startedTools: Set<String> = []
     /// Commands of started `commandExecution` items, for approvals that omit theirs.
     private var itemCommands: [String: String] = [:]
-    /// Lifts `cmux-question` / `cmux-result` blocks out of the reply text.
+    /// Lifts `cmux-question` blocks out of the reply text.
     var blocks = ChiefStructuredBlocks()
 
     init(threadID: String? = nil) {

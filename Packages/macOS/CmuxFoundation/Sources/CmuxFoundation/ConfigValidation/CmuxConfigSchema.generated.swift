@@ -10,7 +10,7 @@ enum CmuxEmbeddedConfigSchema {
     static let json = ##"""
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+  "$id": "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json",
   "title": "cmux.json",
   "description": "cmux configuration. Global cmux.json supports app settings, shortcuts, actions, custom commands, notification hooks, and workspace layouts. Project-local .cmux/cmux.json or cmux.json supports actions, commands, notification hooks, UI action wiring, Agent Chat overrides, vault agents, workspace-group overrides, and workspace launch/button configuration.",
   "descriptionKey": "schemaDescriptions.root",
@@ -20,7 +20,7 @@ enum CmuxEmbeddedConfigSchema {
     "$schema": {
       "type": "string",
       "format": "uri",
-      "default": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+      "default": "https://raw.githubusercontent.com/ukkii/cmux/main/schemas/cmux.schema.json",
       "description": "Optional schema URL for editor completion and validation."
     },
     "schemaVersion": {

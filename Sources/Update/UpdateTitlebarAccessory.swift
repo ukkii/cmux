@@ -2258,17 +2258,12 @@ final class TitlebarControlsAccessoryViewController: NSTitlebarAccessoryViewCont
               let contentView = window.contentView else {
             return
         }
-        let windowIdentifier = ObjectIdentifier(window)
         // Recreate content view each time to avoid stale observers when popover is hidden
         let hostingController = NSHostingController(
             rootView: NotificationsPopoverView(
                 notificationStore: notificationStore,
                 onDismiss: { [weak notificationsPopover] in
                     notificationsPopover?.performClose(nil)
-                },
-                onOpenPhoneForwarding: { [weak notificationsPopover] in
-                    notificationsPopover?.performClose(nil)
-                    openPhoneForwardingSettings(in: NSApp.windows.first { ObjectIdentifier($0) == windowIdentifier })
                 }
             )
             .cmuxAccentColorEnvironment()
@@ -2353,27 +2348,11 @@ final class TitlebarControlsAccessoryViewController: NSTitlebarAccessoryViewCont
     }
 }
 
-@MainActor
-private func openPhoneForwardingSettings(in window: NSWindow?) {
-    guard let window,
-          let appDelegate = AppDelegate.shared,
-          let context = appDelegate.contextForMainTerminalWindow(window),
-          let workspace = context.tabManager.selectedWorkspace,
-          let paneId = workspace.bonsplitController.focusedPaneId
-            ?? workspace.bonsplitController.allPaneIds.first else {
-        NSSound.beep()
-        return
-    }
-    context.sidebarSelectionState.selection = .tabs
-    _ = workspace.openOrFocusNotificationsSurface(inPane: paneId)
-}
-
 private struct NotificationsPopoverView: View {
     @ObservedObject var notificationStore: TerminalNotificationStore
     @State private var keyboardShortcutSettingsObserver = KeyboardShortcutSettingsObserver.shared
     @Environment(\.cmuxAccentColor) private var cmuxAccent
     let onDismiss: () -> Void
-    let onOpenPhoneForwarding: () -> Void
 
     @AppStorage("cmux.notifications.popover.width")
     private var savedWidth: Double = Double(NotificationsPopoverMetrics.defaultWidth)
@@ -2390,8 +2369,6 @@ private struct NotificationsPopoverView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
-            phoneForwardingEntry
             Divider()
             content
         }
@@ -2560,34 +2537,6 @@ private struct NotificationsPopoverView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-    }
-
-    private var phoneForwardingEntry: some View {
-        Button(action: onOpenPhoneForwarding) {
-            HStack(spacing: 8) {
-                CmuxSystemSymbolImage(systemName: "iphone", pointSize: 12, weight: .medium, tint: .secondary)
-                Text(
-                    String(
-                        localized: "notifications.forwardToPhone.title",
-                        defaultValue: "Forward notifications to my iPhone"
-                    )
-                )
-                .cmuxFont(size: 12, weight: .medium)
-                Spacer()
-                CmuxSystemSymbolImage(systemName: "chevron.right", pointSize: 9, weight: .semibold, tint: .secondary)
-            }
-            .contentShape(Rectangle())
-            .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("notificationsPopover.phoneForwarding")
-        .safeHelp(
-            String(
-                localized: "notifications.forwardToPhone.subtitle",
-                defaultValue: "Send local agent notifications to cmux on your iPhone. Enabled by default; turn this off to stop this Mac from forwarding them."
-            )
-        )
     }
 
     @ViewBuilder
@@ -3101,7 +3050,6 @@ final class UpdateTitlebarAccessoryController {
               let contentView = window.contentView else {
             return
         }
-        let windowIdentifier = ObjectIdentifier(window)
 
         let popover = NSPopover()
         let delegate = DetachedNotificationsPopoverDelegate { [weak self, weak popover] in
@@ -3123,10 +3071,6 @@ final class UpdateTitlebarAccessoryController {
                 notificationStore: TerminalNotificationStore.shared,
                 onDismiss: { [weak popover] in
                     popover?.performClose(nil)
-                },
-                onOpenPhoneForwarding: { [weak popover] in
-                    popover?.performClose(nil)
-                    openPhoneForwardingSettings(in: NSApp.windows.first { ObjectIdentifier($0) == windowIdentifier })
                 }
             )
             .cmuxAccentColorEnvironment()

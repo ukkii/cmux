@@ -1,42 +1,6 @@
 public import CmuxAgentQuestion
 import Foundation
 
-/// The result of a finished Chief flow, shown as a card with one action.
-///
-/// Today the only action opens a Cloud machine workspace
-/// (`cmux vm workspace open <machine> <workspace>`); the card stores as a
-/// `MessagePart.work` whose `host` is the machine and whose `session` is the
-/// machine workspace id, so it survives in every Home client unchanged.
-public struct ChiefResultCard: Sendable, Equatable, Codable {
-    /// What the agent or the flow reached.
-    public enum Status: String, Sendable, Equatable, Codable {
-        /// The agent in the workspace was seen working.
-        case working
-        /// The workspace is ready; nothing runs in it yet.
-        case ready
-        /// The flow failed; the subtitle says why.
-        case failed
-        /// The agent waits for the user to sign in on the machine; the subtitle says how.
-        case needsSignIn = "needs_sign_in"
-    }
-
-    public var title: String
-    public var subtitle: String?
-    /// The machine id (`brave-otter`).
-    public var machine: String
-    /// The machine workspace id (`ws_…`).
-    public var workspace: String
-    public var status: Status
-
-    public init(title: String, subtitle: String? = nil, machine: String, workspace: String, status: Status = .ready) {
-        self.title = title
-        self.subtitle = subtitle
-        self.machine = machine
-        self.workspace = workspace
-        self.status = status
-    }
-}
-
 /// Lifts the Chief's structured blocks out of its streamed reply text.
 ///
 /// The model writes a block as a fenced code block whose info string names
@@ -50,13 +14,6 @@ public struct ChiefResultCard: Sendable, Equatable, Codable {
 /// ```
 /// ````
 ///
-/// ````
-/// ```cmux-result
-/// {"title": "Codex is working on brave-otter", "subtitle": "fix login · ws_4f2c",
-///  "machine": "brave-otter", "workspace": "ws_4f2c", "status": "working"}
-/// ```
-/// ````
-///
 /// The text around a block streams as usual; the block itself never shows as
 /// text. While a fence may be opening (a trailing "`", "``", …) the text is
 /// held back, so a draft never flashes the raw JSON. A block whose JSON does
@@ -67,7 +24,6 @@ struct ChiefStructuredBlocks: Sendable {
     /// One recognized block.
     enum Block: Sendable, Equatable {
         case question(AgentQuestion)
-        case result(ChiefResultCard)
     }
 
     /// One piece of filtered output, in order.
@@ -77,7 +33,6 @@ struct ChiefStructuredBlocks: Sendable {
     }
 
     static let questionKind = "cmux-question"
-    static let resultKind = "cmux-result"
     private static let opener = "```cmux-"
 
     /// The Chief's session id, recorded as the question's source.
@@ -103,13 +58,13 @@ struct ChiefStructuredBlocks: Sendable {
     // MARK: Turn events
 
     /// Filters one brain event: text deltas lose their blocks (which become
-    /// `.question` / `.result` events in place); any event that ends the
+    /// `.question` events in place); any event that ends the
     /// text segment first flushes held-back text.
     mutating func filter(_ event: ChiefTurnEvent) -> [ChiefTurnEvent] {
         switch event {
         case .textDelta(let text):
             return feed(text).map(Self.event)
-        case .textSegmentEnd, .toolStarted, .approvalRequested, .question, .result, .finished, .failed:
+        case .textSegmentEnd, .toolStarted, .approvalRequested, .question, .finished, .failed:
             return finish().map(Self.event) + [event]
         case .session, .toolFinished, .usage:
             return [event]
@@ -120,7 +75,6 @@ struct ChiefStructuredBlocks: Sendable {
         switch piece {
         case .text(let text): return .textDelta(text)
         case .block(.question(let question)): return .question(question)
-        case .block(.result(let card)): return .result(card)
         }
     }
 
@@ -160,7 +114,7 @@ struct ChiefStructuredBlocks: Sendable {
             let name = "cmux-" + pending[start.upperBound..<newline].trimmingCharacters(in: .whitespaces)
             let before = String(pending[..<start.lowerBound])
             let afterOpener = pending.index(after: newline)
-            if name == Self.questionKind || name == Self.resultKind {
+            if name == Self.questionKind {
                 if !before.isEmpty { out.append(.text(before)) }
                 openKind = name
                 pending = String(pending[afterOpener...])
@@ -218,8 +172,6 @@ struct ChiefStructuredBlocks: Sendable {
         switch kind {
         case Self.questionKind:
             return Self.question(json, id: makeID(), session: session ?? "chief").map(Block.question)
-        case Self.resultKind:
-            return Self.result(json).map(Block.result)
         default:
             return nil
         }
@@ -249,15 +201,6 @@ struct ChiefStructuredBlocks: Sendable {
         guard Set(items.map(\.id)).count == items.count else { return nil }
         let source = AgentQuestion.Source(harness: .chief, session: session, agentName: "Chief")
         return AgentQuestion(id: id, source: source, items: items, submitLabel: nonEmpty(json["submit"]?.string))
-    }
-
-    /// A `cmux-result` body: `{"title", "subtitle"?, "machine", "workspace", "status"?}`.
-    static func result(_ json: ChiefJSON) -> ChiefResultCard? {
-        guard let title = nonEmpty(json["title"]?.string), let machine = nonEmpty(json["machine"]?.string),
-              let workspace = nonEmpty(json["workspace"]?.string) else { return nil }
-        let status = json["status"]?.string.flatMap(ChiefResultCard.Status.init(rawValue:)) ?? .ready
-        return ChiefResultCard(title: title, subtitle: nonEmpty(json["subtitle"]?.string), machine: machine,
-                               workspace: workspace, status: status)
     }
 
     private static func nonEmpty(_ text: String?) -> String? {

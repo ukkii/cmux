@@ -75,12 +75,6 @@ import Testing
         #expect(Self.line([Self.answer, Self.ask]) == .message(Self.ask))
     }
 
-    @Test func aResultCardShowsItsTitleNotItsMetaLine() {
-        let card = Self.message(3, [.work(WorkRef(session: "ws_962f", host: "vm-794a", title: "Codex needs sign-in on chief-dogfood-1",
-                                                  status: .waiting, preview: "README title · ws_962f · waiting at sign-in"))])
-        #expect(Self.line([Self.ask, card]) == .card("Codex needs sign-in on chief-dogfood-1"))
-    }
-
     @Test func aCardOlderThanMyLastMessageNoLongerWaits() {
         let card = Self.message(1, [.approval(ApprovalRef(request: "p1", prompt: "Run `cmux vm new`?", options: ["Allow", "Deny"]))])
         let later = Self.message(2, [.text("never mind", mentions: [])], by: Self.me)

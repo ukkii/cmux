@@ -89,12 +89,15 @@ private enum ReactGrabPastebackContentFilter {
 
 /// Fetches, integrity-checks, and caches the react-grab script.
 /// Shared across all BrowserPanel instances.
+///
+/// The script is fetched lazily, only when the user invokes React Grab, so
+/// opening a browser panel never contacts unpkg.com on its own.
 enum ReactGrabScriptLoader {
     private static var cachedScript: String?
     private static var cachedVersion: String?
     private static var prefetchTask: Task<String?, Never>?
 
-    static func prefetch() {
+    private static func startFetchIfNeeded() {
         let version = ReactGrabSettings.configuredVersion
         // Invalidate cache if version changed.
         if cachedVersion != version {
@@ -113,7 +116,7 @@ enum ReactGrabScriptLoader {
     static func fetch() async -> String? {
         let version = ReactGrabSettings.configuredVersion
         if cachedVersion == version, let cached = cachedScript { return cached }
-        prefetch()
+        startFetchIfNeeded()
         return await prefetchTask?.value
     }
 

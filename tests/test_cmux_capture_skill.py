@@ -27,8 +27,6 @@ RECORD_METHOD = ROOT / "Sources" / "TerminalController+WindowRecording.swift"
 FOUNDATION = ROOT / "Packages" / "macOS" / "CmuxFoundation" / "Sources" / "CmuxFoundation"
 SHOT_REQUEST = FOUNDATION / "WindowCapture" / "WindowScreenshotRequest.swift"
 RECORD_REQUEST = FOUNDATION / "WindowRecording" / "WindowRecordingRequest.swift"
-WORKFLOW = ROOT / ".github" / "workflows" / "cmux-skill-contract.yml"
-CAPTURE_WORKFLOW_GLOB = "skills/cmux-capture/**"
 
 # Every Swift file these checks read. The workflow has to run them when one of
 # these changes, or a doc claim outlives the code it describes.
@@ -152,16 +150,6 @@ def braced_body_after(source: str, marker: str) -> str:
                 state = "code"
         index += 1
     raise AssertionError(f"unclosed body after {marker!r}")
-
-
-def workflow_paths(workflow: str, event: str) -> set[str]:
-    """Read only the paths list under one workflow event."""
-    marker = f"  {event}:"
-    start = workflow.index(marker) + len(marker)
-    following = [workflow.find(f"  {name}:", start) for name in ("pull_request", "push") if workflow.find(f"  {name}:", start) >= 0]
-    end = min(following, default=len(workflow))
-    block = workflow[start:end]
-    return set(re.findall(r'^\s*- "([^"]+)"$', block, re.MULTILINE))
 
 
 class CaptureSkillTests(unittest.TestCase):
@@ -350,15 +338,6 @@ class CaptureSkillTests(unittest.TestCase):
                     if line.startswith("#")
                 }
                 self.assertIn(fragment, headings, f"{page.name}: no '{fragment}' in {path}")
-
-    def test_the_workflow_runs_this_guard_when_its_sources_change(self) -> None:
-        triggers = WORKFLOW.read_text(encoding="utf-8")
-        expected = {str(path.relative_to(ROOT)) for path in WATCHED}
-        expected.add(CAPTURE_WORKFLOW_GLOB)
-        for event in ("pull_request", "push"):
-            paths = workflow_paths(triggers, event)
-            missing = sorted(expected - paths)
-            self.assertEqual([], missing, f"{event}.paths omits capture guard inputs")
 
     def test_skill_points_at_its_reference(self) -> None:
         self.assertIn("references/commands.md", SKILL.read_text(encoding="utf-8"))

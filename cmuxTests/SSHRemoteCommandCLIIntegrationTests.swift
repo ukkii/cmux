@@ -108,42 +108,6 @@ struct SSHRemoteCommandCLIIntegrationTests {
         #expect(scpArguments.contains("ProxyJump=bastion"))
     }
 
-    @Test
-    func testSCPDoesNotPassCmuxRouteMarkerToOpenSSH() {
-        let routeMarker = "__cmux_route_sensitive=" + String(repeating: "a1", count: 32)
-        let configuration = WorkspaceRemoteConfiguration(
-            destination: "user@example.com",
-            port: nil,
-            identityFile: nil,
-            sshOptions: ["ControlMaster=auto", "ControlPersist=600", routeMarker],
-            localProxyPort: nil,
-            relayPort: nil,
-            relayID: nil,
-            relayToken: nil,
-            localSocketPath: nil,
-            terminalStartupCommand: nil
-        )
-        let session = DetectedSSHSession(
-            destination: configuration.destination, port: configuration.port,
-            identityFile: configuration.identityFile, configFile: nil, jumpHost: nil,
-            controlPath: nil, useIPv4: false, useIPv6: false, forwardAgent: false,
-            compressionEnabled: false, sshOptions: configuration.sshOptions
-        )
-
-        let scpArguments = session.scpArgumentsForTesting(
-            localPath: "/tmp/local.png",
-            remotePath: "/tmp/cmux-drop-123.png"
-        )
-
-        #expect(!scpArguments.contains { $0.contains("__cmux_route_sensitive") })
-        // A one-off upload rides the carrier's master and never becomes one.
-        #expect(scpArguments.contains("ControlMaster=no"))
-        #expect(!scpArguments.contains { $0.hasPrefix("ControlPersist=") })
-        #expect(!scpArguments.contains("ControlMaster=auto"))
-        // The route identity is kept beside the options for connection sharing.
-        #expect(configuration.routeSensitiveIdentifier == String(repeating: "a1", count: 32))
-    }
-
     private static func waitForRemoteCommandMockSocketCommand(
         in state: Harness.MockSocketServerState,
         timeout: TimeInterval = 5,

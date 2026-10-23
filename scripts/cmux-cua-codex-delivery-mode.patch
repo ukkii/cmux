@@ -126,3 +126,155 @@ index 151a8a11..886487e4 100644
      #[test]
      fn native_actions_keep_lifecycle_and_host_cursor_sessions_distinct() {
          let native = native_action_arguments(
+diff --git a/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs b/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs
+index 9adc2e51..37f4113c 100644
+--- a/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs
++++ b/libs/cmux-cua/rust/crates/cmux-cua/src/telemetry.rs
+@@ -32,9 +32,8 @@ use std::sync::OnceLock;
+ 
+ // ── Constants ────────────────────────────────────────────────────────────
+ 
+-/// PostHog ingest endpoint (EU region — matches Swift exactly so dashboards
+-/// aggregate Rust + Swift events cleanly).
+-const POSTHOG_CAPTURE_URL: &str = "https://eu.i.posthog.com/capture/";
++// cmux: the PostHog ingest endpoint is compiled out. cmux builds of the
++// helper never send usage events; see `post_to_posthog` below.
+ 
+ /// Public PostHog project key. Public by design — keys can only ingest
+ /// events, not read them. Matches Swift `TelemetryClient.Constants.apiKey`.
+@@ -65,8 +64,6 @@ const ENV_TELEMETRY_ENABLED: &str = "CMUX_CUA_TELEMETRY_ENABLED";
+ /// `CMUX_CUA_TELEMETRY_DEBUG`).
+ const ENV_TELEMETRY_DEBUG: &str = "CMUX_CUA_TELEMETRY_DEBUG";
+ 
+-/// Fire-and-forget POST timeout. PostHog ingest must never delay a CLI call.
+-const POSTHOG_TIMEOUT_SECS: u64 = 3;
+ 
+ // ── Canonical event names ────────────────────────────────────────────────
+ 
+@@ -107,7 +104,11 @@ pub mod event {
+ /// Defaults to **enabled** when the env var is unset (matches Swift, which
+ /// defaults `telemetryEnabled` to `true` in its config).
+ pub fn is_enabled() -> bool {
+-    parse_env_bool(ENV_TELEMETRY_ENABLED).unwrap_or(true)
++    // cmux: telemetry is compiled out. The env var is still parsed so
++    // `CMUX_CUA_TELEMETRY_ENABLED=false` keeps working as an explicit
++    // opt-out, but nothing can turn telemetry back on.
++    let _ = parse_env_bool(ENV_TELEMETRY_ENABLED);
++    false
+ }
+ 
+ /// Record a telemetry event. No-op when telemetry is disabled.
+@@ -139,6 +140,11 @@ pub fn capture(event_name: &str, properties: Option<serde_json::Value>) {
+ /// next launch retries — without this, a single bad network at install
+ /// time would silently drop the only adoption signal we have.
+ pub fn capture_install() {
++    // cmux: the install ping no longer bypasses the opt-out, and telemetry
++    // is always disabled, so this never creates an install id or marker.
++    if !is_enabled() {
++        return;
++    }
+     capture_install_with_poster(post_to_posthog);
+ }
+ 
+@@ -391,22 +397,11 @@ fn spawn_capture(
+     }
+ }
+ 
+-/// Actual ureq POST. Returns the HTTP status code on success. Anything else
+-/// (network error, 4xx/5xx, timeout) is propagated as `Err`.
++/// cmux: the PostHog POST is compiled out. This never touches the network
++/// and always reports failure, so no caller can mark an event as delivered.
+ fn post_to_posthog(payload: &serde_json::Value) -> Result<u16, String> {
+-    let agent = ureq::Agent::config_builder()
+-        .timeout_global(Some(std::time::Duration::from_secs(POSTHOG_TIMEOUT_SECS)))
+-        .build()
+-        .new_agent();
+-
+-    match agent
+-        .post(POSTHOG_CAPTURE_URL)
+-        .header("Content-Type", "application/json")
+-        .send_json(payload)
+-    {
+-        Ok(response) => Ok(response.status().as_u16()),
+-        Err(e) => Err(e.to_string()),
+-    }
++    let _ = payload;
++    Err("telemetry is compiled out of cmux builds".to_owned())
+ }
+ 
+ // ── Environment helpers ──────────────────────────────────────────────────
+diff --git a/libs/cmux-cua/rust/crates/cmux-cua/src/version_check.rs b/libs/cmux-cua/rust/crates/cmux-cua/src/version_check.rs
+index b600a5df..cc2d1325 100644
+--- a/libs/cmux-cua/rust/crates/cmux-cua/src/version_check.rs
++++ b/libs/cmux-cua/rust/crates/cmux-cua/src/version_check.rs
+@@ -53,20 +53,14 @@ const ENV_UPDATE_CHECK: &str = "CMUX_CUA_UPDATE_CHECK";
+ /// day even when the daemon restarts repeatedly.
+ const CACHE_REFRESH_SECONDS: u64 = 20 * 60 * 60; // 20 hours
+ 
+-/// HTTP timeout for the releases API fetch. Kept tight so the background
+-/// task can't linger past the daemon's normal startup window.
+-const HTTP_TIMEOUT_SECONDS: u64 = 4;
+ 
+ /// Tag-name prefix used by the Rust-port releases on the trycua/cua repo.
+ /// Releases tagged with anything else (e.g. the Swift port's
+ /// `cmux-cua-v*`) are filtered out so we never recommend the wrong binary.
+ pub const RELEASE_TAG_PREFIX: &str = "cmux-cua-v";
+ 
+-/// GitHub releases API endpoint. Paginates newest-first; 40 entries is
+-/// plenty of headroom past the most recent stable release even when
+-/// pre-releases are sprinkled in between.
+-const RELEASES_URL: &str =
+-    "https://api.github.com/repos/trycua/cua/releases?per_page=40";
++// cmux: the GitHub releases endpoint is compiled out. The helper ships
++// inside cmux and is updated with it; see `fetch_latest_version` below.
+ 
+ // ── Public API ───────────────────────────────────────────────────────────
+ 
+@@ -367,6 +361,11 @@ fn format_banner(latest: &str, current: &str) -> String {
+ /// 2. Persisted config `update_check_enabled` (false → off)
+ /// 3. Built `CARGO_PKG_VERSION` is a pre-release (`-dev`, `-rc.1`, …) → off
+ fn is_enabled() -> bool {
++    // cmux: the background update check is compiled out. The opt-outs
++    // below are kept for parity with upstream but nothing can enable it.
++    if cfg!(all()) {
++        return false;
++    }
+     if let Some(false) = parse_env_bool(ENV_UPDATE_CHECK) {
+         return false;
+     }
+@@ -496,31 +495,16 @@ fn cache_path() -> Option<PathBuf> {
+ /// human-readable error string on failure. The caller is expected to
+ /// downgrade errors to `tracing::debug!`.
+ pub fn fetch_latest_version() -> Result<String, String> {
+-    let agent = ureq::Agent::config_builder()
+-        .timeout_global(Some(std::time::Duration::from_secs(HTTP_TIMEOUT_SECONDS)))
+-        .build()
+-        .new_agent();
+-
+-    let response = agent
+-        .get(RELEASES_URL)
+-        .header("Accept", "application/vnd.github+json")
+-        .header("User-Agent", concat!("cmux-cua/", env!("CARGO_PKG_VERSION")))
+-        .call()
+-        .map_err(|e| format!("HTTP error: {e}"))?;
+-
+-    let body: serde_json::Value = response
+-        .into_body()
+-        .read_json()
+-        .map_err(|e| format!("JSON parse error: {e}"))?;
+-
+-    pick_latest_release(&body)
+-        .ok_or_else(|| "no matching cmux-cua-v* release in response".to_owned())
++    // cmux: never contact GitHub. The helper is bundled with cmux and is
++    // updated together with the app.
++    Err("update checks are disabled in cmux builds".to_owned())
+ }
+ 
+ /// Pull the highest non-draft `cmux-cua-v*` tag out of the parsed
+ /// releases response. Split out so unit tests can feed in canned JSON
+ /// without hitting the network. Pre-release flag is intentionally
+ /// ignored — see `fetch_latest_version` doc-comment.
++#[allow(dead_code)]
+ pub(crate) fn pick_latest_release(body: &serde_json::Value) -> Option<String> {
+     let releases = body.as_array()?;
+     let mut versions: Vec<semver::Version> = releases

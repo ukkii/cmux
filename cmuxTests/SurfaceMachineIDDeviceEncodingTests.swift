@@ -94,8 +94,10 @@ struct SurfaceMachineIDDeviceEncodingTests {
         #expect(try JSONSerialization.jsonObject(with: data) is [String: Any])
     }
 
-    @Test("The socket catalog payload names the machine kind and presence")
+    @Test("The socket catalog payload names the machine kind")
     func socketPayload() {
+        // Device presence is no longer part of the socket payload: the fork has no
+        // paired devices, so only the machine identity and link state are reported.
         let presence = SurfaceDevicePresence(
             state: .offline, lastSeenAt: Date(timeIntervalSince1970: 1_700_000_000), tag: "default",
             bundleID: "com.cmuxterm.app", accountTrust: .sameAccount
@@ -104,16 +106,12 @@ struct SurfaceMachineIDDeviceEncodingTests {
         #expect(device["kind"] as? String == "device")
         #expect(device["local"] as? Bool == false)
         #expect(device["id"] as? String == "device:\(uuid)@default")
-        let devicePresence = device["presence"] as? [String: Any]
-        #expect(devicePresence?["state"] as? String == "offline")
-        #expect(devicePresence?["account_trust"] as? String == "sameAccount")
-        #expect(devicePresence?["tag"] as? String == "default")
-        #expect(devicePresence?["bundle_id"] as? String == "com.cmuxterm.app")
-        #expect((devicePresence?["last_seen_at"] as? NSNumber)?.doubleValue == 1_700_000_000)
+        #expect(device["link_state"] as? String == SurfaceLinkState.offline.rawValue)
+        #expect(device["presence"] == nil)
 
         let cloud = TerminalController.surfaceMachinePayload(machineInfo(.cloud("brave-otter"), linkState: .connected, presence: nil))
         #expect(cloud["kind"] as? String == "cloud")
-        #expect(cloud["presence"] is NSNull)
+        #expect(cloud["presence"] == nil)
         let local = TerminalController.surfaceMachinePayload(machineInfo(.local, linkState: .notApplicable, presence: nil))
         #expect(local["kind"] as? String == "local")
         #expect(local["local"] as? Bool == true)

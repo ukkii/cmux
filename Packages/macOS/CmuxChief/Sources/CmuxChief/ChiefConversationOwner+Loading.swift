@@ -156,7 +156,7 @@ extension ChiefConversationOwner {
     }
 
     /// What an earlier run left open can never finish: its approval cards
-    /// expire (``approvalExpired``) and its running work rows fail (Cloud result cards keep theirs).
+    /// expire (``approvalExpired``) and its running work rows fail.
     static func settleInterrupted(_ state: inout ChiefConversationState) {
         var settled: [Message] = []
         for message in state.messages {
@@ -167,10 +167,7 @@ extension ChiefConversationOwner {
                     ref.decided = approvalExpired
                     changed = true
                     return .approval(ref)
-                // A Cloud result card (a machine `host`, not the provisioning row) reports a remote
-                // agent's state, not a local call: it outlives the run ("Needs sign-in" stays).
-                case .work(var work) where (work.status == .running || work.status == .waiting)
-                    && (work.host == nil || ChiefCloudProvisioning.isProvisioning(work)):
+                case .work(var work) where work.status == .running || work.status == .waiting:
                     work.status = .failed
                     changed = true
                     return .work(work)

@@ -128,9 +128,6 @@ extension CmuxStrings {
     static var approvalReasonDispatch: String {
         String(localized: "home.approval.reason.dispatch", defaultValue: "Starts a coding agent", table: "CmuxHome", bundle: .module)
     }
-    static var approvalReasonCloud: String {
-        String(localized: "home.approval.reason.cloud", defaultValue: "Creates a cloud machine", table: "CmuxHome", bundle: .module)
-    }
     /// The words no allow rule covers yet ("cmux close-workspace").
     static func approvalReasonNotAllowed(_ words: String) -> String {
         String(localized: "home.approval.reason.notAllowed", defaultValue: "Not in your allowed commands: \(words)",

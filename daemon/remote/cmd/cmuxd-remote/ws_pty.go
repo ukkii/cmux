@@ -31,17 +31,15 @@ import (
 )
 
 type wsPTYServerConfig struct {
-	ListenAddr          string
-	PTYAuthLeaseFile    string
-	RPCAuthLeaseFile    string
-	AdminTokenSHA256    string
-	AdminEd25519PubKey  string
-	CLIBridgeSocketPath string
-	CLIBridge           *cloudCLIBridge
-	Shell               string
-	PTYHub              *wsPTYHub
-	ScrollbackLimit     int
-	SessionIdleTTL      time.Duration
+	ListenAddr         string
+	PTYAuthLeaseFile   string
+	RPCAuthLeaseFile   string
+	AdminTokenSHA256   string
+	AdminEd25519PubKey string
+	Shell              string
+	PTYHub             *wsPTYHub
+	ScrollbackLimit    int
+	SessionIdleTTL     time.Duration
 }
 
 type wsLease struct {
@@ -309,14 +307,6 @@ func runWebSocketPTYServer(ctx context.Context, cfg wsPTYServerConfig, stderr io
 		return err
 	}
 	defer listener.Close()
-	if strings.TrimSpace(cfg.RPCAuthLeaseFile) != "" {
-		if cfg.CLIBridge == nil {
-			cfg.CLIBridge = newCloudCLIBridge()
-		}
-		if err := cfg.CLIBridge.start(ctx, cfg.CLIBridgeSocketPath, stderr); err != nil {
-			return fmt.Errorf("cloud CLI bridge: %w", err)
-		}
-	}
 
 	server := &http.Server{
 		Handler:           newWebSocketPTYHandler(cfg, stderr),
@@ -702,7 +692,6 @@ func handleWebSocketRPC(w http.ResponseWriter, r *http.Request, cfg wsPTYServerC
 		sessions:      map[string]*sessionState{},
 		ptyHub:        cfg.PTYHub,
 		ownsPTYHub:    false,
-		cliBridge:     cfg.CLIBridge,
 		frameWriter: &wsRPCFrameWriter{
 			conn:    conn,
 			writeMu: writeMu,
@@ -710,11 +699,6 @@ func handleWebSocketRPC(w http.ResponseWriter, r *http.Request, cfg wsPTYServerC
 		},
 	}
 	dispatcher := newRPCRequestDispatcher(connectionCtx, cancelConnection, nil, server)
-	unregisterCLI := func() {}
-	if cfg.CLIBridge != nil {
-		unregisterCLI = cfg.CLIBridge.register(server)
-	}
-	defer unregisterCLI()
 	defer server.closeAll()
 	defer cancelConnection()
 

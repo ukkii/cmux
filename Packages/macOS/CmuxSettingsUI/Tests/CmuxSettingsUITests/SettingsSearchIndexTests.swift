@@ -91,7 +91,6 @@ struct SettingsSearchIndexTests {
             if case .section = $0.kind { return true } else { return false }
         }.count
         #expect(sectionCount == SettingsSectionID.allCases.count)
-        #expect(result.contains { $0.id == "section:computers" })
     }
 
     @Test func tokenizedQueryFiltersBothSectionsAndSettings() {

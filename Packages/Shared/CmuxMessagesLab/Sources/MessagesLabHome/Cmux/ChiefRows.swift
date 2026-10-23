@@ -259,17 +259,14 @@ enum ChiefRows {
         case folded
         /// A failed turn's row; `retry`: it is the newest message (Try Again resends the last message).
         case failure(retry: Bool)
-        /// A Cloud result card whose machine an earlier provisioning row named ("chief-dogfood-1"):
-        /// the card shows the name, the raw machine id stays in its tooltip.
-        case cloudResult(name: String)
     }
 
     /// Tool-only messages: every part is a tool call (`.work` without a `host`), not retracted. A work part
-    /// with a host is a flow's own row (a Cloud machine's provisioning or result card): it stays a row of
-    /// its own, never folded into a run. So are the owner's system rows (a failure, a saved note).
+    /// with a host is a flow's own row: it stays a row of its own, never folded into a run. So are the
+    /// owner's system rows (a failure, a saved note).
     static func isToolOnly(_ item: TranscriptItem) -> Bool {
         !item.isRetracted && !item.parts.isEmpty && item.parts.allSatisfy {
-            if case .work(let w) = $0 { w.host == nil && !ChiefCloudRows.isProvisioning(w) && !isNotice(w) } else { false }
+            if case .work(let w) = $0 { w.host == nil && !isNotice(w) } else { false }
         }
     }
 
@@ -286,20 +283,6 @@ enum ChiefRows {
         return ref.prompt
     }
 
-    /// The work part of a Cloud provisioning row (one part), nil for any other message.
-    static func provisioningWork(_ item: TranscriptItem) -> WorkRef? {
-        guard !item.isRetracted, item.parts.count == 1, case .work(let w)? = item.parts.first, ChiefCloudRows.isProvisioning(w) else { return nil }
-        return w
-    }
-
-    /// Whether `prompt` asks to run a Cloud provisioning command (`cmux vm new`, `cmux cloud new`,
-    /// `vm wait`): its provisioning row already says what it does, so the allowed receipt folds into it.
-    static func asksToProvision(_ prompt: String) -> Bool {
-        guard let command = command(inPrompt: prompt), let all = words(command) else { return false }
-        let head = Array(all.prefix(3))
-        return ["vm", "cloud"].contains { group in ["new", "wait"].contains { head == ["cmux", group, $0] } }
-    }
-
     /// Messages drawn as the tool sender (`toolSender`): tool rows and approval cards, which are not the
     /// agent's words (they end its bubble group, and its next words start a new one).
     static func drawsAsToolSender(_ item: TranscriptItem) -> Bool {
@@ -314,9 +297,7 @@ enum ChiefRows {
     /// The tool role of each item, by key. A run is consecutive tool-only items of one author
     /// in one thread (another message between, even a folded draft, ends it). An allowed approval
     /// right before a run whose first call it asked for (the call's title is in its prompt) heads
-    /// that run: its receipt and the "Ran" row are one row ("Ran … · Allowed"). An allowed Cloud
-    /// provisioning command next to its provisioning row (after it, or right before the row posted
-    /// again on Allow) folds into that row (it already says what happened). A Cloud result card names the machine an earlier provisioning row named. A failure
+    /// that run: its receipt and the "Ran" row are one row ("Ran … · Allowed"). A failure
     /// row offers Try Again only while it is the newest message. A finished memory save
     /// (`isFinishedMemorySave`) shows nothing: the note's row says it.
     static func roles(_ items: [TranscriptItem]) -> [IdempotencyKey: ToolRole] {
@@ -325,10 +306,6 @@ enum ChiefRows {
         var calls: [ToolCall] = []
         var allowed = false
         var granted: (item: TranscriptItem, prompt: String)?
-        // The newest provisioning row of the author's current stretch of messages (another author's
-        // message ends it), and the machine names provisioning rows learned (machine id: name).
-        var provisioning: TranscriptItem?
-        var machineNames: [String: String] = [:]
         func close() {
             // A failed call's result wins over its approval: "Failed <cmd> ✗", never a green "Allowed".
             if let head { out[head.key] = .head(calls, allowed: allowed && !calls.contains { $0.state == .failed }) }
@@ -337,17 +314,7 @@ enum ChiefRows {
             allowed = false
         }
         let newest = items.last?.key
-        for (index, item) in items.enumerated() {
-            if let p = provisioning, p.author != item.author || p.threadRoot != item.threadRoot { provisioning = nil }
-            if let w = provisioningWork(item) {
-                if w.status != .failed, let machine = w.host, let name = w.preview, !name.isEmpty, name != machine {
-                    machineNames[machine] = name
-                }
-                provisioning = item
-            } else if !item.isRetracted, item.parts.count == 1, case .work(let w)? = item.parts.first,
-                      ChiefCloudRows.isResult(w), let machine = w.host, let name = machineNames.value(for: machine) {
-                out[item.key] = .cloudResult(name: name)
-            }
+        for item in items {
             if isFailureOnly(item) {
                 close()
                 granted = nil
@@ -356,16 +323,7 @@ enum ChiefRows {
             }
             if let prompt = allowedPrompt(item) {
                 close()
-                // Its provisioning row is just before it, or (the card took the row's place until the
-                // Allow) posted again right after it.
-                let next = items.dropFirst(index + 1).first
-                let rowAfter = next.map { provisioningWork($0) != nil && $0.author == item.author && $0.threadRoot == item.threadRoot } ?? false
-                if provisioning != nil || rowAfter, asksToProvision(prompt) {
-                    out[item.key] = .folded
-                    granted = nil
-                } else {
-                    granted = (item, prompt)
-                }
+                granted = (item, prompt)
                 continue
             }
             guard isToolOnly(item) else { close(); granted = nil; continue }
@@ -578,7 +536,6 @@ enum ChiefRows {
         guard let all = words(command), let program = all.first else { return nil }
         let sub = all.dropFirst().first
         if program == "cmux", sub == "chief", all.dropFirst(2).first == "dispatch" { return CmuxStrings.approvalReasonDispatch }
-        if program == "cmux", sub == "vm" || sub == "cloud", all.dropFirst(2).first == "new" { return CmuxStrings.approvalReasonCloud }
         return CmuxStrings.approvalReasonNotAllowed(([program] + (sub.map { [$0] } ?? [])).joined(separator: " "))
     }
 
@@ -645,8 +602,6 @@ extension ChiefRows {
         CustomRows.register(ChiefToolRowProvider.shared)
         CustomRows.register(ChiefApprovalRowProvider.shared)
         CustomRows.register(QuestionCardRowProvider.shared)
-        CustomRows.register(ChiefProvisionRowProvider.shared)
-        CustomRows.register(ChiefResultCardProvider.shared)
         CustomRows.register(ChiefFailureRowProvider.shared)
         CustomRows.register(ChiefMemoryRowProvider.shared)
         CustomRows.register(ChiefStoppedRowProvider.shared)

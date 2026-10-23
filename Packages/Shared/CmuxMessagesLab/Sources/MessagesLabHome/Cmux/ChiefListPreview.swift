@@ -11,7 +11,7 @@ import Foundation
 /// 2. A question card that waits: "Needs your answer: <the question>", never its options.
 /// 3. A tool call that runs: its row's line ("Running cmux tree --all", "Starting Codex in …").
 /// 4. Otherwise the newest bubble: a text, attachment, link or location message (the host
-///    formats it, Markdown flattened), or a Cloud result card's title (not its meta line).
+///    formats it, Markdown flattened), or a result card's title (not its meta line).
 ///
 /// Never a system row (a saved note, "Stopped", a failed turn's row), a finished tool row, a
 /// decided approval or an answered question. Pure: tests pin each kind.
@@ -23,7 +23,7 @@ public struct ChiefListPreview: Hashable, Sendable {
         case needsAnswer(String)
         /// A tool call runs; the text is its row's line.
         case running(String)
-        /// A Cloud result card's title.
+        /// A result card's title.
         case card(String)
         /// The newest bubble, for the host to format.
         case message(CmuxHomeCore.Message)
@@ -69,9 +69,6 @@ public struct ChiefListPreview: Hashable, Sendable {
         }
         for message in live.reversed() {
             if message.parts.contains(where: isBubble) { return .message(message) }
-            for case .work(let work) in message.parts where ChiefCloudRows.isResult(work) && !work.title.isEmpty {
-                return .card(work.title)
-            }
         }
         return nil
     }
@@ -113,10 +110,9 @@ public struct ChiefListPreview: Hashable, Sendable {
         return CmuxStrings.dispatchStart(subject)
     }
 
-    /// A running work part's line: a tool call's row text, a Cloud provisioning row's
-    /// "Creating cloud machine…"; nil for a system row or a hidden call (a memory save).
+    /// A running work part's line: a tool call's row text; nil for a system row or a hidden
+    /// call (a memory save).
     static func runningLine(_ work: WorkRef) -> String? {
-        if ChiefCloudRows.isProvisioning(work) { return CmuxStrings.cloudCreating("").trimmingCharacters(in: .whitespaces) }
         guard work.host == nil, !ChiefRows.isNotice(work), !ChiefRows.savesMemory(work) else { return nil }
         return ChiefRows.lineText(ChiefRows.ToolCall(work))
     }

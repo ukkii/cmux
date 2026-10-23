@@ -1,0 +1,10 @@
+# Files the fork owns outright. scripts/merge-upstream.sh keeps the fork's version of
+# these whenever upstream changes them; port anything useful from upstream by hand.
+CLAUDE.md
+README.md
+REMOVED.md
+CONTRIBUTING.md
+.strip/
+scripts/merge-upstream.sh
+.github/workflows/fork-ci.yml
+TODO.md

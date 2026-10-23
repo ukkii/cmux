@@ -113,7 +113,6 @@ type rpcServer struct {
 	ownsPTYHub     bool
 	ptyAttachments map[string]*wsPTYAttachment
 	frameWriter    rpcFrameWriter
-	cliBridge      *cloudCLIBridge
 }
 
 type rpcRequestDispatcher struct {
@@ -1952,8 +1951,6 @@ func (s *rpcServer) handleRequest(req rpcRequest) rpcResponse {
 		return s.handlePTYClose(req)
 	case "pty.list":
 		return s.handlePTYList(req)
-	case "cli.response":
-		return s.handleCLIResponse(req)
 	default:
 		return rpcResponse{
 			ID: req.ID,

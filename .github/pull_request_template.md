@@ -1,5 +1,4 @@
 <!-- Before drafting or revising this description, read ../STYLE.md. Lead with the problem and the resulting behavior, keep it proportional, and delete any section or checklist line that does not apply. -->
-<!-- First pull request here? docs/start-here.md covers what reviewers look for and what CI runs for you: https://github.com/manaflow-ai/cmux/blob/main/docs/start-here.md -->
 
 ## Summary
 
@@ -14,9 +13,8 @@ Say what ran, what passed, and what that establishes. Keep these apart:
 - Anything still unverified, stated once, next to the claim it limits.
 Bug fix? Name the focused command that fails on the base and passes on the head, then add
 `### Observed / Not run`: what you ran and saw, then what you only read or didn't run.
-gh-merge-green warns when a fix PR has no Observed section.
 The contributor verification ladder suggests the first useful check for each kind of change:
-https://github.com/manaflow-ai/cmux/blob/main/docs/contributor-verification.md
+docs/contributor-verification.md
 -->
 
 ## Changelog

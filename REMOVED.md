@@ -203,3 +203,57 @@ What users see:
   `schemas/cmux.schema.json`.
 - The one-time terminal welcome banner still shows once and keeps its "already shown"
   state.
+
+## Repository cleanup
+
+The repository now holds only what the macOS app build and its local tooling need.
+
+- **iOS app:** `ios/`, `Packages/iOS/` and the iOS-only shared packages (`CmuxSyncStore`,
+  `CmuxTerminalClient`) are deleted, with the iOS entries in `cmux.xcworkspace`, the App
+  Store workflow config (`.asc/`), iOS/iPhone/mobile scripts and their tests.
+- **Server and web:** `web/` (website, API and Cloud backend, BUSL-licensed), `services/`,
+  `vault/`, `cmux-tui/` (SSH-TUI and Cloud client) and the control-plane schemas are deleted.
+- **Workers:** `workers/ci-artifacts`, `fleet-artifacts`, `iroh-v2` and `presence` are
+  deleted. `workers/cmux-paste-text` stays: the app build compiles it.
+- **Upstream CI:** all upstream GitHub Actions workflows, actions and runner config, the
+  fleet/testbox/merge-gate scripts, most of `scripts/ci/` and the tests of that
+  infrastructure are deleted. `.github/workflows/fork-ci.yml` runs the portable static
+  checks (`scripts/verify-local.py --all`, `plutil -lint`) on GitHub-hosted macOS runners
+  with no secrets. `scripts/reload.sh` no longer has `--prod-auth`, `--credentials-file`,
+  `--auth-profile` or `--expected-account`; tagged launches need no credentials. The
+  `homebrew-cmux` submodule and review-bot configs (CodeRabbit, Greptile) are removed.
+- **Docs:** Cloud, iroh, presence, mobile, CodeRouter, PostHog/Sentry and fleet CI docs are
+  deleted; the MDM policy doc, `THIRD_PARTY_LICENSES.md` and the Chief prompt no longer
+  describe removed features.
+- **Translated READMEs:** the 20 `README.*.md` translations described upstream's product
+  and pricing and are deleted. `README.md` describes this fork and how to build it.
+
+## Remaining network behaviour
+
+The app makes no automatic connections to cmux or Manaflow servers. It still contacts:
+
+- **Browser panes:** sites you navigate to, their favicons, and search suggestions from
+  the chosen search engine as you type in the omnibar (on by default; with Google it
+  also queries DuckDuckGo and Bing suggestions). Turn off in Settings → Browser.
+- **Apple Safe Browsing:** WKWebView's default fraudulent-website check.
+- **React Grab:** the pinned, SHA-256-verified `react-grab` script is fetched from
+  unpkg.com only when you invoke "Toggle React Grab", never on browser panel creation.
+- **GitHub PR badges:** api.github.com through your `gh` token / `GH_TOKEN` while the
+  sidebar's pull-request display is on (default on), plus the zsh integration's periodic
+  `gh pr view` (stopped with the same setting via `CMUX_NO_PR_WATCH=1`).
+- **SSH:** the hosts you connect to with `cmux ssh`. The cmuxd-remote daemons
+  (darwin/linux × arm64/amd64) are built into the app by
+  `scripts/bundle-remote-daemons.sh` and uploaded over that SSH connection; nothing is
+  downloaded.
+- **User-configured endpoints:** automation webhooks and similar URLs you set yourself.
+- **Local agent CLIs:** Claude Code, Codex and other CLIs cmux launches contact their own
+  providers.
+- **Computer Use helper (cmux-cua):** PostHog telemetry (including the install ping) and
+  the GitHub release check are compiled out by `scripts/cmux-cua-codex-delivery-mode.patch`;
+  the env opt-outs stay as a second layer.
+- **Help and docs links** (cmux.com, GitHub) open only when clicked. The `$schema` URL
+  written into `cmux.json` now points at this fork's `schemas/cmux.schema.json`.
+
+Also removed in this pass: the "Forward notifications to my iPhone" popover entry, Chief's
+Cloud provisioning/result cards, the unused pricing WebView prewarm pool, the unused
+MarkdownUI dependency, and the cmuxd-remote Cloud CLI bridge.

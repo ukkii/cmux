@@ -57,16 +57,6 @@ protocol ChatIntents: AnyObject {
     /// cmux-classic: a question card's answer (QuestionCardRow). The answer goes to the owner;
     /// `completion(false)` when it was refused.
     func answerQuestion(_ ref: PartRef, answer: AgentQuestionAnswer, completion: @escaping (Bool) -> Void)
-    /// cmux-classic: a Cloud result card's Open Workspace (ChiefCloudRows): the host opens the
-    /// machine workspace as a local workspace (`cmux vm workspace open`).
-    func openCloudWorkspace(machine: String, workspace: String)
-    /// cmux-classic: a Cloud result card's Open Desktop: the host projects the machine's
-    /// live display into cmux (`cmux vm desktop`) so the user can inspect or operate it.
-    func openCloudDesktop(machine: String)
-    /// cmux-classic: a Cloud result card's Stop Machine (ChiefCloudRows): the user asks the Chief to
-    /// stop `machine` (`name` is how the card shows it); the Chief's `cmux vm pause` then asks with an
-    /// approval card. `completion(false)` when the request was not sent.
-    func stopCloudMachine(machine: String, name: String, completion: @escaping (Bool) -> Void)
     /// cmux-classic: a failed turn's Try Again (ChiefNoticeRows.swift): the owner runs the last
     /// message again; `completion(false)` when it did not (a turn runs, nothing to resend).
     func retryLastTurn(completion: @escaping (Bool) -> Void)
@@ -78,9 +68,6 @@ extension ChatIntents {
     func answerApproval(_ ref: PartRef, choice: String, always: Bool, completion: @escaping (Bool) -> Void) { completion(false) }
     func newestPendingApproval() -> (ref: PartRef, approval: ChiefRows.Approval)? { nil }
     func answerQuestion(_ ref: PartRef, answer: AgentQuestionAnswer, completion: @escaping (Bool) -> Void) { completion(false) }
-    func openCloudWorkspace(machine: String, workspace: String) {}
-    func openCloudDesktop(machine: String) {}
-    func stopCloudMachine(machine: String, name: String, completion: @escaping (Bool) -> Void) { completion(false) }
     func retryLastTurn(completion: @escaping (Bool) -> Void) { completion(false) }
     func undoMemory(fact: String, completion: @escaping (Bool) -> Void) { completion(false) }
 }

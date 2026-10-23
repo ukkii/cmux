@@ -99,19 +99,17 @@ enum HomeMapping {
         }
         let toolRole: ChiefRows.ToolRole = role ?? (ChiefRows.isToolOnly(item) ? .head(calls, allowed: false) : .other)
         var retry = false
-        var machineName: String?
         switch toolRole {
         case .folded: return ([], [])
         case let .head(calls, allowed):
             return ([.custom(ChiefRows.toolPart(calls, group: rowSafe(item.key.rawValue), allowed: allowed))], [0])
         case .failure(let r): retry = r
-        case .cloudResult(let name): machineName = name
         case .other: break
         }
         let markdown = isAgent(item.author, summary)
         var parts: [Part] = [], owners: [Int] = []
         for (i, p) in item.parts.enumerated() {
-            // cmux-classic: the Chief's question card and its Cloud rows (QuestionCardRow, ChiefCloudRows).
+            // cmux-classic: the Chief's question card (QuestionCardRow).
             if case .question(let question) = p {
                 parts.append(.custom(QuestionCardRow.part(question)))
                 owners.append(i)
@@ -128,11 +126,6 @@ enum HomeMapping {
             }
             // cmux-classic: the owner's system rows (a failed turn, a saved note; ChiefNoticeRows.swift).
             if case .work(let work) = p, let row = ChiefRows.noticePart(work, retry: retry) {
-                parts.append(.custom(row))
-                owners.append(i)
-                continue
-            }
-            if case .work(let work) = p, let row = ChiefCloudRows.part(work, createdAt: item.createdAt, machineName: machineName) {
                 parts.append(.custom(row))
                 owners.append(i)
                 continue

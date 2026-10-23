@@ -1,16 +1,15 @@
 # Contributing to cmux
 
-New here? Read [docs/start-here.md](docs/start-here.md) first: how to pick an
-issue, what you can fix without a Mac, and what happens to your pull request.
 This file is the mechanics: setup, checks, CI and the pull request checklist.
+This fork is a local-only build of cmux; see [REMOVED.md](REMOVED.md) for what
+was taken out.
 
 Be nice, assume the best: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Write issues
 and pull requests the way the short [writing guide](STYLE.md) says.
 
 ## Prerequisites
 
-Only needed for the native app. Docs, translations, Python tooling, `cmux-tui` and
-`web/` work on Linux; see [what you can fix without a Mac build](docs/start-here.md#2-things-you-can-fix-without-a-mac-build).
+Only needed for the native app. Docs, translations and Python tooling work on Linux.
 
 - macOS 14+
 - Xcode 26 (the pinned toolchain). Xcode 16.2 on Intel Macs with macOS 14.5+ also
@@ -61,9 +60,6 @@ CMUX_DEV_BACKEND_MODE=local ./scripts/reload.sh --tag my-feature
   `./scripts/install-git-hooks.sh`. With a custom `core.hooksPath` it prints the
   `pre-commit` and `post-merge` lines to add yourself; wire both.
 
-Team members with a Stack account can also sign DEBUG builds in and attach an iOS
-build: see [team dev setup](docs/team-dev-setup.md).
-
 <a id="fast-checks-before-building-or-pushing"></a>
 
 ## Fast checks before committing or building
@@ -87,8 +83,8 @@ or testing. The script runs repository code, so use a
 [trusted checkout](docs/contributor-verification.md#trust-boundary). Git push does
 not run it for you.
 
-For `web/` and other JS/TS sources, run `bun run biome:check` from the repository
-root. The root `biome.json` deliberately scopes that to maintained web and JS/TS
+For JS/TS sources (`webviews/`, `scripts/`), run `bun run biome:check` from the repository
+root. The root `biome.json` deliberately scopes that to maintained JS/TS
 sources, excluding generated bundles, build outputs, vendored trees and review-tool
 metadata. Formatting and import sorting are off for now, so do not wire this into
 required CI until the remaining source lint diagnostics are paid down.
@@ -100,27 +96,11 @@ change needs: source checks, the owning package's tests, compiling the app and
 tests, then runtime and physical checks. In the pull request, say which of those
 you ran. A parse or a build is not a test run.
 
-**You do not need to run the app-host or UI tests on your own Mac.** They launch
-the app and need a disposable GUI session. If you can't run them, open the pull
-request anyway and say so under Testing. Opening the pull request is the request
-for CI:
-
-- Static checks run on every pull request. The Linux guards run when your diff
-  touches what they cover.
-- Swift, package, app-host and tooling tests are routed from your diff: an edited
-  suite runs, and an app-source change runs the suites whose tests mention what
-  you changed. No label needed.
-- The broad macOS suite is label-gated. A maintainer adds `full-ci` when a change
-  needs it ([PR CI coverage](skills/cmux-testing/references/pr-ci-coverage.md)).
-  It is not a merge requirement.
-- No pull request job runs `cmuxUITests/` in full. If you touch that directory, the
-  `suite-coverage` check stays red until a maintainer runs the affected classes and
-  records it with `no-full-ci`.
-- On your first pull request, checks wait for a maintainer to approve the workflow
-  run. That's a GitHub default for new contributors, not a judgement on the patch.
-
-Read which tests actually ran on your commit, not the color of the checks list: a
-skipped job is green and is not coverage.
+This fork's CI is one workflow, [`.github/workflows/fork-ci.yml`](.github/workflows/fork-ci.yml).
+On every pull request it runs `python3 scripts/verify-local.py --all` and lints the
+Xcode project on a GitHub-hosted macOS runner. It does not build the app or run
+Swift, app-host or UI tests; run those locally and say in the pull request which
+ones you ran.
 
 ## Ghostty Submodule
 
@@ -148,8 +128,7 @@ conflict notes are in [docs/ghostty-fork.md](docs/ghostty-fork.md).
   email linked to it.
 
 Merges are squash merges, so the title and description become the commit that
-ships. How review works and what makes a patch wait is in
-[start here](docs/start-here.md#5-what-happens-next).
+ships.
 
 Agents working in this repository also follow [CLAUDE.md](CLAUDE.md) (also `AGENTS.md`).
 

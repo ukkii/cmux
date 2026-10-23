@@ -179,7 +179,6 @@
   "BrowserPopupDecisionTests": 7,
   "BrowserPortalFirstRevealScrollTests": 199,
   "BrowserPortalOmnibarSuggestionsTests": 24,
-  "BrowserPrewarmedWebViewPoolTests": 78,
   "BrowserProfileSocketTests": 175,
   "BrowserReadAccessURLTests": 2,
   "BrowserReturnKeyDownRoutingTests": 12,
