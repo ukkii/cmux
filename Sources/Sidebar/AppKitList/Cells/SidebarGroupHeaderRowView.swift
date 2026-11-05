@@ -833,9 +833,20 @@ final class SidebarShortcutHintPillView: NSView {
         let rim = ShortcutHintPalette.glassRimWidth
         return SubviewLayoutFrames(
             glass: bounds,
-            fill: hasGlass ? bounds.insetBy(dx: rim, dy: rim) : bounds,
-            label: bounds.insetBy(dx: horizontalPadding, dy: 2)
+            fill: hasGlass ? insetKeepingValidGeometry(bounds, dx: rim, dy: rim) : bounds,
+            label: insetKeepingValidGeometry(bounds, dx: horizontalPadding, dy: 2)
         )
+    }
+
+    /// `insetBy` that never returns `CGRect.null`. The pill is laid out at
+    /// zero size while hidden, and `insetBy` on a rect smaller than its
+    /// insets yields `CGRect.null`, whose infinite origin AppKit rejects with
+    /// "Invalid view geometry: x is infinity" on every row layout. Collapse
+    /// to a zero-size rect at the center instead.
+    private static func insetKeepingValidGeometry(_ rect: NSRect, dx: CGFloat, dy: CGFloat) -> NSRect {
+        let width = max(0, rect.width - 2 * dx)
+        let height = max(0, rect.height - 2 * dy)
+        return NSRect(x: rect.midX - width / 2, y: rect.midY - height / 2, width: width, height: height)
     }
 
     override func layout() {
