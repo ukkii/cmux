@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import CmuxTerminal
 
@@ -47,6 +46,6 @@ extension TerminalLinkOpenRequest.Destination {
     /// `openTerminalLinksInCmuxBrowser`; Cmd+Shift+click always opens the
     /// system default browser.
     static func forTerminalLinkClick(modifierFlagsRawValue rawValue: UInt) -> Self {
-        .followsSetting
+        cmuxIsSystemBrowserLinkChord(modifierFlagsRawValue: rawValue) ? .systemBrowser : .followsSetting
     }
 }
