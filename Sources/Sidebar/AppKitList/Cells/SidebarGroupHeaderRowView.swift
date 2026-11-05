@@ -822,20 +822,37 @@ final class SidebarShortcutHintPillView: NSView {
         )
     }
 
+    struct SubviewLayoutFrames: Equatable {
+        var glass: NSRect
+        var fill: NSRect
+        var label: NSRect
+    }
+
+    /// Frames ``layout()`` assigns to the glass, fill and label subviews.
+    static func subviewLayoutFrames(in bounds: NSRect, hasGlass: Bool) -> SubviewLayoutFrames {
+        let rim = ShortcutHintPalette.glassRimWidth
+        return SubviewLayoutFrames(
+            glass: bounds,
+            fill: hasGlass ? bounds.insetBy(dx: rim, dy: rim) : bounds,
+            label: bounds.insetBy(dx: horizontalPadding, dy: 2)
+        )
+    }
+
     override func layout() {
         super.layout()
         let radius = bounds.height / 2
+        let frames = Self.subviewLayoutFrames(in: bounds, hasGlass: glassView != nil)
         if let glassView {
-            glassView.frame = bounds
+            glassView.frame = frames.glass
             glassView.setValue(radius, forKey: "cornerRadius")
             let rim = ShortcutHintPalette.glassRimWidth
-            fillView.frame = bounds.insetBy(dx: rim, dy: rim)
+            fillView.frame = frames.fill
             fillView.layer?.cornerRadius = radius - rim
         } else {
-            fillView.frame = bounds
+            fillView.frame = frames.fill
             fillView.layer?.cornerRadius = radius
         }
-        label.frame = bounds.insetBy(dx: Self.horizontalPadding, dy: 2)
+        label.frame = frames.label
         layer?.shadowPath = CGPath(
             roundedRect: bounds,
             cornerWidth: radius,

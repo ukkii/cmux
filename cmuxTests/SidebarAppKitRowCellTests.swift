@@ -2212,6 +2212,53 @@ struct SidebarAppKitRowCellTests {
         #expect((pill.layer?.animationKeys() ?? []).isEmpty)
     }
 
+    /// A hidden pill is laid out at zero size (`fittingPillSize()` returns
+    /// `.zero` while hidden), and every sidebar row lays out its pill. The
+    /// frames the pill assigns to its subviews must stay valid AppKit
+    /// geometry: `CGRect.insetBy` on a rect smaller than the inset returns
+    /// `CGRect.null`, whose origin is infinite, and AppKit logs "Invalid view
+    /// geometry: x is infinity / too large" (and the same for y) for every
+    /// such assignment. AppKit then drops the value, so the views' frames
+    /// cannot be the oracle; the layout's computed frames are.
+    @Test(arguments: [
+        NSSize.zero,
+        NSSize(width: 3, height: 1),
+        NSSize(width: 30, height: 16),
+    ])
+    func shortcutHintPillLayoutFramesStayValidGeometry(size: NSSize) {
+        let bounds = NSRect(origin: .zero, size: size)
+        for hasGlass in [true, false] {
+            let frames = SidebarShortcutHintPillView.subviewLayoutFrames(in: bounds, hasGlass: hasGlass)
+
+            for (name, rect) in [("glass", frames.glass), ("fill", frames.fill), ("label", frames.label)] {
+                #expect(
+                    Self.isValidViewGeometry(rect),
+                    "\(name) frame \(rect) for bounds \(bounds) hasGlass=\(hasGlass)"
+                )
+                #expect(bounds.contains(rect) || rect.isEmpty, "\(name) frame \(rect) escapes \(bounds)")
+            }
+        }
+    }
+
+    @Test
+    func shortcutHintPillLayoutFramesKeepInsetsWhenThereIsRoom() {
+        let bounds = NSRect(x: 0, y: 0, width: 30, height: 16)
+        let rim = ShortcutHintPalette.glassRimWidth
+
+        let frames = SidebarShortcutHintPillView.subviewLayoutFrames(in: bounds, hasGlass: true)
+
+        #expect(frames.glass == bounds)
+        #expect(frames.fill == bounds.insetBy(dx: rim, dy: rim))
+        #expect(frames.label == NSRect(x: 4, y: 2, width: 22, height: 12))
+    }
+
+    private static func isValidViewGeometry(_ rect: NSRect) -> Bool {
+        !rect.isNull
+            && rect.origin.x.isFinite && rect.origin.y.isFinite
+            && rect.size.width.isFinite && rect.size.height.isFinite
+            && rect.size.width >= 0 && rect.size.height >= 0
+    }
+
     @Test
     func reusedWorkspaceCellClearsPreviousShortcutHintImmediately() throws {
         let workspaceId = UUID()

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Testing
 
 #if canImport(cmux_DEV)
@@ -428,5 +429,106 @@ import Testing
 
         #expect(handled == true, "A focused, actively-edited omnibar must still submit on Return.")
         #expect(recorder.submitCount == 1)
+    }
+}
+
+// The omnibar field reports its caret/marked-text state through
+// `onSelectionChanged`, and BrowserPanelView stores that report in `@State`.
+// `updateNSView` runs inside SwiftUI's view update, so reporting synchronously
+// from there wrote `@State` during the update and SwiftUI logged "Modifying
+// state during view update, this will cause undefined behavior." for every new
+// browser panel and every URL the omnibar displayed. The report must arrive
+// after the update that produced it, and still arrive.
+@MainActor
+@Suite(.serialized) struct OmnibarSelectionPublicationTests {
+    private final class SelectionRecorder {
+        var isRendering = false
+        var reports: [(range: NSRange, hasMarkedText: Bool, duringRender: Bool)] = []
+    }
+
+    private struct Host: View {
+        let text: String
+        let recorder: SelectionRecorder
+
+        var body: some View {
+            OmnibarTextFieldRepresentable(
+                panelId: UUID(),
+                fontSize: 13,
+                text: .constant(text),
+                isFocused: .constant(false),
+                selectAllRequestId: 0,
+                inlineCompletion: nil,
+                placeholder: "",
+                onTap: {},
+                onSubmit: { _ in },
+                onEscape: {},
+                onFieldLostFocus: {},
+                onMoveSelection: { _ in },
+                onDeleteSelectedSuggestion: {},
+                onAcceptInlineCompletion: {},
+                onDeleteBackwardWithInlineSelection: {},
+                onClearTypedPrefixWithInlineSelection: {},
+                onDeleteWordBackwardWithInlineSelection: {},
+                onSelectionChanged: { range, hasMarkedText in
+                    recorder.reports.append((range, hasMarkedText, recorder.isRendering))
+                },
+                shouldSuppressWebViewFocus: { false }
+            )
+            .frame(width: 320, height: 24)
+        }
+    }
+
+    private func render(_ host: NSHostingView<Host>, recorder: SelectionRecorder) {
+        recorder.isRendering = true
+        host.layoutSubtreeIfNeeded()
+        host.window?.displayIfNeeded()
+        recorder.isRendering = false
+    }
+
+    /// Suspends the test so the main queue can run work deferred to it. A
+    /// nested `RunLoop.run` does not drain the main dispatch queue while the
+    /// main-actor test itself runs on it.
+    private func drainMainQueue(until done: () -> Bool) async throws {
+        let clock = ContinuousClock()
+        let deadline = clock.now + .seconds(1)
+        while !done(), clock.now < deadline {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
+    @Test func selectionIsPublishedAfterTheViewUpdateThatChangedTheText() async throws {
+        _ = NSApplication.shared
+        let recorder = SelectionRecorder()
+        let host = NSHostingView(rootView: Host(text: "", recorder: recorder))
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 24),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        window.isReleasedWhenClosed = false
+        defer {
+            window.contentView = nil
+            window.close()
+        }
+        window.contentView = host
+
+        render(host, recorder: recorder)
+        try await drainMainQueue { !recorder.reports.isEmpty }
+
+        let url = "https://example.com/path"
+        recorder.reports.removeAll()
+        host.rootView = Host(text: url, recorder: recorder)
+        render(host, recorder: recorder)
+        try await drainMainQueue { recorder.reports.contains { $0.range.location == url.utf16.count } }
+
+        #expect(
+            recorder.reports.allSatisfy { !$0.duringRender },
+            "onSelectionChanged ran inside the SwiftUI update: \(recorder.reports.map(\.range))"
+        )
+        #expect(
+            recorder.reports.last.map { NSEqualRanges($0.range, NSRange(location: url.utf16.count, length: 0)) } == true,
+            "The caret at the end of the displayed URL must still be published: \(recorder.reports.map(\.range))"
+        )
     }
 }
