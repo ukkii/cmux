@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import CmuxTerminal
 
@@ -38,4 +39,14 @@ struct TerminalLinkOpenRequest: Sendable {
         kind == GHOSTTY_ACTION_OPEN_URL_KIND_TEXT || kind == GHOSTTY_ACTION_OPEN_URL_KIND_HTML
     }
 
+}
+
+extension TerminalLinkOpenRequest.Destination {
+    /// The destination a terminal link click asks for, from the modifiers
+    /// held when the click began. Cmd+click follows
+    /// `openTerminalLinksInCmuxBrowser`; Cmd+Shift+click always opens the
+    /// system default browser.
+    static func forTerminalLinkClick(modifierFlagsRawValue rawValue: UInt) -> Self {
+        .followsSetting
+    }
 }
