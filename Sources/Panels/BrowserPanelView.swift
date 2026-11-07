@@ -4742,6 +4742,18 @@ struct OmnibarTextFieldRepresentable: NSViewRepresentable {
             }
         }
 
+        /// Publishes on the next main-queue turn, after the current view update,
+        /// coalescing repeated requests from one update.
+        private func scheduleSelectionStatePublication() {
+            guard !isSelectionPublicationScheduled else { return }
+            isSelectionPublicationScheduled = true
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.isSelectionPublicationScheduled = false
+                self.publishSelectionState()
+            }
+        }
+
         func detachSelectionObserver() {
             if let selectionObserver {
                 NotificationCenter.default.removeObserver(selectionObserver)
@@ -4781,7 +4793,19 @@ struct OmnibarTextFieldRepresentable: NSViewRepresentable {
             return true
         }
 
+        /// True while ``OmnibarTextFieldRepresentable/updateNSView(_:context:)``
+        /// runs. That is inside SwiftUI's view update, and `onSelectionChanged`
+        /// writes BrowserPanelView `@State`, which SwiftUI reports as
+        /// "Modifying state during view update". Field-editor callbacks that
+        /// `updateNSView` triggers synchronously land here too.
+        var isApplyingViewUpdate = false
+        private var isSelectionPublicationScheduled = false
+
         func publishSelectionState() {
+            if isApplyingViewUpdate {
+                scheduleSelectionStatePublication()
+                return
+            }
             guard let field = parentField else { return }
             if let editor = field.currentEditor() as? NSTextView {
                 let range = editor.selectedRange()
@@ -4988,6 +5012,8 @@ struct OmnibarTextFieldRepresentable: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: OmnibarNativeTextField, context: Context) {
+        context.coordinator.isApplyingViewUpdate = true
+        defer { context.coordinator.isApplyingViewUpdate = false }
         context.coordinator.parent = self
         context.coordinator.parentField = nsView
         if let previousPanelId = nsView.panelId, previousPanelId != panelId {

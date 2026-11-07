@@ -822,20 +822,48 @@ final class SidebarShortcutHintPillView: NSView {
         )
     }
 
+    struct SubviewLayoutFrames: Equatable {
+        var glass: NSRect
+        var fill: NSRect
+        var label: NSRect
+    }
+
+    /// Frames ``layout()`` assigns to the glass, fill and label subviews.
+    static func subviewLayoutFrames(in bounds: NSRect, hasGlass: Bool) -> SubviewLayoutFrames {
+        let rim = ShortcutHintPalette.glassRimWidth
+        return SubviewLayoutFrames(
+            glass: bounds,
+            fill: hasGlass ? insetKeepingValidGeometry(bounds, dx: rim, dy: rim) : bounds,
+            label: insetKeepingValidGeometry(bounds, dx: horizontalPadding, dy: 2)
+        )
+    }
+
+    /// `insetBy` that never returns `CGRect.null`. The pill is laid out at
+    /// zero size while hidden, and `insetBy` on a rect smaller than its
+    /// insets yields `CGRect.null`, whose infinite origin AppKit rejects with
+    /// "Invalid view geometry: x is infinity" on every row layout. Collapse
+    /// to a zero-size rect at the center instead.
+    private static func insetKeepingValidGeometry(_ rect: NSRect, dx: CGFloat, dy: CGFloat) -> NSRect {
+        let width = max(0, rect.width - 2 * dx)
+        let height = max(0, rect.height - 2 * dy)
+        return NSRect(x: rect.midX - width / 2, y: rect.midY - height / 2, width: width, height: height)
+    }
+
     override func layout() {
         super.layout()
         let radius = bounds.height / 2
+        let frames = Self.subviewLayoutFrames(in: bounds, hasGlass: glassView != nil)
         if let glassView {
-            glassView.frame = bounds
+            glassView.frame = frames.glass
             glassView.setValue(radius, forKey: "cornerRadius")
             let rim = ShortcutHintPalette.glassRimWidth
-            fillView.frame = bounds.insetBy(dx: rim, dy: rim)
+            fillView.frame = frames.fill
             fillView.layer?.cornerRadius = radius - rim
         } else {
-            fillView.frame = bounds
+            fillView.frame = frames.fill
             fillView.layer?.cornerRadius = radius
         }
-        label.frame = bounds.insetBy(dx: Self.horizontalPadding, dy: 2)
+        label.frame = frames.label
         layer?.shadowPath = CGPath(
             roundedRect: bounds,
             cornerWidth: radius,
