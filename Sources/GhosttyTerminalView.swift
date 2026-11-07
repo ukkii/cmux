@@ -3616,8 +3616,11 @@ class GhosttyApp {
                 // Link callbacks must belong to one intentional pointer
                 // release. Text/HTML exports carry their own explicit action
                 // kind and can also be opened by a configured key binding.
-                if isTerminalLink, !surfaceView.consumeTerminalLinkOpenAuthorization() {
-                    return true
+                if isTerminalLink {
+                    guard let destination = surfaceView.consumeTerminalLinkOpenAuthorization() else {
+                        return true
+                    }
+                    request.destination = destination
                 }
                 surfaceView.recordCommandClickReleaseRuntimeOutcome(.openURL)
                 return TerminalLinkOpenCoordinator().open(request)
@@ -3893,6 +3896,8 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     private var commandClickReleaseRoutingActive = false
     private var commandClickReleaseRuntimeOutcome: TerminalCommandClickReleaseRouter.RuntimeOutcome?
     private var commandClickReleaseCanOpenURL = false
+    /// Destination the in-flight link click asked for, from its press modifiers.
+    private var commandClickReleaseLinkDestination: TerminalLinkOpenRequest.Destination = .followsSetting
     private var terminalPointerGesture = TerminalPointerGestureState()
     var codexActionCommandHovering = false
     private var pressedCodexActionCommand: CodexActionCommand?
@@ -8614,16 +8619,23 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         return true
     }
 
-    private func beginCommandClickReleaseRouting(linkActivationAuthorized: Bool) {
+    private func beginCommandClickReleaseRouting(
+        linkActivationAuthorized: Bool,
+        linkDestination: TerminalLinkOpenRequest.Destination
+    ) {
         commandClickReleaseRoutingActive = true
         commandClickReleaseRuntimeOutcome = nil
         commandClickReleaseCanOpenURL = linkActivationAuthorized
+        commandClickReleaseLinkDestination = linkDestination
     }
 
-    fileprivate func consumeTerminalLinkOpenAuthorization() -> Bool {
-        guard commandClickReleaseRoutingActive, commandClickReleaseCanOpenURL else { return false }
+    /// Consumes the link-open authorization of the active pointer release and
+    /// returns the destination that click asked for, or nil when no
+    /// intentional click authorizes this open.
+    fileprivate func consumeTerminalLinkOpenAuthorization() -> TerminalLinkOpenRequest.Destination? {
+        guard commandClickReleaseRoutingActive, commandClickReleaseCanOpenURL else { return nil }
         commandClickReleaseCanOpenURL = false
-        return true
+        return commandClickReleaseLinkDestination
     }
 
     /// Records a URL action only while its originating mouse release is active.
@@ -8642,6 +8654,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             commandClickReleaseRoutingActive = false
             commandClickReleaseRuntimeOutcome = nil
             commandClickReleaseCanOpenURL = false
+            commandClickReleaseLinkDestination = .followsSetting
         }
         guard commandClickReleaseRoutingActive else {
             return ghosttyConsumed ? .consumed : .unhandled
@@ -8661,7 +8674,10 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         runtimeOutcome: TerminalCommandClickReleaseRouter.RuntimeOutcome,
         resolution: WordPathResolution?
     ) {
-        beginCommandClickReleaseRouting(linkActivationAuthorized: linkActivationAuthorized)
+        beginCommandClickReleaseRouting(
+            linkActivationAuthorized: linkActivationAuthorized,
+            linkDestination: .forTerminalLinkClick(modifierFlagsRawValue: modifierFlags.rawValue)
+        )
         let consumed = sendGhosttyMouseButton(
             surface,
             state: GHOSTTY_MOUSE_RELEASE,

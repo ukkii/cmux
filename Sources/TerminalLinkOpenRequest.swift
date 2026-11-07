@@ -39,3 +39,13 @@ struct TerminalLinkOpenRequest: Sendable {
     }
 
 }
+
+extension TerminalLinkOpenRequest.Destination {
+    /// The destination a terminal link click asks for, from the modifiers
+    /// held when the click began. Cmd+click follows
+    /// `openTerminalLinksInCmuxBrowser`; Cmd+Shift+click always opens the
+    /// system default browser.
+    static func forTerminalLinkClick(modifierFlagsRawValue rawValue: UInt) -> Self {
+        cmuxIsSystemBrowserLinkChord(modifierFlagsRawValue: rawValue) ? .systemBrowser : .followsSetting
+    }
+}

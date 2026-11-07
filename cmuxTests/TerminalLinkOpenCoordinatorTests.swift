@@ -146,6 +146,19 @@ struct TerminalLinkOpenCoordinatorTests {
         #expect(externallyOpened.isEmpty)
     }
 
+    @Test("Cmd+Shift link clicks ask for the system browser; Cmd clicks follow the setting")
+    func linkClickModifiersChooseTheDestination() {
+        func destination(_ flags: NSEvent.ModifierFlags) -> TerminalLinkOpenRequest.Destination {
+            TerminalLinkOpenRequest.Destination.forTerminalLinkClick(modifierFlagsRawValue: flags.rawValue)
+        }
+        #expect(destination([.command, .shift]) == .systemBrowser)
+        #expect(destination([.command, .shift, .capsLock]) == .systemBrowser)
+        #expect(destination([.command]) == .followsSetting)
+        #expect(destination([.command, .option]) == .followsSetting)
+        #expect(destination([.command, .shift, .option]) == .followsSetting)
+        #expect(destination([]) == .followsSetting)
+    }
+
     @Test("A request naming the system browser leaves cmux even with the setting on")
     @MainActor
     func systemBrowserDestinationOverridesTheSetting() throws {
