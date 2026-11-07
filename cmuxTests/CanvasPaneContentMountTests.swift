@@ -73,6 +73,34 @@ struct CanvasPaneContentMountTests {
         #expect(attentionStrokeHexes(in: panel.hostedView).filter { $0 == "#33AA55" }.count >= 2)
     }
 
+    /// A canvas terminal is direct-hosted, outside `TerminalPanelView`, so the
+    /// mount itself carries the Safebox approval banner for that surface.
+    @Test func terminalMountIncludesSafeboxBannerForItsSurface() {
+        let panel = TerminalPanel(workspaceId: UUID())
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 640, height: 480))
+        let mount = CanvasPaneContentMount(
+            content: .terminal(panel, .disabled),
+            panelId: panel.id,
+            container: container,
+            workspaceAttentionColor: WorkspaceAttentionColor(configuredHex: "#FF69B4"),
+            onFocusPanel: { _ in },
+            makeTerminalVisible: { _ in }
+        )
+        defer { panel.surface.teardownHostedSurfaceForTesting() }
+
+        let banner = mount.safeboxBannerView
+        #expect(banner?.rootView.surfaceID == panel.id)
+        #expect(banner?.superview === container)
+        // Above the terminal, so its buttons get the clicks.
+        let bannerIndex = banner.flatMap { container.subviews.firstIndex(of: $0) }
+        let terminalIndex = container.subviews.firstIndex(of: panel.hostedView)
+        #expect(bannerIndex != nil && terminalIndex != nil && bannerIndex! > terminalIndex!)
+
+        mount.unmount()
+        #expect(banner?.superview == nil)
+        #expect(mount.safeboxBannerView == nil)
+    }
+
     private func attentionStrokeHexes(in view: NSView) -> [String] {
         shapeLayers(in: view.layer).compactMap { layer in
             guard let strokeColor = layer.strokeColor,

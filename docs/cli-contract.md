@@ -64,6 +64,7 @@ Environment:
 | `completion <bash\|zsh\|fish>` | Print a shell completion script without connecting to cmux. |
 | `welcome` | Print the welcome screen: the logo, the restored v0.64.25 shortcut list (never the user's bindings), and a pointer to `cmux shortcuts` for editing. Works without the app or a socket. |
 | `sudo` | Run one command through the cmux privileged helper, prompting through the app rather than a terminal. Exits with the command's own exit code. |
+| `safebox` | Secrets stored in cmux (Vault → Safebox), used without printing them: `list [--json]` lists names, notes and dates, never values, and needs no approval; `run NAME [NAME ...] [--as ENV=NAME ...] -- <command> [args...]` starts the command with each secret in its environment, masks every value in its output as `***` (values under 4 bytes are not masked), and exits with the command's status. The first use of a secret in a session waits up to 60 s for the user's Allow in cmux. Backed by `safebox.list` and `safebox.resolve`, which the remote relay denies. |
 | `help` | Print top-level usage, or one task-focused group of commands with `help <topic>`. Works without a socket. |
 | `version` | Print the running CLI's version, build, and commit. Works without the app, a socket, or sign-in. |
 | `guide`, `--skill` | Print the same short Markdown guide to workspace, terminal, browser, computer-use, and Cloud methods. Works without the app, a socket, network access, or sign-in. `--json` returns `{topic: "cmux", format: "markdown", content: "..."}`. |

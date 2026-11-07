@@ -720,6 +720,7 @@
 		C0F16B000000000000000001 /* CLIRemoteShellStartupPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F16B000000000000000002 /* CLIRemoteShellStartupPerformanceTests.swift */; };
 		C11757000000000000000071 /* CLIRestoreSessionTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C11757000000000000000070 /* CLIRestoreSessionTransferTests.swift */; };
 		A5D41209A1B2C3D4E5F60718 /* CLIRovoDevHookPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D4120AA1B2C3D4E5F60718 /* CLIRovoDevHookPersistenceTests.swift */; };
+		FF58B7D62C8965C0DFC73C5F /* CLISafeboxCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C67210096896DDE31B2D4660 /* CLISafeboxCommandTests.swift */; };
 		AE55B7F6000000000000A002 /* CLISendDraftGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE55B7F6000000000000A001 /* CLISendDraftGuardTests.swift */; };
 		FE89827F4FAB9F7524A38B41 /* CLISendQueuedOutputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85A183D9426E08846D029219 /* CLISendQueuedOutputTests.swift */; };
 		C12985000000000000000002 /* CLISocketEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12985000000000000000001 /* CLISocketEnvironment.swift */; };
@@ -935,6 +936,7 @@
 		925800000000000000000007 /* CMUXCLI+RestoreRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925800000000000000000008 /* CMUXCLI+RestoreRecord.swift */; };
 		925800000000000000000005 /* CMUXCLI+RestoreSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925800000000000000000006 /* CMUXCLI+RestoreSelector.swift */; };
 		888222D96880953F33F554F1 /* CMUXCLI+RovoDevHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF43B7BD28A755A6280428D6 /* CMUXCLI+RovoDevHooks.swift */; };
+		0DD84AC46A0CB8C0BFAADA15 /* CMUXCLI+Safebox.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0DB79D097A5CA5969DF6A3 /* CMUXCLI+Safebox.swift */; };
 		37708E13930225D14409F461 /* CMUXCLI+Screenshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50748DE10A0E397E5C77A025 /* CMUXCLI+Screenshot.swift */; };
 		A24420164F7D1D02F89B3E69 /* CMUXCLI+SemanticNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11AE8B73B8979F37F85EB754 /* CMUXCLI+SemanticNotifications.swift */; };
 		C0DE5E5500000000000000A1 /* CMUXCLI+SessionMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE5E5500000000000000A2 /* CMUXCLI+SessionMove.swift */; };
@@ -2438,6 +2440,34 @@
 		F5300000A1B2C3D4E5F60718 /* RovoDevSessionIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5300001A1B2C3D4E5F60718 /* RovoDevSessionIndexTests.swift */; };
 		FE003107 /* RovoDevTranscriptPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE003007 /* RovoDevTranscriptPreview.swift */; };
 		F5300002A1B2C3D4E5F60718 /* RovoDevTranscriptPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5300003A1B2C3D4E5F60718 /* RovoDevTranscriptPreviewTests.swift */; };
+		19671DA24FE33B8CEA1ABA00 /* SafeboxAppAttentionMarking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 491B67B2534DA4841C1F8FFB /* SafeboxAppAttentionMarking.swift */; };
+		028DC9363FFE1ABBC69E67CC /* SafeboxApprovalAttentionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7FF29FAFEF7F41992CF1A66 /* SafeboxApprovalAttentionTracker.swift */; };
+		D3C21DC5B83D25090B84FD2B /* SafeboxApprovalBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54916E026A822A2723DDFE0 /* SafeboxApprovalBanner.swift */; };
+		561892721E500FDD1A1D2F0A /* SafeboxApprovalBannerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF57861832F64B9011FA38B /* SafeboxApprovalBannerModelTests.swift */; };
+		D6196389B46E67DCC333DD2B /* SafeboxApprovalRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64B6C1FF207C2D622AFC6CA7 /* SafeboxApprovalRegistry.swift */; };
+		178F63C5E47E88B200B35E39 /* SafeboxApprovalRegistryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49044EDDE82BE96CDC733854 /* SafeboxApprovalRegistryTests.swift */; };
+		1323F5A3D9353BBC6B5E74C1 /* SafeboxCaptureConcealment.swift in Sources */ = {isa = PBXBuildFile; fileRef = B49EDA2DF1892BA6AA37A87E /* SafeboxCaptureConcealment.swift */; };
+		0C636CFE570C9FEAFC89E254 /* SafeboxChildRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E256025CBA890EA182A592 /* SafeboxChildRunner.swift */; };
+		9F9202551F0A133555CAD9C4 /* SafeboxCopiedValueExpiry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263FE26617648DAC14A6D8FB /* SafeboxCopiedValueExpiry.swift */; };
+		F72A1DB30EB5D08A28238EAA /* SafeboxKeychainValueStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D1F00C0890A62786F08F5C /* SafeboxKeychainValueStore.swift */; };
+		CEA72DC163605145DFE60268 /* SafeboxListModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9D35A14AA6E2815D5E4AE19 /* SafeboxListModel.swift */; };
+		21676367F634078773DE37B0 /* SafeboxListModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E88AE00F24EEDAF1105ED9D1 /* SafeboxListModelTests.swift */; };
+		1EBF34F7E23D30D69C1C975D /* SafeboxListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA2E706A582CC9A1E3401C1 /* SafeboxListView.swift */; };
+		D91DEAAC0C6FEDA2D5985CB0 /* SafeboxMetadataFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB13E15C011BBC7DC87F4A5F /* SafeboxMetadataFile.swift */; };
+		F7E87FBBC7EC7D64F7F17C9B /* SafeboxMetadataFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8BCB1EDEBC0E4D7163A4C8 /* SafeboxMetadataFileTests.swift */; };
+		05517544211D5EDEFDBE3C73 /* SafeboxOutputMasker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7986130D828FDE0B3154F4C0 /* SafeboxOutputMasker.swift */; };
+		B267A839CB7C37EEB17FEA26 /* SafeboxOutputMasker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7986130D828FDE0B3154F4C0 /* SafeboxOutputMasker.swift */; };
+		9A2AF6E88E82D94274980DAB /* SafeboxOutputMaskerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CF84813883DA74D103876F8 /* SafeboxOutputMaskerTests.swift */; };
+		733FBC0AB53108A66375FF19 /* SafeboxPlainTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A13589889219B8F4501EA7 /* SafeboxPlainTextField.swift */; };
+		2BBBE75CD49C1905C37EDDF0 /* SafeboxRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38ECD65C474312472401E274 /* SafeboxRepository.swift */; };
+		E5856929B497C2F06ECC76E8 /* SafeboxRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DAE661E89C33D2F43699D30 /* SafeboxRepositoryTests.swift */; };
+		C3546C6CD891A7B4452DB4E2 /* SafeboxSecretEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D3DF3794A90445F3FC41CE /* SafeboxSecretEditor.swift */; };
+		3070A22154F5C32BB65669A0 /* SafeboxSecretMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC75CED21EC55B4066949B8D /* SafeboxSecretMetadata.swift */; };
+		722126C6BD80E63783BB8322 /* SafeboxSecretName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56AE6F9697A1513705EA2BE8 /* SafeboxSecretName.swift */; };
+		EB411151D91D46A990A249BC /* SafeboxSecretRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B919915CF5F541076167EF2D /* SafeboxSecretRow.swift */; };
+		4A0AFFFF564863B7FDAEE8A2 /* SafeboxSessionKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9F660683C4DAD926E32B64 /* SafeboxSessionKey.swift */; };
+		8458FE6485150941D7AB15ED /* SafeboxSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24885E90DA2CAA4E4FA5A344 /* SafeboxSocketService.swift */; };
+		66FE5E63615B7370DC93C5CD /* SafeboxSocketServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E8289CFD4E54BBAB623C70D /* SafeboxSocketServiceTests.swift */; };
 		C0DE1A080000000000000001 /* SavedLayoutDefinitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE1A080000000000000002 /* SavedLayoutDefinitionTests.swift */; };
 		C0DE1A020000000000000001 /* SavedLayoutStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE1A020000000000000002 /* SavedLayoutStore.swift */; };
 		C0DE1A070000000000000001 /* SavedLayoutStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE1A070000000000000002 /* SavedLayoutStoreTests.swift */; };
@@ -3085,6 +3115,7 @@
 		7738C0087738C0087738C008 /* TerminalController+RemoteTmuxControlRefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7738D0087738D0087738D008 /* TerminalController+RemoteTmuxControlRefs.swift */; };
 		7738C0047738C0047738C004 /* TerminalController+RemoteTmuxControlTopology.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7738D0047738D0047738D004 /* TerminalController+RemoteTmuxControlTopology.swift */; };
 		B49282191C80DC84B8AB0BCB /* TerminalController+RemoteTmuxTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CCFC650BD590101D445C4A0 /* TerminalController+RemoteTmuxTestSupport.swift */; };
+		FEBD930124B17C1F1BCC3C19 /* TerminalController+SafeboxCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02758054A7F854ED9BCC365F /* TerminalController+SafeboxCommands.swift */; };
 		D310E509C9FA457B8AE81CF6 /* TerminalController+ShortcutConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC516CC8FB0418AA9D72AB4 /* TerminalController+ShortcutConfiguration.swift */; };
 		A6E57A0F0000000000000001 /* TerminalController+SocketBoundedLanes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E57A0F0000000000000002 /* TerminalController+SocketBoundedLanes.swift */; };
 		A79840040000000000000002 /* TerminalController+SocketCleanup.swift in Sources */ = {isa = PBXBuildFile; fileRef = A79840040000000000000001 /* TerminalController+SocketCleanup.swift */; };
@@ -4515,6 +4546,7 @@
 		C0F16B000000000000000002 /* CLIRemoteShellStartupPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIRemoteShellStartupPerformanceTests.swift; sourceTree = "<group>"; };
 		C11757000000000000000070 /* CLIRestoreSessionTransferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIRestoreSessionTransferTests.swift; sourceTree = "<group>"; };
 		A5D4120AA1B2C3D4E5F60718 /* CLIRovoDevHookPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLIRovoDevHookPersistenceTests.swift; sourceTree = "<group>"; };
+		C67210096896DDE31B2D4660 /* CLISafeboxCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLISafeboxCommandTests.swift; sourceTree = "<group>"; };
 		AE55B7F6000000000000A001 /* CLISendDraftGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLISendDraftGuardTests.swift; sourceTree = "<group>"; };
 		85A183D9426E08846D029219 /* CLISendQueuedOutputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLISendQueuedOutputTests.swift; sourceTree = "<group>"; };
 		C12985000000000000000001 /* CLISocketEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CLISocketEnvironment.swift; sourceTree = "<group>"; };
@@ -4701,6 +4733,7 @@
 		925800000000000000000008 /* CMUXCLI+RestoreRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+RestoreRecord.swift"; sourceTree = "<group>"; };
 		925800000000000000000006 /* CMUXCLI+RestoreSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+RestoreSelector.swift"; sourceTree = "<group>"; };
 		DF43B7BD28A755A6280428D6 /* CMUXCLI+RovoDevHooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+RovoDevHooks.swift"; sourceTree = "<group>"; };
+		FC0DB79D097A5CA5969DF6A3 /* CMUXCLI+Safebox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+Safebox.swift"; sourceTree = "<group>"; };
 		50748DE10A0E397E5C77A025 /* CMUXCLI+Screenshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+Screenshot.swift"; sourceTree = "<group>"; };
 		11AE8B73B8979F37F85EB754 /* CMUXCLI+SemanticNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+SemanticNotifications.swift"; sourceTree = "<group>"; };
 		C0DE5E5500000000000000A2 /* CMUXCLI+SessionMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMUXCLI+SessionMove.swift"; sourceTree = "<group>"; };
@@ -6103,6 +6136,33 @@
 		F5300001A1B2C3D4E5F60718 /* RovoDevSessionIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RovoDevSessionIndexTests.swift; sourceTree = "<group>"; };
 		FE003007 /* RovoDevTranscriptPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RovoDevTranscriptPreview.swift; sourceTree = "<group>"; };
 		F5300003A1B2C3D4E5F60718 /* RovoDevTranscriptPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RovoDevTranscriptPreviewTests.swift; sourceTree = "<group>"; };
+		491B67B2534DA4841C1F8FFB /* SafeboxAppAttentionMarking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxAppAttentionMarking.swift; sourceTree = "<group>"; };
+		A7FF29FAFEF7F41992CF1A66 /* SafeboxApprovalAttentionTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxApprovalAttentionTracker.swift; sourceTree = "<group>"; };
+		C54916E026A822A2723DDFE0 /* SafeboxApprovalBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxApprovalBanner.swift; sourceTree = "<group>"; };
+		4BF57861832F64B9011FA38B /* SafeboxApprovalBannerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SafeboxApprovalBannerModelTests.swift"; sourceTree = "<group>"; };
+		64B6C1FF207C2D622AFC6CA7 /* SafeboxApprovalRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxApprovalRegistry.swift; sourceTree = "<group>"; };
+		49044EDDE82BE96CDC733854 /* SafeboxApprovalRegistryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SafeboxApprovalRegistryTests.swift"; sourceTree = "<group>"; };
+		B49EDA2DF1892BA6AA37A87E /* SafeboxCaptureConcealment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxCaptureConcealment.swift; sourceTree = "<group>"; };
+		72E256025CBA890EA182A592 /* SafeboxChildRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeboxChildRunner.swift; sourceTree = "<group>"; };
+		263FE26617648DAC14A6D8FB /* SafeboxCopiedValueExpiry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxCopiedValueExpiry.swift; sourceTree = "<group>"; };
+		73D1F00C0890A62786F08F5C /* SafeboxKeychainValueStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxKeychainValueStore.swift; sourceTree = "<group>"; };
+		B9D35A14AA6E2815D5E4AE19 /* SafeboxListModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxListModel.swift; sourceTree = "<group>"; };
+		E88AE00F24EEDAF1105ED9D1 /* SafeboxListModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SafeboxListModelTests.swift"; sourceTree = "<group>"; };
+		0DA2E706A582CC9A1E3401C1 /* SafeboxListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxListView.swift; sourceTree = "<group>"; };
+		BB13E15C011BBC7DC87F4A5F /* SafeboxMetadataFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxMetadataFile.swift; sourceTree = "<group>"; };
+		5B8BCB1EDEBC0E4D7163A4C8 /* SafeboxMetadataFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SafeboxMetadataFileTests.swift"; sourceTree = "<group>"; };
+		7986130D828FDE0B3154F4C0 /* SafeboxOutputMasker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeboxOutputMasker.swift; sourceTree = "<group>"; };
+		2CF84813883DA74D103876F8 /* SafeboxOutputMaskerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafeboxOutputMaskerTests.swift; sourceTree = "<group>"; };
+		72A13589889219B8F4501EA7 /* SafeboxPlainTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxPlainTextField.swift; sourceTree = "<group>"; };
+		38ECD65C474312472401E274 /* SafeboxRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxRepository.swift; sourceTree = "<group>"; };
+		2DAE661E89C33D2F43699D30 /* SafeboxRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SafeboxRepositoryTests.swift"; sourceTree = "<group>"; };
+		32D3DF3794A90445F3FC41CE /* SafeboxSecretEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxSecretEditor.swift; sourceTree = "<group>"; };
+		DC75CED21EC55B4066949B8D /* SafeboxSecretMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxSecretMetadata.swift; sourceTree = "<group>"; };
+		56AE6F9697A1513705EA2BE8 /* SafeboxSecretName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxSecretName.swift; sourceTree = "<group>"; };
+		B919915CF5F541076167EF2D /* SafeboxSecretRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/UI/SafeboxSecretRow.swift; sourceTree = "<group>"; };
+		DA9F660683C4DAD926E32B64 /* SafeboxSessionKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxSessionKey.swift; sourceTree = "<group>"; };
+		24885E90DA2CAA4E4FA5A344 /* SafeboxSocketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Safebox/SafeboxSocketService.swift; sourceTree = "<group>"; };
+		6E8289CFD4E54BBAB623C70D /* SafeboxSocketServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SafeboxSocketServiceTests.swift"; sourceTree = "<group>"; };
 		C0DE1A080000000000000002 /* SavedLayoutDefinitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedLayoutDefinitionTests.swift; sourceTree = "<group>"; };
 		C0DE1A020000000000000002 /* SavedLayoutStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedLayoutStore.swift; sourceTree = "<group>"; };
 		C0DE1A070000000000000002 /* SavedLayoutStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedLayoutStoreTests.swift; sourceTree = "<group>"; };
@@ -6744,6 +6804,7 @@
 		7738D0087738D0087738D008 /* TerminalController+RemoteTmuxControlRefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+RemoteTmuxControlRefs.swift"; sourceTree = "<group>"; };
 		7738D0047738D0047738D004 /* TerminalController+RemoteTmuxControlTopology.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+RemoteTmuxControlTopology.swift"; sourceTree = "<group>"; };
 		1CCFC650BD590101D445C4A0 /* TerminalController+RemoteTmuxTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Debug/RemoteTmux/TerminalController+RemoteTmuxTestSupport.swift"; sourceTree = "<group>"; };
+		02758054A7F854ED9BCC365F /* TerminalController+SafeboxCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SafeboxCommands.swift"; sourceTree = "<group>"; };
 		BBC516CC8FB0418AA9D72AB4 /* TerminalController+ShortcutConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+ShortcutConfiguration.swift"; sourceTree = "<group>"; };
 		A6E57A0F0000000000000002 /* TerminalController+SocketBoundedLanes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SocketBoundedLanes.swift"; sourceTree = "<group>"; };
 		A79840040000000000000001 /* TerminalController+SocketCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalController+SocketCleanup.swift"; sourceTree = "<group>"; };
@@ -7594,6 +7655,8 @@
 				A62542679E9A9BFDD99A7BC6 /* CodexAutoNamingArgumentsTests.swift */,
 				DBC11F0A54FF4AC781CB4EE2 /* CLIChiefDispatchPlanTests.swift */,
 				3E18C2CC11FD283EAA50B7D6 /* CLIJumpToLastPromptTests.swift */,
+				2CF84813883DA74D103876F8 /* SafeboxOutputMaskerTests.swift */,
+				C67210096896DDE31B2D4660 /* CLISafeboxCommandTests.swift */,
 			);
 			path = cmuxCLITests;
 			sourceTree = "<group>";
@@ -9927,6 +9990,25 @@
 				F1C6800D38EC5F238A2994FC /* DockSplitStore+ChiefPane.swift */,
 				7947118FF892144AE54C82D2 /* ChiefPaneDragPayload.swift */,
 				0D10F73113F55349CE0E475D /* ChiefHomeConversationRows.swift */,
+				BB13E15C011BBC7DC87F4A5F /* SafeboxMetadataFile.swift */,
+				DC75CED21EC55B4066949B8D /* SafeboxSecretMetadata.swift */,
+				56AE6F9697A1513705EA2BE8 /* SafeboxSecretName.swift */,
+				73D1F00C0890A62786F08F5C /* SafeboxKeychainValueStore.swift */,
+				38ECD65C474312472401E274 /* SafeboxRepository.swift */,
+				DA9F660683C4DAD926E32B64 /* SafeboxSessionKey.swift */,
+				64B6C1FF207C2D622AFC6CA7 /* SafeboxApprovalRegistry.swift */,
+				24885E90DA2CAA4E4FA5A344 /* SafeboxSocketService.swift */,
+				02758054A7F854ED9BCC365F /* TerminalController+SafeboxCommands.swift */,
+				B9D35A14AA6E2815D5E4AE19 /* SafeboxListModel.swift */,
+				0DA2E706A582CC9A1E3401C1 /* SafeboxListView.swift */,
+				32D3DF3794A90445F3FC41CE /* SafeboxSecretEditor.swift */,
+				B919915CF5F541076167EF2D /* SafeboxSecretRow.swift */,
+				72A13589889219B8F4501EA7 /* SafeboxPlainTextField.swift */,
+				C54916E026A822A2723DDFE0 /* SafeboxApprovalBanner.swift */,
+				A7FF29FAFEF7F41992CF1A66 /* SafeboxApprovalAttentionTracker.swift */,
+				491B67B2534DA4841C1F8FFB /* SafeboxAppAttentionMarking.swift */,
+				B49EDA2DF1892BA6AA37A87E /* SafeboxCaptureConcealment.swift */,
+				263FE26617648DAC14A6D8FB /* SafeboxCopiedValueExpiry.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -10185,6 +10267,9 @@
 				0A373D54DD824A79BFEB0840 /* CMUXCLI+ChiefDispatch.swift */,
 				2C636D86CB494560BBF6953B /* ChiefDispatchPlan.swift */,
 				C0023A973E2D4196E338ED78 /* CMUXCLI+ClaudeHookPaneDirectory.swift */,
+				7986130D828FDE0B3154F4C0 /* SafeboxOutputMasker.swift */,
+				72E256025CBA890EA182A592 /* SafeboxChildRunner.swift */,
+				FC0DB79D097A5CA5969DF6A3 /* CMUXCLI+Safebox.swift */,
 			);
 			path = CLI;
 			sourceTree = "<group>";
@@ -11219,6 +11304,12 @@
 				76E1227E00E3EB8E37E90C1E /* RemoteLinkTestContainer.swift */,
 				7112C6D86D530BF23479E552 /* CmuxAppURLSchemeTests.swift */,
 				FD44995727EC2D6028F5FF71 /* RetiredPanelDecodingTests.swift */,
+				5B8BCB1EDEBC0E4D7163A4C8 /* SafeboxMetadataFileTests.swift */,
+				2DAE661E89C33D2F43699D30 /* SafeboxRepositoryTests.swift */,
+				49044EDDE82BE96CDC733854 /* SafeboxApprovalRegistryTests.swift */,
+				6E8289CFD4E54BBAB623C70D /* SafeboxSocketServiceTests.swift */,
+				E88AE00F24EEDAF1105ED9D1 /* SafeboxListModelTests.swift */,
+				4BF57861832F64B9011FA38B /* SafeboxApprovalBannerModelTests.swift */,
 			);
 			path = cmuxTests;
 			sourceTree = "<group>";
@@ -11839,6 +11930,7 @@
 				C117570000000000000000A2 /* CLIPasteCommandTests.swift in Sources */,
 				C11757000000000000000031 /* CLIRelayQueuedHookRegressionTests.swift in Sources */,
 				C11757000000000000000071 /* CLIRestoreSessionTransferTests.swift in Sources */,
+				FF58B7D62C8965C0DFC73C5F /* CLISafeboxCommandTests.swift in Sources */,
 				AE55B7F6000000000000A002 /* CLISendDraftGuardTests.swift in Sources */,
 				C11757000000000000000032 /* CLISSHPTYResizeInputTests.swift in Sources */,
 				C11757000000000000000033 /* CLIStdioSIGPIPERegressionTests.swift in Sources */,
@@ -11870,6 +11962,8 @@
 				C11757000000000000000063 /* ProcessExitWait.swift in Sources */,
 				C0DE18477000000000000003 /* RemoteTmuxInvocation.swift in Sources */,
 				F8216B767F66C1B841330699 /* RemoteTmuxInvocationTests.swift in Sources */,
+				B267A839CB7C37EEB17FEA26 /* SafeboxOutputMasker.swift in Sources */,
+				9A2AF6E88E82D94274980DAB /* SafeboxOutputMaskerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -13135,6 +13229,24 @@
 				C46790000000000000000005 /* RosettaNativeRelaunch.swift in Sources */,
 				FE003105 /* RovoDevIndex.swift in Sources */,
 				FE003107 /* RovoDevTranscriptPreview.swift in Sources */,
+				19671DA24FE33B8CEA1ABA00 /* SafeboxAppAttentionMarking.swift in Sources */,
+				028DC9363FFE1ABBC69E67CC /* SafeboxApprovalAttentionTracker.swift in Sources */,
+				D3C21DC5B83D25090B84FD2B /* SafeboxApprovalBanner.swift in Sources */,
+				D6196389B46E67DCC333DD2B /* SafeboxApprovalRegistry.swift in Sources */,
+				1323F5A3D9353BBC6B5E74C1 /* SafeboxCaptureConcealment.swift in Sources */,
+				9F9202551F0A133555CAD9C4 /* SafeboxCopiedValueExpiry.swift in Sources */,
+				F72A1DB30EB5D08A28238EAA /* SafeboxKeychainValueStore.swift in Sources */,
+				CEA72DC163605145DFE60268 /* SafeboxListModel.swift in Sources */,
+				1EBF34F7E23D30D69C1C975D /* SafeboxListView.swift in Sources */,
+				D91DEAAC0C6FEDA2D5985CB0 /* SafeboxMetadataFile.swift in Sources */,
+				733FBC0AB53108A66375FF19 /* SafeboxPlainTextField.swift in Sources */,
+				2BBBE75CD49C1905C37EDDF0 /* SafeboxRepository.swift in Sources */,
+				C3546C6CD891A7B4452DB4E2 /* SafeboxSecretEditor.swift in Sources */,
+				3070A22154F5C32BB65669A0 /* SafeboxSecretMetadata.swift in Sources */,
+				722126C6BD80E63783BB8322 /* SafeboxSecretName.swift in Sources */,
+				EB411151D91D46A990A249BC /* SafeboxSecretRow.swift in Sources */,
+				4A0AFFFF564863B7FDAEE8A2 /* SafeboxSessionKey.swift in Sources */,
+				8458FE6485150941D7AB15ED /* SafeboxSocketService.swift in Sources */,
 				C0DE1A020000000000000001 /* SavedLayoutStore.swift in Sources */,
 				F12748000000000000000003 /* SavingTextView+WordWrapShortcut.swift in Sources */,
 				E8BA79E246754A8B99A0B823 /* ScreenIdentity.swift in Sources */,
@@ -13592,6 +13704,7 @@
 				7738C0087738C0087738C008 /* TerminalController+RemoteTmuxControlRefs.swift in Sources */,
 				7738C0047738C0047738C004 /* TerminalController+RemoteTmuxControlTopology.swift in Sources */,
 				B49282191C80DC84B8AB0BCB /* TerminalController+RemoteTmuxTestSupport.swift in Sources */,
+				FEBD930124B17C1F1BCC3C19 /* TerminalController+SafeboxCommands.swift in Sources */,
 				D310E509C9FA457B8AE81CF6 /* TerminalController+ShortcutConfiguration.swift in Sources */,
 				A6E57A0F0000000000000001 /* TerminalController+SocketBoundedLanes.swift in Sources */,
 				A79840040000000000000002 /* TerminalController+SocketCleanup.swift in Sources */,
@@ -14206,6 +14319,7 @@
 				925800000000000000000007 /* CMUXCLI+RestoreRecord.swift in Sources */,
 				925800000000000000000005 /* CMUXCLI+RestoreSelector.swift in Sources */,
 				888222D96880953F33F554F1 /* CMUXCLI+RovoDevHooks.swift in Sources */,
+				0DD84AC46A0CB8C0BFAADA15 /* CMUXCLI+Safebox.swift in Sources */,
 				37708E13930225D14409F461 /* CMUXCLI+Screenshot.swift in Sources */,
 				A24420164F7D1D02F89B3E69 /* CMUXCLI+SemanticNotifications.swift in Sources */,
 					C0DE5E5500000000000000A1 /* CMUXCLI+SessionMove.swift in Sources */,
@@ -14297,6 +14411,8 @@
 				B9000027A1B2C3D4E5F60719 /* RemoteRelayZshBootstrap.swift in Sources */,
 				B9000029A1B2C3D4E5F60719 /* RemoteSessionBundledResourceLoader.swift in Sources */,
 				C0DE18477000000000000001 /* RemoteTmuxInvocation.swift in Sources */,
+				0C636CFE570C9FEAFC89E254 /* SafeboxChildRunner.swift in Sources */,
+				05517544211D5EDEFDBE3C73 /* SafeboxOutputMasker.swift in Sources */,
 				C1A900000000000000000022 /* SharedLegacyFacadeCommand.swift in Sources */,
 				A10052000000000000000002 /* SocketClient+StartupWait.swift in Sources */,
 				D1275700D1275700D1275701 /* SocketClient+V2.swift in Sources */,
@@ -15119,6 +15235,12 @@
 				C46790000000000000000007 /* RosettaNativeRelaunchTests.swift in Sources */,
 				F5300000A1B2C3D4E5F60718 /* RovoDevSessionIndexTests.swift in Sources */,
 				F5300002A1B2C3D4E5F60718 /* RovoDevTranscriptPreviewTests.swift in Sources */,
+				561892721E500FDD1A1D2F0A /* SafeboxApprovalBannerModelTests.swift in Sources */,
+				178F63C5E47E88B200B35E39 /* SafeboxApprovalRegistryTests.swift in Sources */,
+				21676367F634078773DE37B0 /* SafeboxListModelTests.swift in Sources */,
+				F7E87FBBC7EC7D64F7F17C9B /* SafeboxMetadataFileTests.swift in Sources */,
+				E5856929B497C2F06ECC76E8 /* SafeboxRepositoryTests.swift in Sources */,
+				66FE5E63615B7370DC93C5CD /* SafeboxSocketServiceTests.swift in Sources */,
 				C0DE1A080000000000000001 /* SavedLayoutDefinitionTests.swift in Sources */,
 				C0DE1A070000000000000001 /* SavedLayoutStoreTests.swift in Sources */,
 				3C3FDDC0C744FA3350DA1D9B /* ScrollbackTestTerminal.swift in Sources */,

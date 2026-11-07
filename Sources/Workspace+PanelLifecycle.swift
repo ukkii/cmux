@@ -470,6 +470,11 @@ extension Workspace {
         if closePanel, !preservesTerminalForTransfer {
             journalClosedAgentSessions(panelId: panelId)
         }
+        if !preservesTerminalForTransfer {
+            // The terminal session ends here (close or respawn): its Safebox
+            // grants go and its pending approval requests are denied.
+            AppDelegate.shared?.safeboxApprovals.surfaceClosed(panelId)
+        }
         if publishSurfaceClosedEvent {
             publishCmuxSurfaceClosed(panelId, paneId: paneId, panel: panel, origin: origin)
         }

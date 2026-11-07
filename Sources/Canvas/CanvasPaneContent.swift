@@ -1,5 +1,6 @@
 import AppKit
 import CmuxCanvasUI
+import SwiftUI
 
 /// How a panel's content view mounts into a canvas pane.
 ///
@@ -26,6 +27,9 @@ final class CanvasPaneContentMount: CanvasPaneContentMounting {
     private let content: CanvasPaneContent
     private weak var container: NSView?
     private var onFocusPanel: ((UUID) -> Void)?
+    /// The Safebox approval banner of a terminal mount, pinned over the top of
+    /// the terminal. It has no height while nothing is pending.
+    private(set) var safeboxBannerView: NSHostingView<SafeboxApprovalBannerHost>?
 
     /// Mounts panel content into the pane's content container.
     ///
@@ -86,6 +90,7 @@ final class CanvasPaneContentMount: CanvasPaneContentMounting {
                 to: container,
                 makeVisible: makeTerminalVisible
             )
+            safeboxBannerView = Self.attachSafeboxBanner(surfaceID: panel.id, above: panel.hostedView, in: container)
         case .hosted:
             // Hosting views self-size to SwiftUI's ideal size under
             // autoresizing; pin with constraints so the pane dictates size.
@@ -112,6 +117,27 @@ final class CanvasPaneContentMount: CanvasPaneContentMounting {
         view.frame = container.bounds
         container.addSubview(view)
         makeVisible(view)
+    }
+
+    /// Adds the Safebox approval banner over the top edge of a direct-hosted
+    /// terminal. The canvas pane gives terminal clicks to the content, so the
+    /// banner's buttons receive them like any subview.
+    static func attachSafeboxBanner(
+        surfaceID: UUID,
+        above terminalView: NSView,
+        in container: NSView
+    ) -> NSHostingView<SafeboxApprovalBannerHost> {
+        let banner = NSHostingView(rootView: SafeboxApprovalBannerHost(surfaceID: surfaceID))
+        // Sized by its content, so it is zero-height while nothing is pending.
+        banner.sizingOptions = [.intrinsicContentSize]
+        banner.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(banner, positioned: .above, relativeTo: terminalView)
+        NSLayoutConstraint.activate([
+            banner.topAnchor.constraint(equalTo: container.topAnchor),
+            banner.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            banner.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+        ])
+        return banner
     }
 
     /// The terminal panel when this mount hosts a terminal directly.
@@ -178,6 +204,8 @@ final class CanvasPaneContentMount: CanvasPaneContentMounting {
             hostedView.setInactiveOverlay(color: .clear, opacity: 0, visible: false)
             panel.surface.applyVisibilityOcclusion(true)
             hostedView.removeFromSuperview()
+            safeboxBannerView?.removeFromSuperview()
+            safeboxBannerView = nil
         case .hosted(let panel, let view, _):
             if let simulatorPanel = panel as? SimulatorPanel {
                 simulatorPanel.setVisibleInUI(false)

@@ -449,6 +449,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// Owns the process-scoped idle-sleep assertion shared by every local and
     /// mobile entrypoint.
     let caffeineController = CaffeineController()
+    /// Safebox: the one repository (metadata file and Keychain item) of this
+    /// app process.
+    let safeboxRepository = SafeboxRepository.live()
+    /// Safebox Allow/Deny state. It must live as long as the app: a
+    /// `safebox.resolve` caller waits on it for the user's answer and is never
+    /// resumed if it goes away, and grants exist only in memory here.
+    let safeboxApprovals = SafeboxApprovalRegistry()
+    /// Hides revealed Safebox values before cmux captures one of its windows.
+    let safeboxCaptureConcealment = SafeboxCaptureConcealment()
+    /// The control socket's `safebox.*` handler over the two above.
+    var safeboxSocketService: SafeboxSocketService {
+        SafeboxSocketService(repository: safeboxRepository, approvals: safeboxApprovals)
+    }
+    /// Marks a tab unread while a Safebox request in it waits for the user.
+    private lazy var safeboxApprovalAttention = SafeboxApprovalAttentionTracker(
+        registry: safeboxApprovals,
+        target: SafeboxAppAttentionMarking(appDelegate: self)
+    )
+    /// What the Vault sidebar's Safebox tab needs, over the same two instances.
+    var safeboxUIDependencies: SafeboxUIDependencies {
+        SafeboxUIDependencies(
+            repository: safeboxRepository,
+            approvals: safeboxApprovals,
+            sessionLabel: { [weak self] session in self?.safeboxSessionLabel(for: session) },
+            captureConcealment: safeboxCaptureConcealment
+        )
+    }
     /// Composition-root lifetime owner shared by every window's font-size
     /// queue. Window coordinators receive this dependency explicitly; no
     /// coordinator reaches back through `AppDelegate.shared`.
@@ -1489,6 +1516,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if !isRunningUnderXCTest {
             startSudoApprovalCoordinator()
         }
+        safeboxApprovalAttention.start()
         // Prewarm the restorable-agent index (see closedPanelHistoryEntry) and the agent
         // message journal off the main thread, so the first close or command palette open
         // after launch doesn't load either synchronously on main.
@@ -2208,6 +2236,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         GhosttyApp.terminalPasteboard.cleanupAllOwnedTemporaryImageFiles()
         VSCodeServeWebController.shared.stop()
         BrowserProfileStore.shared.flushPendingSaves()
+        flushSafeboxUsageForTermination()
         ghosttyCrashBreadcrumbTask?.cancel()
         ghosttyCrashBreadcrumbTask = nil
         pendingCrashScanTask?.cancel()
@@ -2323,6 +2352,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
         pendingCrashScanTask = task
         return task
+    }
+
+    /// "Workspace › Tab" for a session the Safebox tab lists as granted, or nil
+    /// when its surface is no longer in a main window's workspace.
+    private func safeboxSessionLabel(for session: SafeboxSessionKey) -> String? {
+        guard let workspace = workspaceContainingPanel(panelId: session.surfaceID)?.workspace else { return nil }
+        guard let panelTitle = workspace.panelTitle(panelId: session.surfaceID), !panelTitle.isEmpty else {
+            return workspace.title
+        }
+        return "\(workspace.title) \u{203A} \(panelTitle)"
+    }
+
+    /// Writes pending Safebox "last used" dates before the process exits. The
+    /// repository is an actor, so this waits a bounded time for it.
+    private func flushSafeboxUsageForTermination() {
+        let repository = safeboxRepository
+        let finished = DispatchSemaphore(value: 0)
+        Task.detached {
+            try? await repository.flushUsage()
+            finished.signal()
+        }
+        _ = finished.wait(timeout: .now() + .seconds(2))
     }
 
     private func startSudoApprovalCoordinator() {
@@ -9340,6 +9391,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             .environmentObject(cmuxConfigStore)
             .environment(\.sessionDragRegistry, sessionDragRegistry)
             .environment(\.tabDragTransferRegistry, tabDragTransferRegistry)
+            .environment(\.safeboxDependencies, safeboxUIDependencies)
             // AppKit hosts this ContentView in its own NSHostingView, which does
             // not inherit the App scene's SwiftUI environment. Inject the
             // settings runtime so `@LiveSetting` can resolve the stores it

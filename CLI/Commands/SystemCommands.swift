@@ -792,6 +792,30 @@ struct SudoCommand: SharedLegacyFacadeCommand {
     static let configuration = CommandConfiguration(commandName: "sudo", helpNames: [])
 }
 
+struct SafeboxCommand: SharedLegacyFacadeCommand {
+    // See SessionCommand's comment: no catch-all argument alongside `subcommands`.
+    static let configuration = CommandConfiguration(
+        commandName: "safebox",
+        subcommands: [
+            SafeboxListCommand.self,
+            SafeboxRunCommand.self,
+        ],
+        helpNames: []
+    )
+}
+
+struct SafeboxListCommand: SharedLegacyFacadeCommand {
+    @Argument(parsing: .captureForPassthrough) var arguments: [String] = []
+    static let configuration = CommandConfiguration(commandName: "list", helpNames: [], aliases: ["ls"])
+}
+
+/// The words after `--` are the command to run and reach
+/// `runSafeboxNamespace` untouched.
+struct SafeboxRunCommand: SharedLegacyFacadeCommand {
+    @Argument(parsing: .captureForPassthrough) var arguments: [String] = []
+    static let configuration = CommandConfiguration(commandName: "run", helpNames: [])
+}
+
 struct VaultCommand: SharedLegacyFacadeCommand {
     // See SessionCommand's comment: no catch-all argument alongside `subcommands`.
     static let configuration = CommandConfiguration(

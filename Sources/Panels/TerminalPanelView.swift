@@ -101,6 +101,9 @@ struct TerminalPanelView: View {
                     onDismiss: { panel.dismissAgentWakeFailure() }
                 )
             }
+            // Reads the Safebox registry itself, so a pending-request change
+            // re-renders only the banner, never this panel body.
+            SafeboxApprovalBannerHost(surfaceID: panel.id)
             // Layering contract: terminal find UI is mounted in GhosttySurfaceScrollView (AppKit portal layer)
             // via `searchState`. Rendering `SurfaceSearchOverlay` in this SwiftUI container can hide it.
             GhosttyTerminalView(

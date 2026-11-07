@@ -29,6 +29,7 @@ extension TerminalController {
         let outputPath = outputDir.appendingPathComponent(filename)
 
         let captureTarget: CGWindowID? = v2MainSync {
+            Self.concealSafeboxValuesForCapture()
             let candidateWindows = NSApp.windows.filter { window in
                 window.isVisible &&
                     !window.isMiniaturized &&

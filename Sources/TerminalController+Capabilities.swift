@@ -182,6 +182,8 @@ extension TerminalController {
             "chief.read",
             "chief.mark_read",
             "chief.stop",
+            "safebox.list",
+            "safebox.resolve",
             "debug.terminals",
             "surface.send_text",
             "surface.send_key",

@@ -104,6 +104,9 @@ public enum ControlCommandExecutionPolicy: Sendable, Equatable {
         // `chief.approve`, `chief.answer` and `chief.debug` answer only in DEBUG builds.
         "chief.open", "chief.send", "chief.status", "chief.conversations",
         "chief.read", "chief.mark_read", "chief.stop", "chief.approve", "chief.answer", "chief.debug",
+        // Safebox: repository-actor reads, one main-actor hop to identify the
+        // caller's pane, and `safebox.resolve` waits for the user's Allow or Deny.
+        "safebox.list", "safebox.resolve",
         "browser.download.list", "browser.download.wait",
         "browser.profiles.list",
         "browser.profiles.create",
