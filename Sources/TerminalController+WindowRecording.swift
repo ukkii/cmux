@@ -112,8 +112,12 @@ extension TerminalController {
     ///
     /// Shared with `window.screenshot`, so `cmux record --window` and
     /// `cmux shot --window` cannot pick different windows for the same handle.
+    ///
+    /// Every capture of a cmux window starts here, so this is also where
+    /// revealed Safebox values are hidden, before the first frame is read.
     nonisolated func captureWindowID(handle: String?) -> CGWindowID? {
         v2MainSync {
+            Self.concealSafeboxValuesForCapture()
             let eligibleWindows = WindowRecordingWindowSelection.eligibleWindows(in: NSApp)
             let selected: NSWindow?
             if let handle {

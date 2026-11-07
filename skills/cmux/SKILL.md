@@ -60,6 +60,35 @@ cmux browser --surface <surface> download list --limit 5 --json
 Use the browser skill for the full response fields and wait/path compatibility
 details.
 
+## Safebox
+
+Safebox holds secrets the user stored in cmux (Vault → Safebox). Use it whenever a command needs a token, key or password, so the value never passes through you.
+
+```bash
+cmux safebox list [--json]
+cmux safebox run NAME [NAME ...] [--as ENV=NAME ...] -- <command> [args...]
+```
+
+- `list` shows names, notes and dates, never values. It never needs approval.
+- `run` starts `<command>` with each secret in an environment variable named after it (`--as ENV=NAME` renames the variable) and exits with the command's status. Example:
+
+```bash
+cmux safebox run CLOUDFLARE_TOKEN -- sh -c 'curl -H "Authorization: Bearer $CLOUDFLARE_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify'
+```
+
+- Expand `$VAR` inside the child (`sh -c '...'` with single quotes). Your own shell would expand it before cmux runs, to nothing. Tools that read the variable themselves can run directly.
+- Output is masked: every occurrence of a value becomes `***`. Values shorter than 4 bytes are not masked.
+- The first use of a secret in a session waits for the user to Allow it in cmux (60 s timeout, then it counts as denied). Later uses in the same session do not ask again.
+- Interactive full-screen programs (TUIs) are not supported. `run` waits for every process holding its output, so a background daemon it starts keeps it waiting.
+- Errors (the command is not run): `not_approved` (the user denied it or did not answer), `unknown_secret` (no stored value; check `list`), `not_in_cmux_terminal` (run it from a cmux terminal), `keychain_unavailable` (cmux cannot read the Keychain), `invalid_params` (a secret name or another argument is malformed), `not_authorized` (Safebox is not available through a remote `cmux ssh` session).
+- Inside tmux, screen or mosh running in a cmux pane, Safebox fails closed with `not_in_cmux_terminal`: those sessions are not the pane's own terminal. Run `cmux safebox` directly in the cmux pane.
+
+Rules for agents:
+
+- Never print, echo or log a secret value. Never write one to a file. Never pass one as an argument.
+- Do not try to read the Keychain or the Safebox files directly.
+- If a secret is missing, tell the user to add it in Vault → Safebox. You cannot add or change secrets.
+
 ## Deep-dive references
 
 | Reference | When to Use |

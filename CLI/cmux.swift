@@ -5648,6 +5648,9 @@ struct CMUXCLI {
                 jsonOutput: jsonOutput
             )
 
+        case "safebox":
+            try runSafeboxNamespace(commandArgs: commandArgs, client: client, jsonOutput: jsonOutput)
+
         case "recover":
             try runRecoveryCommand(
                 commandArgs: commandArgs,
@@ -16325,6 +16328,8 @@ struct CMUXCLI {
             return Self.reviewUsage
         case "vault":
             return Self.vaultUsage
+        case "safebox":
+            return Self.safeboxUsage
         case "recover":
             return Self.recoveryUsage
         case "ping":

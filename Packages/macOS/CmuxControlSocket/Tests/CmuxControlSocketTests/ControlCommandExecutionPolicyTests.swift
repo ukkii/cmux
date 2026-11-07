@@ -59,6 +59,8 @@ struct ControlCommandExecutionPolicyTests {
             // Chief awaits its owner actor and the store's send; never inline on main.
             "chief.open", "chief.send", "chief.status", "chief.conversations",
             "chief.read", "chief.mark_read", "chief.stop", "chief.approve", "chief.answer", "chief.debug",
+            // Safebox resolve waits for the user's approval; never inline on main.
+            "safebox.list", "safebox.resolve",
         ] {
             #expect(
                 ControlCommandExecutionPolicy(forMethod: method)

@@ -14,6 +14,7 @@ extension DockSplitStore {
         // container (a transfer detaches it first).
         if panels[panelId] != nil {
             journalClosedAgentSessions(panelId: panelId)
+            AppDelegate.shared?.safeboxApprovals.surfaceClosed(panelId)
         }
         if panels[panelId] is BrowserPanel {
             removeBrowserOpenTabSuggestion(panelId: panelId)

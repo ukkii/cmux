@@ -255,6 +255,12 @@ struct SessionIndexView: View {
     /// Default view is deliberately the information-rich layout shown in the
     /// Recent grouping; Compact view hides only the repository/branch line.
     @AppStorage("sessionIndex.compactView") private var isCompactView = false
+    /// Persisted selection of the Safebox tab. Kept apart from
+    /// `SessionGrouping`: Safebox is other content, not a session grouping, so
+    /// the grouping the user had stays selected underneath it.
+    @AppStorage("sessionIndex.safeboxSelected") private var isSafeboxSelected = false
+    /// The app's Safebox repository and approvals; nil hides the Safebox tab.
+    @Environment(\.safeboxDependencies) private var safeboxDependencies
     let onResume: ((SessionEntry) -> Void)?
     /// Launches the indexed session in a new split in the selected workspace.
     let onOpen: ((SessionEntry) -> Void)?
@@ -265,6 +271,9 @@ struct SessionIndexView: View {
     /// Focus-only action. Unlike `onOpen`, it never launches another session
     /// if the pane disappears between menu presentation and click.
     let onFocus: ((SessionEntry) -> Void)?
+    /// False while the hosting sidebar is collapsed but kept mounted. The
+    /// Safebox tab hides revealed values when it turns false.
+    let isPresented: Bool
     /// Rows shown per section before "Show more" is tapped.
     private static let collapsedRowLimit = 5
 
@@ -273,13 +282,15 @@ struct SessionIndexView: View {
         onResume: ((SessionEntry) -> Void)?,
         onOpen: ((SessionEntry) -> Void)?,
         activeSessionKeys: Set<String> = [],
-        onFocus: ((SessionEntry) -> Void)? = nil
+        onFocus: ((SessionEntry) -> Void)? = nil,
+        isPresented: Bool = true
     ) {
         self.store = store
         self.onResume = onResume
         self.onOpen = onOpen
         self.activeSessionKeys = activeSessionKeys
         self.onFocus = onFocus
+        self.isPresented = isPresented
     }
     static let relativeFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -343,25 +354,10 @@ struct SessionIndexView: View {
     var body: some View {
         VStack(spacing: 0) {
             controlBar
-            VaultAllSessionsBar(
-                searchText: $searchText,
-                isCompactView: $isCompactView,
-                onPeekTopResult: { peekTopSearchResult() },
-                onResumeTopResult: { resumeTopSearchResult() }
-            )
-            if isShowingSearchResults && !searchErrors.isEmpty {
-                searchErrorBanner
-            }
-            if store.isLoading && store.entries.isEmpty {
-                loadingView
-            } else if store.entries.isEmpty {
-                emptyView
-            } else if isShowingSearchResults && isSearchInFlight {
-                searchStatusView
-            } else if isShowingSearchResults && projectedSearchSections.isEmpty {
-                searchEmptyView
+            if isSafeboxSelected, let safeboxDependencies {
+                SafeboxListView(dependencies: safeboxDependencies, isPresented: isPresented)
             } else {
-                sessionsList
+                sessionsContent
             }
         }
         // RightSidebarPanelView offers the active mode the full remaining
@@ -390,21 +386,62 @@ struct SessionIndexView: View {
         }
     }
 
+    /// Whether the Safebox tab is both selected and available in this host.
+    private var showsSafebox: Bool {
+        isSafeboxSelected && safeboxDependencies != nil
+    }
+
+    @ViewBuilder
+    private var sessionsContent: some View {
+        VaultAllSessionsBar(
+            searchText: $searchText,
+            isCompactView: $isCompactView,
+            onPeekTopResult: { peekTopSearchResult() },
+            onResumeTopResult: { resumeTopSearchResult() }
+        )
+        if isShowingSearchResults && !searchErrors.isEmpty {
+            searchErrorBanner
+        }
+        if store.isLoading && store.entries.isEmpty {
+            loadingView
+        } else if store.entries.isEmpty {
+            emptyView
+        } else if isShowingSearchResults && isSearchInFlight {
+            searchStatusView
+        } else if isShowingSearchResults && projectedSearchSections.isEmpty {
+            searchEmptyView
+        } else {
+            sessionsList
+        }
+    }
+
     private var controlBar: some View {
         HStack(spacing: RightSidebarChromeMetrics.headerControlSpacing) {
             ForEach(SessionGrouping.allCases) { mode in
                 GroupingButton(
                     mode: mode,
-                    isSelected: store.grouping == mode
+                    isSelected: !showsSafebox && store.grouping == mode
                 ) {
+                    if isSafeboxSelected {
+                        isSafeboxSelected = false
+                    }
                     if store.grouping != mode {
                         store.grouping = mode
                     }
                 }
             }
+            if safeboxDependencies != nil {
+                SafeboxTabButton(isSelected: showsSafebox) {
+                    if !isSafeboxSelected {
+                        isSafeboxSelected = true
+                    }
+                }
+            }
 
             Spacer(minLength: 4)
-            VaultAllSessionsBar.reloadButton(isLoading: store.isLoading) { store.reload() }
+            if !showsSafebox {
+                VaultAllSessionsBar.reloadButton(isLoading: store.isLoading) { store.reload() }
+            }
         }
         // Match the right-sidebar mode bar above: the same outer insets and
         // the same 28-point chrome rhythm.
@@ -714,6 +751,44 @@ private struct GroupingButton: View {
         .onHover { isHovered = $0 }
         .help(mode.label)
         .accessibilityIdentifier("SessionGroupingButton.\(mode.rawValue)")
+    }
+}
+
+/// The Safebox tab in the Vault control bar, drawn like `GroupingButton`.
+private struct SafeboxTabButton: View {
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var isHovered: Bool = false
+
+    private static var label: String {
+        String(localized: "safebox.tab.title", defaultValue: "Safebox")
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: RightSidebarChromeMetrics.contentIconTextSpacing) {
+                CmuxSystemSymbolImage(
+                    magnified: "lock.shield",
+                    pointSize: RightSidebarChromeControlStyle.secondaryIconSize,
+                    weight: RightSidebarChromeControlStyle.iconWeight,
+                    tint: RightSidebarChromeControlStyle.pillForegroundColor(isSelected: isSelected, isHovered: isHovered)
+                )
+                .frame(width: RightSidebarChromeMetrics.contentIconFrameSize)
+                Text(Self.label)
+                    .cmuxFont(
+                        size: RightSidebarChromeControlStyle.labelSize,
+                        weight: RightSidebarChromeControlStyle.labelWeight
+                    )
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .rightSidebarChromePill(isSelected: isSelected, isHovered: isHovered, geometryKeyPrefix: "rightSidebarSecondaryControl_safebox")
+        }
+        .buttonStyle(.plain)
+        .titlebarInteractiveControl()
+        .onHover { isHovered = $0 }
+        .help(Self.label)
+        .accessibilityIdentifier("SessionIndexSafeboxButton")
     }
 }
 

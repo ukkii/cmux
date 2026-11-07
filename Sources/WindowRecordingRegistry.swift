@@ -160,6 +160,13 @@ actor WindowRecordingRegistry {
         return await active.status
     }
 
+    /// True while a recording is starting or running. Safebox does not reveal
+    /// values meanwhile (`SafeboxCaptureConcealment`).
+    func isRecording() async -> Bool {
+        await harvestFinishedRecording()
+        return active != nil
+    }
+
     func recentStatuses() async -> [WindowRecordingStatus] {
         await harvestFinishedRecording()
         var statuses = history

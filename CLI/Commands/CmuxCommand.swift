@@ -195,6 +195,7 @@ struct CmuxCommand: AsyncParsableCommand {
             AutomationCommand.self,
             GlaedaCommand.self,
             SudoCommand.self,
+            SafeboxCommand.self,
             VaultCommand.self,
             TodoCommand.self,
             CommentsCommand.self,

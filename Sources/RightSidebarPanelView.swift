@@ -459,7 +459,9 @@ struct RightSidebarPanelView: View {
                     activeSessionKeys: SessionEntryResumeCoordinator.inPaneSessionKeys(tabManager: tabManager),
                     onFocus: { entry in
                         _ = SessionEntryResumeCoordinator.focusIfActive(entry, tabManager: tabManager)
-                    }
+                    },
+                    // The content stays mounted while the sidebar is collapsed.
+                    isPresented: fileExplorerState.isVisible
                 )
                     .onAppear {
                         sessionIndexStore.setCurrentDirectoryIfChanged(sessionIndexStore.currentDirectory)

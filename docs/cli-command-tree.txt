@@ -1014,6 +1014,11 @@ command  right-sidebar  aliases=-
 command  rpc  aliases=-
   arg  arguments  kind=argument  completion=-
   arg  method  kind=argument  completion=-
+command  safebox  aliases=-
+command  safebox list  aliases=ls
+  arg  arguments  kind=argument  completion=-
+command  safebox run  aliases=-
+  arg  arguments  kind=argument  completion=-
 command  select-workspace  aliases=-
   arg  --window  kind=option  completion=custom
   arg  --workspace  kind=option  completion=custom

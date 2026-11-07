@@ -299,6 +299,11 @@ extension TerminalController {
             // denies `chief.*`); the handler refuses relay provenance again.
             return await chiefResponse(request)
         }
+        if request.method.hasPrefix("safebox.") {
+            // Remote relay requests never reach here (`RemoteRelayCommandPolicy`
+            // denies `safebox.*`); the handler refuses relay provenance again.
+            return await safeboxResponse(request)
+        }
         if request.method.hasPrefix("agent.message.") {
             if request.params[WorkspaceRemoteRelayCommandRewriter.remoteWorkspaceIDKey] != nil,
                let dispatchError = try await v2MainAsync({
