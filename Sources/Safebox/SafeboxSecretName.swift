@@ -30,6 +30,13 @@ struct SafeboxSecretName: Hashable, Codable, Sendable, Comparable {
         try container.encode(rawValue)
     }
 
+    /// The command an agent runs to use this secret, without the command
+    /// after `--`. Copy Run Command puts it on the pasteboard so the user can hand
+    /// it to an agent session. Names are `[A-Z0-9_]` only, so no quoting.
+    var runCommandPrefix: String {
+        "cmux safebox run \(rawValue) --"
+    }
+
     static func < (lhs: SafeboxSecretName, rhs: SafeboxSecretName) -> Bool {
         lhs.rawValue < rhs.rawValue
     }

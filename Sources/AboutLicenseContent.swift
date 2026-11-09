@@ -1,12 +1,15 @@
 import Foundation
 
 struct AboutLicenseContent {
+    /// The ukkii/cmux fork this build is made from.
+    static let forkRepositoryURL = URL(string: "https://github.com/ukkii/cmux")!
+
     let bundle: Bundle
     let repositoryURL: URL
 
     init(
         bundle: Bundle,
-        repositoryURL: URL = URL(string: "https://github.com/manaflow-ai/cmux")!
+        repositoryURL: URL = AboutLicenseContent.forkRepositoryURL
     ) {
         self.bundle = bundle
         self.repositoryURL = repositoryURL
@@ -71,15 +74,17 @@ struct AboutLicenseContent {
         bundleIdentifier: String?,
         commit: String?
     ) -> URL {
-        if bundleIdentifier == "com.cmuxterm.app", let version = normalized(version) {
-            return repositoryURL
-                .appendingPathComponent("tree", isDirectory: true)
-                .appendingPathComponent("v\(version)")
-        }
+        // Fork builds keep upstream's version number, so the upstream-style version tag
+        // would point at code this build is not made from. The commit is exact.
         if let commit = normalized(commit) {
             return repositoryURL
                 .appendingPathComponent("tree", isDirectory: true)
                 .appendingPathComponent(commit)
+        }
+        if bundleIdentifier == "com.cmuxterm.app", let version = normalized(version) {
+            return repositoryURL
+                .appendingPathComponent("tree", isDirectory: true)
+                .appendingPathComponent("v\(version)")
         }
         return repositoryURL
     }

@@ -141,6 +141,11 @@ struct SafeboxListModelTests {
         try? FileManager.default.removeItem(at: directory)
     }
 
+    @Test func runCommandPrefixNamesTheSecretForCopyRunCommand() throws {
+        let name = try #require(SafeboxSecretName(normalizing: "git_reviewer_auth_user"))
+        #expect(name.runCommandPrefix == "cmux safebox run GIT_REVIEWER_AUTH_USER --")
+    }
+
     @Test func searchFiltersByNameAndNote() async throws {
         defer { cleanUp() }
         let model = makeModel()

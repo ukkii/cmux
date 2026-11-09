@@ -30,8 +30,22 @@ struct AboutLicensesResourceTests {
         #expect(contents.contains(licenseContent.correspondingSourceURL().absoluteString))
     }
 
-    @Test("Stable builds link corresponding source to their exact version tag")
-    func stableBuildUsesVersionTag() {
+    @Test(
+        "Builds link corresponding source to their exact fork commit",
+        arguments: ["com.cmuxterm.app", "com.cmuxterm.app.debug.licpkg", "com.cmuxterm.app.nightly", "com.cmuxterm.app.rc"]
+    )
+    func buildUsesForkCommit(bundleIdentifier: String) {
+        let url = AboutLicenseContent(bundle: .main).correspondingSourceURL(
+            version: "0.64.19",
+            bundleIdentifier: bundleIdentifier,
+            commit: "abcdef123"
+        )
+
+        #expect(url.absoluteString == "https://github.com/ukkii/cmux/tree/abcdef123")
+    }
+
+    @Test("Stable builds without a commit fall back to the version tag")
+    func stableBuildWithoutCommitUsesVersionTag() {
         let repositoryURL = URL(string: "https://example.com/cmux-source")!
         let url = AboutLicenseContent(
             bundle: .main,
@@ -39,23 +53,9 @@ struct AboutLicensesResourceTests {
         ).correspondingSourceURL(
             version: "0.64.19",
             bundleIdentifier: "com.cmuxterm.app",
-            commit: "abcdef123"
+            commit: nil
         )
 
         #expect(url.absoluteString == "https://example.com/cmux-source/tree/v0.64.19")
-    }
-
-    @Test(
-        "Non-stable builds link corresponding source to their commit",
-        arguments: ["com.cmuxterm.app.debug.licpkg", "com.cmuxterm.app.nightly", "com.cmuxterm.app.rc"]
-    )
-    func nonStableBuildUsesCommit(bundleIdentifier: String) {
-        let url = AboutLicenseContent(bundle: .main).correspondingSourceURL(
-            version: "0.64.19",
-            bundleIdentifier: bundleIdentifier,
-            commit: "abcdef123"
-        )
-
-        #expect(url.absoluteString == "https://github.com/manaflow-ai/cmux/tree/abcdef123")
     }
 }

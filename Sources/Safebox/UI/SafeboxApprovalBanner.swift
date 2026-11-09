@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 
@@ -201,9 +202,21 @@ struct SafeboxApprovalBanner: View {
         }
         .padding(10)
         // Opaque, because in a canvas pane it overlays the terminal's top rows.
-        .background(.bar)
+        // Tinted so a pending request stands out from the terminal chrome.
+        .background(Color(nsColor: Self.backgroundColor))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("safebox-approval-banner")
+    }
+
+    /// Pale mint in light appearance; a dark green in dark appearance so the
+    /// primary (light) text keeps its contrast.
+    private static var backgroundColor: NSColor {
+        NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            return isDark
+                ? NSColor(srgbRed: 0.13, green: 0.25, blue: 0.15, alpha: 1)
+                : NSColor(srgbRed: 0.87, green: 0.98, blue: 0.85, alpha: 1)
+        }
     }
 
     private func countdownText(now: Date) -> String {

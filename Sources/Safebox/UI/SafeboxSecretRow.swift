@@ -6,6 +6,8 @@ struct SafeboxSecretRowActions {
     let toggleReveal: (SafeboxSecretName) -> Void
     let edit: (SafeboxSecretRowSnapshot) -> Void
     let copyValue: (SafeboxSecretName) -> Void
+    /// Copies `cmux safebox run NAME --` (no value) for an agent session.
+    let copyRunCommand: (SafeboxSecretName) -> Void
     let revoke: (SafeboxSecretName, SafeboxSessionKey) -> Void
     let revokeAll: (SafeboxSecretName) -> Void
     let requestDelete: (SafeboxSecretName) -> Void
@@ -112,6 +114,9 @@ struct SafeboxSecretRow: View {
         .buttonStyle(RightSidebarHeaderIconButtonStyle(iconGeometryKeyPrefix: "safeboxRowEye"))
         .frame(width: RightSidebarChromeMetrics.headerControlSize, height: RightSidebarChromeMetrics.headerControlSize)
         .disabled(row.valueState != .present)
+        Button(String(localized: "safebox.menu.copyRunCommand", defaultValue: "Copy Run Command")) {
+            actions.copyRunCommand(row.name)
+        }
         .help(label)
         .accessibilityLabel(Text(label))
         .accessibilityIdentifier("SafeboxRevealButton.\(row.name.rawValue)")

@@ -267,6 +267,12 @@ struct SafeboxListView: View {
                 editorTarget = .edit(name: row.name, note: row.note, isValueMissing: row.valueState == .missing)
             },
             copyValue: { name in Task { await model.copyValue(name) } },
+            copyRunCommand: { name in
+                // Plain text: it holds only the secret's name, never its value.
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(name.runCommandPrefix, forType: .string)
+            },
             revoke: { name, session in model.revoke(name, session: session) },
             revokeAll: { name in model.revokeAllGrants(for: name) },
             requestDelete: { name in pendingDelete = name },
