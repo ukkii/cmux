@@ -114,9 +114,6 @@ struct SafeboxSecretRow: View {
         .buttonStyle(RightSidebarHeaderIconButtonStyle(iconGeometryKeyPrefix: "safeboxRowEye"))
         .frame(width: RightSidebarChromeMetrics.headerControlSize, height: RightSidebarChromeMetrics.headerControlSize)
         .disabled(row.valueState != .present)
-        Button(String(localized: "safebox.menu.copyRunCommand", defaultValue: "Copy Run Command")) {
-            actions.copyRunCommand(row.name)
-        }
         .help(label)
         .accessibilityLabel(Text(label))
         .accessibilityIdentifier("SafeboxRevealButton.\(row.name.rawValue)")
@@ -132,6 +129,9 @@ struct SafeboxSecretRow: View {
             actions.copyValue(row.name)
         }
         .disabled(row.valueState != .present)
+        Button(String(localized: "safebox.menu.copyRunCommand", defaultValue: "Copy Run Command")) {
+            actions.copyRunCommand(row.name)
+        }
         if row.grants.count == 1, let session = row.grants.first {
             Button(String(localized: "safebox.menu.revokeAccess", defaultValue: "Revoke Access")) {
                 actions.revoke(row.name, session)
